@@ -1,11 +1,11 @@
 import { Length, Lengths } from './internal/model';
 
 function px(value: number): Length {
-    return [value, Lengths.Px];
+    return [Lengths.Px, Math.round(value)];
 }
 
 function rem(value: number): Length {
-    return [value, Lengths.Rem];
+    return [Lengths.Rem, value];
 }
 
 // Shrink an element to fit its contents.
@@ -36,7 +36,7 @@ function minimum(
     value: number,
     length: Lengths.Content | Lengths.Fill
 ): Length {
-    return [value, length];
+    return [length, value];
 }
 
 /** TODO: Add a maximum to a length.
@@ -53,7 +53,27 @@ function maximum(
     value: number,
     length: Lengths.Content | Lengths.Fill
 ): Length {
-    return [value, length];
+    return [length, value];
 }
 
-export { px, rem, shrink, fill, minContent, maxContent, minimum, maximum };
+/** TODO: Sometimes you may not want to split available space evenly. In this case you can use `fillPortion` to define which elements should have what portion of the available space.
+
+So, two elements, one with `width (fillPortion 2)` and one with `width (fillPortion 3)`. The first would get 2 portions of the available space, while the second would get 3.
+
+**Also:** `fill == fillPortion 1`
+*/
+function fillPortion(value: number): Length {
+    return [Lengths.Fill, value];
+}
+
+export {
+    px,
+    rem,
+    shrink,
+    fill,
+    fillPortion,
+    minContent,
+    maxContent,
+    minimum,
+    maximum,
+};

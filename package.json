@@ -17,6 +17,7 @@
     "homepage": "https://github.com/hoero/espectro#readme",
     "dependencies": {
         "@types/lodash": "^4.14.182",
+        "class-validator": "^0.13.2",
         "lodash": "^4.17.21"
     }
 }

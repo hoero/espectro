@@ -20,15 +20,12 @@ function oneRem(device: Device) {
     switch (device.class) {
         case DeviceClass.Phone:
             return percentToPx(45.5);
-            break;
 
         case DeviceClass.Tablet:
             return percentToPx(52.5);
-            break;
 
         default:
             return percentToPx(62.5);
-            break;
     }
 }
 

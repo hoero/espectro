@@ -144,16 +144,10 @@ function respond(device: Device, bps: Breakpoints) {
                         return bps.phonePortrait
                             ? bps.phonePortrait
                             : bps.phone;
-                        break;
-
                     case Orientation.Landscape:
                         return bps.phoneLandscape
                             ? bps.phoneLandscape
                             : bps.phone;
-                        break;
-
-                    default:
-                        break;
                 }
             } else {
                 return bps.default;
@@ -167,16 +161,11 @@ function respond(device: Device, bps: Breakpoints) {
                         return bps.tabletPortrait
                             ? bps.tabletPortrait
                             : bps.tablet;
-                        break;
 
                     case Orientation.Landscape:
                         return bps.tabletLandscape
                             ? bps.tabletLandscape
                             : bps.tablet;
-                        break;
-
-                    default:
-                        break;
                 }
             } else {
                 return bps.default;
@@ -190,16 +179,11 @@ function respond(device: Device, bps: Breakpoints) {
                         return bps.desktopPortrait
                             ? bps.desktopPortrait
                             : bps.desktop;
-                        break;
 
                     case Orientation.Landscape:
                         return bps.desktopLandscape
                             ? bps.desktopLandscape
                             : bps.desktop;
-                        break;
-
-                    default:
-                        break;
                 }
             } else {
                 return bps.default;
@@ -217,16 +201,11 @@ function respond(device: Device, bps: Breakpoints) {
                         return bps.bigDesktopPortrait
                             ? bps.bigDesktopPortrait
                             : bps.bigDesktop;
-                        break;
 
                     case Orientation.Landscape:
                         return bps.bigDesktopLandscape
                             ? bps.bigDesktopLandscape
                             : bps.bigDesktop;
-                        break;
-
-                    default:
-                        break;
                 }
             } else {
                 return bps.default;
