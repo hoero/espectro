@@ -1,4 +1,4 @@
-import { _ } from 'lodash/core';
+import { min, max } from 'lodash';
 
 /** MEDIA QUERY MANAGER
     -------------------------
@@ -227,16 +227,20 @@ function deviceData(vw: number, vh: number) {
 If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
 */
 function classifyDevice(window: { width: number; height: number }): Device {
-    const longSide = _.max([window.width, window.height]);
-    const shortSide = _.min([window.width, window.height]);
+    const longSide = max([window.width, window.height]);
+    const shortSide = min([window.width, window.height]);
 
     return {
         class: (function () {
-            if (shortSide < 600) {
+            if (shortSide !== undefined && shortSide < 600) {
                 return DeviceClass.Phone;
-            } else if (longSide <= 1200) {
+            } else if (longSide !== undefined && longSide <= 1200) {
                 return DeviceClass.Tablet;
-            } else if (longSide > 1200 && longSide <= 1920) {
+            } else if (
+                longSide !== undefined &&
+                longSide > 1200 &&
+                longSide <= 1920
+            ) {
                 return DeviceClass.Desktop;
             } else {
                 return DeviceClass.BigDesktop;
