@@ -1,5 +1,12 @@
 import { Min, Max } from 'class-validator';
-import { reduce as foldl, words, some as any } from 'lodash';
+import {
+    reduce as foldl,
+    words,
+    some as any,
+    isArray,
+    isString,
+    isObject,
+} from 'lodash';
 
 import {
     Flag,
@@ -12,6 +19,61 @@ import {
 } from './flag';
 import { classes } from './style';
 
+enum Elements {
+    Unstyled,
+    Styled,
+    Text,
+    Empty,
+}
+
+interface Unstyled {
+    type: Elements.Unstyled;
+    html: (a: LayoutContext) => HTMLElement;
+}
+
+interface Styled {
+    type: Elements.Styled;
+    styles: Style_[];
+    html: (a: EmbedStyles, b: LayoutContext) => HTMLElement;
+}
+
+interface Text {
+    type: Elements.Text;
+    str: string;
+}
+
+interface Empty {
+    type: Elements.Empty;
+}
+
+type Element = Unstyled | Styled | Text | Empty;
+
+enum EmbedStyles {
+    NoStyleSheet,
+    StaticRootAndDynamic,
+    OnlyDynamic,
+}
+
+interface NoStyleSheet {
+    type: EmbedStyles.NoStyleSheet;
+}
+
+interface StaticRootAndDynamic {
+    type: EmbedStyles.StaticRootAndDynamic;
+    options: OptionRecord;
+    styles: Style_[];
+}
+
+interface OnlyDynamic {
+    type: EmbedStyles.OnlyDynamic;
+    options: OptionRecord;
+    styles: Style_[];
+}
+
+type EmbedStyle = NoStyleSheet | StaticRootAndDynamic | OnlyDynamic;
+
+const noStyleSheet = EmbedStyles.NoStyleSheet;
+
 enum LayoutContext {
     AsRow,
     AsColumn,
@@ -22,8 +84,8 @@ enum LayoutContext {
 }
 
 interface Align {
-    hAlign: HAlign | undefined;
-    vAlign: VAlign | undefined;
+    hAlign: HAlign | null;
+    vAlign: VAlign | null;
 }
 
 enum Aligned {
@@ -43,42 +105,63 @@ enum VAlign {
     Bottom,
 }
 
-interface Style {
+enum Styles {
+    Style,
+    FontFamily,
+    FontSize,
+    Single,
+    Colored,
+    SpacingStyle,
+    BorderWidth,
+    PaddingStyle,
+    GridTemplateStyle,
+    GridPosition,
+    Transform,
+    PseudoSelector,
+    Transparency,
+    Shadows,
+}
+
+interface Style_ {
+    type: Styles.Style;
     selector: string;
     props: Property[];
 }
 
 interface FontFamily {
+    type: Styles.FontFamily;
     name: string;
-    typefaces: Typefaces[];
+    typefaces: Font[];
 }
 
-interface Typefaces {
-    type: FontFamilyType;
-    font: string;
+interface FontSize {
+    type: Styles.FontSize;
+    i: number;
 }
-
-type FontSize = number;
 
 interface Single {
+    type: Styles.Single;
     class: string;
     prop: string;
     value: string;
 }
 
 interface Colored {
+    type: Styles.Colored;
     class: string;
     prop: string;
-    color: string;
+    color: Color;
 }
 
 interface SpacingStyle {
+    type: Styles.SpacingStyle;
     name: string;
     x: number;
     y: number;
 }
 
 interface BorderWidth {
+    type: Styles.BorderWidth;
     class: string;
     top: number;
     right: number;
@@ -87,6 +170,7 @@ interface BorderWidth {
 }
 
 interface PaddingStyle {
+    type: Styles.PaddingStyle;
     name: string;
     top: number;
     right: number;
@@ -95,37 +179,45 @@ interface PaddingStyle {
 }
 
 interface GridTemplateStyle {
+    type: Styles.GridTemplateStyle;
     spacing: [Length, Length];
     columns: Length[];
     rows: Length[];
 }
 
 interface GridPosition {
+    type: Styles.GridPosition;
     row: number;
     column: number;
     width: number;
     height: number;
 }
 
-type Transform = Transformation;
+interface Transform {
+    type: Styles.Transform;
+    transform: Transformation;
+}
 
 interface PseudoSelector {
+    type: Styles.PseudoSelector;
     class: PseudoClass;
-    styles: Style[];
+    styles: Style_[];
 }
 
 interface Transparency {
+    type: Styles.Transparency;
     name: string;
     transparency: number;
 }
 
 interface Shadows {
+    type: Styles.Shadows;
     name: string;
     prop: string;
 }
 
-type Styles =
-    | Style
+type Style =
+    | Style_
     | FontFamily
     | FontSize
     | Single
@@ -140,11 +232,23 @@ type Styles =
     | Transparency
     | Shadows;
 
-type Untransformed = undefined;
+enum Transformations {
+    Untransformed,
+    Moved,
+    FullTransform,
+}
 
-type Moved = XYZ;
+interface Untransformed {
+    type: Transformations.Untransformed;
+}
+
+interface Moved {
+    type: Transformations.Moved;
+    xyz: XYZ;
+}
 
 interface FullTransform {
+    type: Transformations.FullTransform;
     translate: XYZ;
     scale: XYZ;
     rotate: XYZ;
@@ -152,12 +256,6 @@ interface FullTransform {
 }
 
 type Transformation = Untransformed | Moved | FullTransform;
-
-enum Transformations {
-    Untransformed,
-    Moved,
-    FullTransform,
-}
 
 enum PseudoClass {
     Focus,
@@ -181,31 +279,37 @@ enum FontFamilyType {
     FontWith,
 }
 
-type Typeface = string;
+interface Serif {
+    type: FontFamilyType.Serif;
+}
+
+interface SansSerif {
+    type: FontFamilyType.SansSerif;
+}
+
+interface Monospace {
+    type: FontFamilyType.Monospace;
+}
+
+interface Typeface {
+    type: FontFamilyType.Typeface;
+    name: string;
+}
 
 interface ImportFont {
+    type: FontFamilyType.ImportFont;
     name: string;
     url: string;
 }
 
 interface FontWith {
+    type: FontFamilyType.FontWith;
     name: string;
-    adjustment: Adjustment | undefined;
-    variants: [Variants, Variant][];
+    adjustment: Adjustment | null;
+    variants: Variant[];
 }
 
-type Font = FontFamilyType | Typeface | ImportFont | FontWith;
-
-type VariantActive = string;
-
-type VariantOff = string;
-
-interface VariantIndexed {
-    name: string;
-    index: number;
-}
-
-type Variant = VariantActive | VariantOff | VariantIndexed;
+type Font = Serif | SansSerif | Monospace | Typeface | ImportFont | FontWith;
 
 enum Variants {
     VariantActive,
@@ -213,67 +317,85 @@ enum Variants {
     VariantIndexed,
 }
 
-function renderVariant(variants: Variants, variant: Variant) {
-    switch (variants) {
+interface VariantActive {
+    type: Variants.VariantActive;
+    name: string;
+}
+
+interface VariantOff {
+    type: Variants.VariantOff;
+    name: string;
+}
+
+interface VariantIndexed {
+    type: Variants.VariantIndexed;
+    name: string;
+    index: number;
+}
+
+type Variant = VariantActive | VariantOff | VariantIndexed;
+
+function renderVariant(variant: Variant) {
+    switch (variant.type) {
         case Variants.VariantActive:
-            if (typeof variant === 'string') {
+            if (isString(variant)) {
                 return `\'${variant}\'`;
             }
             return '';
 
         case Variants.VariantOff:
-            if (typeof variant === 'string') {
+            if (isString(variant)) {
                 return `\'${variant}\' 0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (typeof variant === 'object') {
+            if (isObject(variant)) {
                 return `\'${variant.name}\' ${variant.index}`;
             }
             return '';
     }
 }
 
-function variantName(variants: Variants, variant: Variant) {
-    switch (variants) {
+function variantName(variant: Variant) {
+    switch (variant.type) {
         case Variants.VariantActive:
-            if (typeof variant === 'string') {
+            if (isString(variant)) {
                 return variant;
             }
             return '';
 
         case Variants.VariantOff:
-            if (typeof variant === 'string') {
+            if (isString(variant)) {
                 return `${variant}-0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (typeof variant === 'object') {
+            if (isObject(variant)) {
                 return `${variant.name}-${variant.index}`;
             }
             return '';
     }
 }
 
-function renderVariants(typeface: FontFamilyType, font: FontWith) {
-    switch (typeface) {
+function renderVariants(font: FontWith) {
+    switch (font.type) {
         case FontFamilyType.FontWith:
             const variants = font.variants.map((variant) => {
-                return renderVariant(variant[0], variant[1]);
+                return renderVariant(variant);
             });
             return variants.join(', ');
 
         default:
-            return undefined;
+            return null;
     }
 }
 
-function isSmallCaps(variants: Variants, variant: Variant) {
-    switch (variants) {
+function isSmallCaps(variant: Variant) {
+    switch (variant.type) {
         case Variants.VariantActive:
-            if (typeof variant === 'string') {
+            if (isString(variant)) {
                 return variant === 'smcp';
             }
             return false;
@@ -282,20 +404,20 @@ function isSmallCaps(variants: Variants, variant: Variant) {
             return false;
 
         case Variants.VariantIndexed:
-            if (typeof variant === 'object') {
+            if (isObject(variant)) {
                 return variant.name === 'smcp' && variant.index === 1;
             }
             return false;
     }
 }
 
-function hasSmallCaps(typeface: FontFamilyType, font: FontWith) {
-    switch (typeface) {
+function hasSmallCaps(font: FontWith) {
+    switch (font.type) {
         case FontFamilyType.FontWith:
             return any(
                 font.variants,
                 font.variants.map((variant) => {
-                    return isSmallCaps(variant[0], variant[1]);
+                    return isSmallCaps(variant);
                 })
             );
 
@@ -313,24 +435,9 @@ type XYZ = [number, number, number];
 
 type Angle = number;
 
-type NoAttribute = undefined;
-
-type Attr = Element['attributes'];
-
-type Describe = Description;
-
-interface Class {
-    flag: Second | Flag;
-    class: string;
-}
-
-interface StyleClass {
-    flag: Second | Flag;
-    style: Styles;
-}
-
 enum Attributes {
     NoAttribute,
+    Attr,
     Describe,
     Class,
     StyleClass,
@@ -342,11 +449,118 @@ enum Attributes {
     TransformComponent,
 }
 
-type Description = Descriptions | Heading | Label;
+interface NoAttribute {
+    type: Attributes.NoAttribute;
+}
 
-type Heading = number;
+interface Attr {
+    type: Attributes.Attr;
+    attr: HTMLElement['attributes'];
+}
 
-type Label = string;
+interface Describe {
+    type: Attributes.Describe;
+    description: Description;
+}
+
+interface Class {
+    type: Attributes.Class;
+    flag: Second | Flag;
+    class: string;
+}
+
+interface StyleClass {
+    type: Attributes.StyleClass;
+    flag: Second | Flag;
+    style: Style;
+}
+
+interface AlignY {
+    type: Attributes.AlignY;
+    y: VAlign;
+}
+
+interface AlignX {
+    type: Attributes.AlignX;
+    x: HAlign;
+}
+
+interface Width {
+    type: Attributes.Width;
+    width: Length;
+}
+
+interface Height {
+    type: Attributes.Height;
+    width: Length;
+}
+
+interface Nearby {
+    type: Attributes.Nearby;
+    location: Location;
+    element: Elements;
+}
+
+interface TransformComponent_ {
+    type: Attributes.TransformComponent;
+    flag: Flag | Second;
+    component: TransformComponent;
+}
+
+type Attribute =
+    | NoAttribute
+    | Attr
+    | Describe
+    | Class
+    | StyleClass
+    | AlignY
+    | AlignX
+    | Width
+    | Height
+    | Nearby
+    | TransformComponent_;
+
+enum TransformComponents {
+    MoveX,
+    MoveY,
+    MoveZ,
+    MoveXYZ,
+    Rotate,
+    Scale,
+}
+
+interface MoveX {
+    type: TransformComponents.MoveX;
+    x: number;
+}
+
+interface MoveY {
+    type: TransformComponents.MoveY;
+    y: number;
+}
+
+interface MoveZ {
+    type: TransformComponents.MoveZ;
+    z: number;
+}
+
+interface MoveXYZ {
+    type: TransformComponents.MoveXYZ;
+    xyz: XYZ;
+}
+
+interface Rotate {
+    type: TransformComponents.Rotate;
+    xyz: XYZ;
+    angle: number;
+}
+
+interface Scale {
+    type: TransformComponents.Scale;
+    xyz: number;
+}
+
+type TransformComponent = MoveX | MoveY | MoveZ | MoveXYZ | Rotate | Scale;
 
 enum Descriptions {
     Main,
@@ -359,6 +573,100 @@ enum Descriptions {
     LiveAssertive,
     Button,
     Paragraph,
+}
+interface Main {
+    type: Descriptions.Main;
+}
+
+interface Navigation {
+    type: Descriptions.Navigation;
+}
+
+interface ContentInfo {
+    type: Descriptions.ContentInfo;
+}
+
+interface Complementary {
+    type: Descriptions.Complementary;
+}
+
+interface Heading {
+    type: Descriptions.Heading;
+    i: number;
+}
+
+interface Label {
+    type: Descriptions.Label;
+    label: string;
+}
+
+interface LivePolite {
+    type: Descriptions.LivePolite;
+}
+
+interface LiveAssertive {
+    type: Descriptions.LiveAssertive;
+}
+
+interface Button {
+    type: Descriptions.Button;
+}
+
+interface Paragraph {
+    type: Descriptions.Paragraph;
+}
+
+type Description =
+    | Main
+    | Navigation
+    | ContentInfo
+    | Complementary
+    | Heading
+    | Label
+    | LivePolite
+    | LiveAssertive
+    | Button
+    | Paragraph;
+
+enum Lengths {
+    Px,
+    Rem,
+    Content,
+    Fill,
+    MinContent,
+    MaxContent,
+}
+
+interface Px {
+    type: Lengths.Px;
+    px: number;
+}
+
+interface Rem {
+    type: Lengths.Rem;
+    rem: number;
+}
+
+interface MinMax {
+    type: Lengths.Content | Lengths.Fill;
+    size: number;
+}
+
+type Length = Px | Rem | MinMax | Lengths;
+
+enum Axis {
+    XAxis,
+    YAxis,
+    AllAxis,
+}
+
+enum Location {
+    Above,
+    Below,
+    OnRight,
+    OnLeft,
+    InFront,
+    Behind,
 }
 
 interface Channels {
@@ -384,7 +692,7 @@ interface Rgba {
 
 type Colour = [number, number, number, number];
 
-type Color = Hsla | Rgba | undefined;
+type Color = Hsla | Rgba | string | null;
 
 enum Notation {
     Hsl,
@@ -395,7 +703,21 @@ enum Notation {
     Rgba255,
 }
 
-type NoNearbyChildren = undefined;
+type NodeName_ = string;
+
+type Embedded = [string, string];
+
+type NodeName = NodeNames.Generic | NodeName_ | Embedded;
+
+enum NodeNames {
+    Generic,
+    NodeName,
+    Embedded,
+}
+
+const div = NodeNames.Generic;
+
+type NoNearbyChildren = NearbyChildrens.NoNearbyChildren;
 
 type ChildrenBehind = HTMLElement[];
 
@@ -417,27 +739,42 @@ enum NearbyChildrens {
 }
 
 interface Gathered {
-    attributes: Element['attributes'][];
-    styles: Styles[];
-    children: NearbyChildren;
+    node: NodeNames;
+    attributes: HTMLElement['attributes'];
+    styles: Style_[];
+    children: NearbyChildrens;
     has: Field;
 }
 
-type Px = [Lengths.Px, number];
+function transformClass(transform: Transformation) {
+    switch (transform.type) {
+        case Transformations.Untransformed:
+            return null;
 
-type Rem = [Lengths.Rem, number];
+        case Transformations.Moved:
+            if (isArray(transform.xyz)) {
+                return `mv-${floatClass(transform.xyz[0])}-${floatClass(
+                    transform.xyz[1]
+                )}-${floatClass(transform.xyz[2])}`;
+            }
+            return null;
 
-type MinMax = [Lengths.Content | Lengths.Fill, number];
-
-type Length = Px | Rem | MinMax | Lengths;
-
-enum Lengths {
-    Px,
-    Rem,
-    Content,
-    Fill,
-    MinContent,
-    MaxContent,
+        case Transformations.FullTransform:
+            if (isObject(transform) && !isArray(transform)) {
+                return `tfrm-${floatClass(transform.translate[0])}-${floatClass(
+                    transform.translate[1]
+                )}-${floatClass(transform.translate[2])}-${floatClass(
+                    transform.scale[0]
+                )}-${floatClass(transform.scale[1])}-${floatClass(
+                    transform.scale[2]
+                )}-${floatClass(transform.rotate[0])}-${floatClass(
+                    transform.rotate[1]
+                )}-${floatClass(transform.rotate[2])}-${floatClass(
+                    transform.angle
+                )}`;
+            }
+            return null;
+    }
 }
 
 let min = {
@@ -554,12 +891,40 @@ class Rgba255Color extends ChannelsColor {
 
 function gatherAttrRecursive(
     classes: string,
+    node: NodeNames,
     has: Field,
     transform: Transformation,
-    styles: Styles[],
-    attrs: Element['attributes'][],
-    children: NearbyChildren
-) {}
+    styles: Style_[],
+    attrs: HTMLElement['attributes'],
+    children: NearbyChildrens,
+    elementAttrs: Attribute[]
+): Gathered {
+    switch (elementAttrs) {
+        case []:
+            switch (transformClass(transform)) {
+                case null:
+                    const nodeMap = new NamedNodeMap();
+                    const attr = document.createAttribute('class');
+                    attr.value = classes;
+
+                    return {
+                        node: node,
+                        // attributes: {},
+                        attributes: nodeMap.setNamedItem(attr),
+                        styles: styles,
+                        children: children,
+                        has: has,
+                    };
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+    }
+}
 
 const rowClass = classes.any + ' ' + classes.row,
     columnClass = classes.any + ' ' + classes.column,
@@ -590,41 +955,96 @@ function contextClasses(context: LayoutContext) {
     }
 }
 
-const families: Typefaces[] = [
-    { type: FontFamilyType.Typeface, font: 'Open Sans' },
-    { type: FontFamilyType.Typeface, font: 'Helvetica' },
-    { type: FontFamilyType.Typeface, font: 'Verdana' },
-    { type: FontFamilyType.SansSerif, font: '' },
+enum RenderMode {
+    Layout,
+    NoStaticStyleSheet,
+    WithVirtualCss,
+}
+
+interface OptionRecord {
+    hover: HoverSetting;
+    focus: FocusStyle;
+    mode: RenderMode;
+}
+
+enum HoverSetting {
+    NoHover,
+    AllowHover,
+    ForceHover,
+}
+
+type HoverOption = HoverSetting;
+
+type FocusStyleOption = FocusStyle;
+
+type RenderModeOption = RenderMode;
+
+type Option = HoverOption | FocusStyleOption | RenderModeOption;
+
+enum Options {
+    HoverOption,
+    FocusStyleOption,
+    RenderModeOption,
+}
+
+interface FocusStyle {
+    borderColor: Color;
+    shadow: Shadow | null;
+    backgroundColor: Color;
+}
+
+interface Shadow {
+    color: Color;
+    offset: [number, number];
+    blur: number;
+    size: number;
+}
+
+const families: Font[] = [
+    { type: FontFamilyType.Typeface, name: 'Open Sans' },
+    { type: FontFamilyType.Typeface, name: 'Helvetica' },
+    { type: FontFamilyType.Typeface, name: 'Verdana' },
+    { type: FontFamilyType.SansSerif },
 ];
 
 const rootStyle: StyleClass[] = [
     {
+        type: Attributes.StyleClass,
         flag: bgColor,
         style: {
+            type: Styles.Colored,
             class: `bg-${formatColorClass(0, 0, 1, 0)}`,
             prop: 'background-color',
             color: formatColor(0, 0, 1, 0),
         },
     },
     {
+        type: Attributes.StyleClass,
         flag: fontColor,
         style: {
+            type: Styles.Colored,
             class: `fc-${formatColorClass(0, 0, 0, 1)}`,
             prop: 'color',
             color: formatColor(0, 0, 0, 1),
         },
     },
     {
+        type: Attributes.StyleClass,
         flag: fontSize,
-        style: 20,
+        style: {
+            type: Styles.FontSize,
+            i: 20,
+        },
     },
     {
+        type: Attributes.StyleClass,
         flag: fontFamily,
         style: {
+            type: Styles.FontFamily,
             name: foldl(
                 families,
-                (result: string, n: Typefaces) => {
-                    return renderFontClassName(n.type, n.font, result);
+                (result: string, n: Font) => {
+                    return renderFontClassName(n, result);
                 },
                 'font-'
             ),
@@ -633,12 +1053,8 @@ const rootStyle: StyleClass[] = [
     },
 ];
 
-function renderFontClassName(
-    type: FontFamilyType,
-    font: Font,
-    current: string
-) {
-    switch (type) {
+function renderFontClassName(font: Font, current: string) {
+    switch (font.type) {
         case FontFamilyType.Serif:
             return current + 'serif';
 
@@ -649,13 +1065,13 @@ function renderFontClassName(
             return current + 'monospace';
 
         case FontFamilyType.Typeface:
-            if (typeof font === 'string') {
+            if (isString(font)) {
                 return current + words(font).join('-');
             }
             return '';
 
         case FontFamilyType.ImportFont || FontFamilyType.FontWith:
-            if (typeof font === 'object') {
+            if (isObject(font)) {
                 return current + words(font.name).join('-');
             }
             return '';
@@ -687,10 +1103,9 @@ function formatColor(
             return `rgb(${floatClass(a)}, ${floatClass(b)}, ${floatClass(c)})`;
 
         case Notation.Rgba:
-            return `rgba(${floatClass(a)}
-                    , ${floatClass(b)}
-                    , ${floatClass(c)}
-                    , ${d})`;
+            return `rgba(${floatClass(a)}, ${floatClass(b)}, ${floatClass(
+                c
+            )}, ${d})`;
 
         case Notation.Rgb255:
             return `rgb(${a}, ${b}, ${c})`;
@@ -718,10 +1133,9 @@ function formatColorClass(
             return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}`;
 
         case Notation.Rgba:
-            return `${floatClass(a)}
-                    -${floatClass(b)}
-                    -${floatClass(c)}
-                    -${d * 100}`;
+            return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}-${
+                d * 100
+            }`;
 
         case Notation.Rgb255:
             return `${a}-${b}-${c})`;

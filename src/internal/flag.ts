@@ -1,12 +1,18 @@
 type Field = [number, number];
 
-type Flag = [Flags.Flag, number];
-
-type Second = [Flags.Second, number];
-
 enum Flags {
     Flag,
     Second,
+}
+
+interface Flag {
+    type: Flags.Flag;
+    first: number;
+}
+
+interface Second {
+    type: Flags.Second;
+    second: number;
 }
 
 const none: Field = [0, 0];
@@ -53,9 +59,9 @@ function merge(a: Field, b: Field): Field {
 
 function flag(i: number): Second | Flag {
     if (i > 31) {
-        return [Flags.Second, (i - 32) << 1];
+        return { type: Flags.Second, second: (i - 32) << 1 };
     } else {
-        return [Flags.Flag, i << 1];
+        return { type: Flags.Flag, first: i << 1 };
     }
 }
 
