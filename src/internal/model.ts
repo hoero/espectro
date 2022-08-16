@@ -338,14 +338,14 @@ type Variant = VariantActive | VariantOff | VariantIndexed;
 function renderVariant(variant: Variant) {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant)) {
-                return `\'${variant}\'`;
+            if (isString(variant.name)) {
+                return `\'${variant.name}\'`;
             }
             return '';
 
         case Variants.VariantOff:
-            if (isString(variant)) {
-                return `\'${variant}\' 0`;
+            if (isString(variant.name)) {
+                return `\'${variant.name}\' 0`;
             }
             return '';
 
@@ -360,14 +360,14 @@ function renderVariant(variant: Variant) {
 function variantName(variant: Variant) {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant)) {
-                return variant;
+            if (isString(variant.name)) {
+                return variant.name;
             }
             return '';
 
         case Variants.VariantOff:
-            if (isString(variant)) {
-                return `${variant}-0`;
+            if (isString(variant.name)) {
+                return `${variant.name}-0`;
             }
             return '';
 
@@ -395,8 +395,8 @@ function renderVariants(font: FontWith) {
 function isSmallCaps(variant: Variant) {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant)) {
-                return variant === 'smcp';
+            if (isString(variant.name)) {
+                return variant.name === 'smcp';
             }
             return false;
 
@@ -455,7 +455,12 @@ interface NoAttribute {
 
 interface Attr {
     type: Attributes.Attr;
-    attr: HTMLElement['attributes'];
+    attr: globalThis.Attr;
+}
+
+interface Attr_ {
+    attribute: string;
+    value: string;
 }
 
 interface Describe {
@@ -498,7 +503,7 @@ interface Height {
 interface Nearby {
     type: Attributes.Nearby;
     location: Location;
-    element: Elements;
+    element: Element;
 }
 
 interface TransformComponent_ {
@@ -574,6 +579,7 @@ enum Descriptions {
     Button,
     Paragraph,
 }
+
 interface Main {
     type: Descriptions.Main;
 }
@@ -703,33 +709,30 @@ enum Notation {
     Rgba255,
 }
 
-type NodeName_ = string;
-
-type Embedded = [string, string];
-
-type NodeName = NodeNames.Generic | NodeName_ | Embedded;
-
 enum NodeNames {
     Generic,
     NodeName,
     Embedded,
 }
 
+interface Generic {
+    type: NodeNames.Generic;
+}
+
+interface NodeName_ {
+    type: NodeNames.NodeName;
+    nodeName: string;
+}
+
+interface Embedded {
+    type: NodeNames.Embedded;
+    nodeName: string;
+    internal: string;
+}
+
+type NodeName = Generic | NodeName_ | Embedded;
+
 const div = NodeNames.Generic;
-
-type NoNearbyChildren = NearbyChildrens.NoNearbyChildren;
-
-type ChildrenBehind = HTMLElement[];
-
-type ChildrenInFront = HTMLElement[];
-
-type ChildrenBehindAndInFront = [HTMLElement[], HTMLElement[]];
-
-type NearbyChildren =
-    | NoNearbyChildren
-    | ChildrenBehind
-    | ChildrenInFront
-    | ChildrenBehindAndInFront;
 
 enum NearbyChildrens {
     NoNearbyChildren,
@@ -738,10 +741,36 @@ enum NearbyChildrens {
     ChildrenBehindAndInFront,
 }
 
+interface NoNearbyChildren {
+    type: NearbyChildrens.NoNearbyChildren;
+}
+
+interface ChildrenBehind {
+    type: NearbyChildrens.ChildrenBehind;
+    existingBehind: HTMLElement[];
+}
+
+interface ChildrenInFront {
+    type: NearbyChildrens.ChildrenInFront;
+    existingInFront: HTMLElement[];
+}
+
+interface ChildrenBehindAndInFront {
+    type: NearbyChildrens.ChildrenBehindAndInFront;
+    existingBehind: HTMLElement[];
+    existingInFront: HTMLElement[];
+}
+
+type NearbyChildren =
+    | NoNearbyChildren
+    | ChildrenBehind
+    | ChildrenInFront
+    | ChildrenBehindAndInFront;
+
 interface Gathered {
-    node: NodeNames;
-    attributes: HTMLElement['attributes'];
-    styles: Style_[];
+    node: NodeName;
+    attributes: globalThis.Attr[];
+    styles: Style[];
     children: NearbyChildrens;
     has: Field;
 }
@@ -889,13 +918,34 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
+function addNodeName(newNode: string, old: NodeName): NodeName {
+    switch (old.type) {
+        case NodeNames.Generic:
+            return { type: NodeNames.NodeName, nodeName: newNode };
+
+        case NodeNames.NodeName:
+            return {
+                type: NodeNames.Embedded,
+                nodeName: old.nodeName,
+                internal: newNode,
+            };
+
+        case NodeNames.Embedded:
+            return {
+                type: NodeNames.Embedded,
+                nodeName: old.nodeName,
+                internal: old.internal,
+            };
+    }
+}
+
 function gatherAttrRecursive(
     classes: string,
-    node: NodeNames,
+    node: NodeName,
     has: Field,
     transform: Transformation,
-    styles: Style_[],
-    attrs: HTMLElement['attributes'],
+    styles: Style[],
+    attrs: globalThis.Attr[],
     children: NearbyChildrens,
     elementAttrs: Attribute[]
 ): Gathered {
@@ -903,28 +953,310 @@ function gatherAttrRecursive(
         case []:
             switch (transformClass(transform)) {
                 case null:
-                    const nodeMap = new NamedNodeMap();
-                    const attr = document.createAttribute('class');
-                    attr.value = classes;
-
                     return {
                         node: node,
-                        // attributes: {},
-                        attributes: nodeMap.setNamedItem(attr),
+                        attributes: [
+                            createAttribute('class', classes),
+                            ...createAttributes(attrs),
+                        ],
                         styles: styles,
                         children: children,
                         has: has,
                     };
 
                 default:
-                    break;
+                    const class_ = transformClass(transform);
+                    return {
+                        node: node,
+                        attributes: [
+                            createAttribute('class', `${classes} ${class_}`),
+                            ...createAttributes(attrs),
+                        ],
+                        styles: [
+                            { type: Styles.Transform, transform: transform },
+                            ...styles,
+                        ],
+                        children: children,
+                        has: has,
+                    };
             }
-            break;
 
         default:
-            break;
+            for (const attr of elementAttrs) {
+                switch (attr.type) {
+                    case Attributes.NoAttribute:
+                        return gatherAttrRecursive(
+                            classes,
+                            node,
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
+
+                    case Attributes.Attr:
+                        return gatherAttrRecursive(
+                            classes,
+                            node,
+                            has,
+                            transform,
+                            styles,
+                            [attr.attr, ...attrs],
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
+
+                    case Attributes.Describe:
+                        switch (attr.description.type) {
+                            case Descriptions.Main:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    addNodeName('main', node),
+                                    has,
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.Navigation:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    addNodeName('nav', node),
+                                    has,
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.ContentInfo:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    addNodeName('footer', node),
+                                    has,
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.Complementary:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    addNodeName('aside', node),
+                                    has,
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.Heading:
+                                if (attr.description.i <= 1) {
+                                    return gatherAttrRecursive(
+                                        classes,
+                                        addNodeName('h1', node),
+                                        has,
+                                        transform,
+                                        styles,
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+                                } else if (attr.description.i < 7) {
+                                    return gatherAttrRecursive(
+                                        classes,
+                                        addNodeName(
+                                            `h${attr.description.i}`,
+                                            node
+                                        ),
+                                        has,
+                                        transform,
+                                        styles,
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+                                } else {
+                                    return gatherAttrRecursive(
+                                        classes,
+                                        addNodeName('h6', node),
+                                        has,
+                                        transform,
+                                        styles,
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+                                }
+
+                            case Descriptions.Label:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    node,
+                                    has,
+                                    transform,
+                                    styles,
+                                    [
+                                        createAttribute(
+                                            'aria-label',
+                                            attr.description.label
+                                        ),
+                                        ...attrs,
+                                    ],
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.LivePolite:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    node,
+                                    has,
+                                    transform,
+                                    styles,
+                                    [
+                                        createAttribute('aria-live', 'polite'),
+                                        ...attrs,
+                                    ],
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.LivePolite:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    node,
+                                    has,
+                                    transform,
+                                    styles,
+                                    [
+                                        createAttribute(
+                                            'aria-live',
+                                            'assertive'
+                                        ),
+                                        ...attrs,
+                                    ],
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.Button:
+                                return gatherAttrRecursive(
+                                    classes,
+                                    node,
+                                    has,
+                                    transform,
+                                    styles,
+                                    [
+                                        createAttribute('role', 'button'),
+                                        ...attrs,
+                                    ],
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Descriptions.Paragraph:
+                                /**
+                                 * previously we rendered a <p> tag, though apparently this invalidates the html if it has <div>s inside.
+                                 * Since we can't guaranteee that there are no divs, we need another strategy.
+                                 *  While it's not documented in many places, there apparently is a paragraph aria role
+                                 * https://github.com/w3c/aria/blob/11f85f41a5b621fdbe85fc9bcdcd270e653a48ba/common/script/roleInfo.js
+                                 * Though we'll need to wait till it gets released in an official wai-aria spec to use it.
+                                 * If it's used at the moment, then Lighthouse complains (likely rightfully) that role paragraph is not recognized. */
+                                return gatherAttrRecursive(
+                                    classes,
+                                    node,
+                                    has,
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+                        }
+                        break;
+
+                    case Attributes.Nearby:
+                        return gatherAttrRecursive(
+                            classes,
+                            node,
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
+
+                    default:
+                        break;
+                }
+            }
     }
 }
+
+function createAttribute(attribute: string, value: string) {
+    const attr = document.createAttribute(attribute);
+    attr.value = value;
+    return attr;
+}
+
+function createAttributes(attributes: globalThis.Attr[]) {
+    let attrs = [];
+
+    for (const { name, value } of attributes) {
+        const attr = createAttribute(name, value);
+        attrs.push(attr);
+    }
+
+    return attrs;
+}
+
+function addNearbyElement(
+    location: Location,
+    element: Element,
+    existing: NearbyChildren
+) {}
+
+function nearbyElement(location: Location, element: Element) {}
 
 const rowClass = classes.any + ' ' + classes.row,
     columnClass = classes.any + ' ' + classes.column,
