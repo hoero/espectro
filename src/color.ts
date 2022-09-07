@@ -1,13 +1,6 @@
 import validate from './validation';
-import {
-    Colour,
-    Color,
-    Hsla,
-    Rgba,
-    HslaColor,
-    RgbaColor,
-    Rgba255Color,
-} from './internal/model';
+import { Colour, Color, Hsla, Rgba } from './internal/data';
+import { HslaColor, RgbaColor, Rgba255Color } from './internal/model';
 
 // Provide the hue, saturation, and lightness values for the color.
 // Hue takes a value between 0 and 360, saturation and lightness take a value between 0 and 1.

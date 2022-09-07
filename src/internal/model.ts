@@ -6,805 +6,75 @@ import {
     isArray,
     isString,
     isObject,
+    map,
+    template,
 } from 'lodash';
 
 import {
-    Flag,
-    Second,
     Field,
+    Flag,
     bgColor,
     fontColor,
     fontSize,
     fontFamily,
-} from './flag';
-import { classes } from './style';
-
-enum Elements {
-    Unstyled,
-    Styled,
-    Text,
-    Empty,
-}
-
-interface Unstyled {
-    type: Elements.Unstyled;
-    html: (a: LayoutContext) => HTMLElement;
-}
-
-interface Styled {
-    type: Elements.Styled;
-    styles: Style_[];
-    html: (a: EmbedStyles, b: LayoutContext) => HTMLElement;
-}
-
-interface Text {
-    type: Elements.Text;
-    str: string;
-}
-
-interface Empty {
-    type: Elements.Empty;
-}
-
-type Element = Unstyled | Styled | Text | Empty;
-
-enum EmbedStyles {
-    NoStyleSheet,
-    StaticRootAndDynamic,
-    OnlyDynamic,
-}
-
-interface NoStyleSheet {
-    type: EmbedStyles.NoStyleSheet;
-}
-
-interface StaticRootAndDynamic {
-    type: EmbedStyles.StaticRootAndDynamic;
-    options: OptionRecord;
-    styles: Style_[];
-}
-
-interface OnlyDynamic {
-    type: EmbedStyles.OnlyDynamic;
-    options: OptionRecord;
-    styles: Style_[];
-}
-
-type EmbedStyle = NoStyleSheet | StaticRootAndDynamic | OnlyDynamic;
-
-const noStyleSheet = EmbedStyles.NoStyleSheet;
-
-enum LayoutContext {
-    AsRow,
-    AsColumn,
-    AsEl,
-    AsGrid,
-    AsParagraph,
-    AsTextColumn,
-}
-
-interface Align {
-    hAlign: HAlign | null;
-    vAlign: VAlign | null;
-}
-
-enum Aligned {
-    Unaligned,
-    Aligned,
-}
-
-enum HAlign {
-    Left,
+    present,
+    xAlign,
+    yAlign,
+    add,
     centerX,
-    Right,
-}
-
-enum VAlign {
-    Top,
     centerY,
-    Bottom,
-}
-
-enum Styles {
+    alignRight,
+    alignBottom,
+    borderWidth,
+    width,
+    widthContent,
+    widthFill,
+    none,
+    widthBetween,
+    heightContent,
+    heightFill,
+    heightBetween,
+    merge,
+    height,
+} from './flag';
+import { classes as cls, dot } from './style';
+import NearbyElement from './NearbyElement.svelte';
+import {
+    Element,
+    Styles,
     Style,
-    FontFamily,
-    FontSize,
-    Single,
-    Colored,
-    SpacingStyle,
-    BorderWidth,
-    PaddingStyle,
-    GridTemplateStyle,
-    GridPosition,
-    Transform,
-    PseudoSelector,
-    Transparency,
-    Shadows,
-}
-
-interface Style_ {
-    type: Styles.Style;
-    selector: string;
-    props: Property[];
-}
-
-interface FontFamily {
-    type: Styles.FontFamily;
-    name: string;
-    typefaces: Font[];
-}
-
-interface FontSize {
-    type: Styles.FontSize;
-    i: number;
-}
-
-interface Single {
-    type: Styles.Single;
-    class: string;
-    prop: string;
-    value: string;
-}
-
-interface Colored {
-    type: Styles.Colored;
-    class: string;
-    prop: string;
-    color: Color;
-}
-
-interface SpacingStyle {
-    type: Styles.SpacingStyle;
-    name: string;
-    x: number;
-    y: number;
-}
-
-interface BorderWidth {
-    type: Styles.BorderWidth;
-    class: string;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
-
-interface PaddingStyle {
-    type: Styles.PaddingStyle;
-    name: string;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
-
-interface GridTemplateStyle {
-    type: Styles.GridTemplateStyle;
-    spacing: [Length, Length];
-    columns: Length[];
-    rows: Length[];
-}
-
-interface GridPosition {
-    type: Styles.GridPosition;
-    row: number;
-    column: number;
-    width: number;
-    height: number;
-}
-
-interface Transform {
-    type: Styles.Transform;
-    transform: Transformation;
-}
-
-interface PseudoSelector {
-    type: Styles.PseudoSelector;
-    class: PseudoClass;
-    styles: Style_[];
-}
-
-interface Transparency {
-    type: Styles.Transparency;
-    name: string;
-    transparency: number;
-}
-
-interface Shadows {
-    type: Styles.Shadows;
-    name: string;
-    prop: string;
-}
-
-type Style =
-    | Style_
-    | FontFamily
-    | FontSize
-    | Single
-    | Colored
-    | SpacingStyle
-    | BorderWidth
-    | PaddingStyle
-    | GridTemplateStyle
-    | GridPosition
-    | Transform
-    | PseudoSelector
-    | Transparency
-    | Shadows;
-
-enum Transformations {
-    Untransformed,
-    Moved,
-    FullTransform,
-}
-
-interface Untransformed {
-    type: Transformations.Untransformed;
-}
-
-interface Moved {
-    type: Transformations.Moved;
-    xyz: XYZ;
-}
-
-interface FullTransform {
-    type: Transformations.FullTransform;
-    translate: XYZ;
-    scale: XYZ;
-    rotate: XYZ;
-    angle: Angle;
-}
-
-type Transformation = Untransformed | Moved | FullTransform;
-
-enum PseudoClass {
-    Focus,
-    Hover,
-    Active,
-}
-
-interface Adjustment {
-    capital: number;
-    lowercase: number;
-    baseline: number;
-    descender: number;
-}
-
-enum FontFamilyType {
-    Serif,
-    SansSerif,
-    Monospace,
-    Typeface,
-    ImportFont,
+    Transformations,
+    Transformation,
+    FontFamilyType,
     FontWith,
-}
-
-interface Serif {
-    type: FontFamilyType.Serif;
-}
-
-interface SansSerif {
-    type: FontFamilyType.SansSerif;
-}
-
-interface Monospace {
-    type: FontFamilyType.Monospace;
-}
-
-interface Typeface {
-    type: FontFamilyType.Typeface;
-    name: string;
-}
-
-interface ImportFont {
-    type: FontFamilyType.ImportFont;
-    name: string;
-    url: string;
-}
-
-interface FontWith {
-    type: FontFamilyType.FontWith;
-    name: string;
-    adjustment: Adjustment | null;
-    variants: Variant[];
-}
-
-type Font = Serif | SansSerif | Monospace | Typeface | ImportFont | FontWith;
-
-enum Variants {
-    VariantActive,
-    VariantOff,
-    VariantIndexed,
-}
-
-interface VariantActive {
-    type: Variants.VariantActive;
-    name: string;
-}
-
-interface VariantOff {
-    type: Variants.VariantOff;
-    name: string;
-}
-
-interface VariantIndexed {
-    type: Variants.VariantIndexed;
-    name: string;
-    index: number;
-}
-
-type Variant = VariantActive | VariantOff | VariantIndexed;
-
-function renderVariant(variant: Variant) {
-    switch (variant.type) {
-        case Variants.VariantActive:
-            if (isString(variant.name)) {
-                return `\'${variant.name}\'`;
-            }
-            return '';
-
-        case Variants.VariantOff:
-            if (isString(variant.name)) {
-                return `\'${variant.name}\' 0`;
-            }
-            return '';
-
-        case Variants.VariantIndexed:
-            if (isObject(variant)) {
-                return `\'${variant.name}\' ${variant.index}`;
-            }
-            return '';
-    }
-}
-
-function variantName(variant: Variant) {
-    switch (variant.type) {
-        case Variants.VariantActive:
-            if (isString(variant.name)) {
-                return variant.name;
-            }
-            return '';
-
-        case Variants.VariantOff:
-            if (isString(variant.name)) {
-                return `${variant.name}-0`;
-            }
-            return '';
-
-        case Variants.VariantIndexed:
-            if (isObject(variant)) {
-                return `${variant.name}-${variant.index}`;
-            }
-            return '';
-    }
-}
-
-function renderVariants(font: FontWith) {
-    switch (font.type) {
-        case FontFamilyType.FontWith:
-            const variants = font.variants.map((variant) => {
-                return renderVariant(variant);
-            });
-            return variants.join(', ');
-
-        default:
-            return null;
-    }
-}
-
-function isSmallCaps(variant: Variant) {
-    switch (variant.type) {
-        case Variants.VariantActive:
-            if (isString(variant.name)) {
-                return variant.name === 'smcp';
-            }
-            return false;
-
-        case Variants.VariantOff:
-            return false;
-
-        case Variants.VariantIndexed:
-            if (isObject(variant)) {
-                return variant.name === 'smcp' && variant.index === 1;
-            }
-            return false;
-    }
-}
-
-function hasSmallCaps(font: FontWith) {
-    switch (font.type) {
-        case FontFamilyType.FontWith:
-            return any(
-                font.variants,
-                font.variants.map((variant) => {
-                    return isSmallCaps(variant);
-                })
-            );
-
-        default:
-            return false;
-    }
-}
-
-interface Property {
-    key: string;
-    value: string;
-}
-
-type XYZ = [number, number, number];
-
-type Angle = number;
-
-enum Attributes {
-    NoAttribute,
-    Attr,
-    Describe,
-    Class,
+    Font,
+    Variants,
+    Variant,
+    LayoutContext,
+    Attributes,
     StyleClass,
-    AlignY,
-    AlignX,
-    Width,
-    Height,
-    Nearby,
-    TransformComponent,
-}
-
-interface NoAttribute {
-    type: Attributes.NoAttribute;
-}
-
-interface Attr {
-    type: Attributes.Attr;
-    attr: globalThis.Attr;
-}
-
-interface Attr_ {
-    attribute: string;
-    value: string;
-}
-
-interface Describe {
-    type: Attributes.Describe;
-    description: Description;
-}
-
-interface Class {
-    type: Attributes.Class;
-    flag: Second | Flag;
-    class: string;
-}
-
-interface StyleClass {
-    type: Attributes.StyleClass;
-    flag: Second | Flag;
-    style: Style;
-}
-
-interface AlignY {
-    type: Attributes.AlignY;
-    y: VAlign;
-}
-
-interface AlignX {
-    type: Attributes.AlignX;
-    x: HAlign;
-}
-
-interface Width {
-    type: Attributes.Width;
-    width: Length;
-}
-
-interface Height {
-    type: Attributes.Height;
-    width: Length;
-}
-
-interface Nearby {
-    type: Attributes.Nearby;
-    location: Location;
-    element: Element;
-}
-
-interface TransformComponent_ {
-    type: Attributes.TransformComponent;
-    flag: Flag | Second;
-    component: TransformComponent;
-}
-
-type Attribute =
-    | NoAttribute
-    | Attr
-    | Describe
-    | Class
-    | StyleClass
-    | AlignY
-    | AlignX
-    | Width
-    | Height
-    | Nearby
-    | TransformComponent_;
-
-enum TransformComponents {
-    MoveX,
-    MoveY,
-    MoveZ,
-    MoveXYZ,
-    Rotate,
-    Scale,
-}
-
-interface MoveX {
-    type: TransformComponents.MoveX;
-    x: number;
-}
-
-interface MoveY {
-    type: TransformComponents.MoveY;
-    y: number;
-}
-
-interface MoveZ {
-    type: TransformComponents.MoveZ;
-    z: number;
-}
-
-interface MoveXYZ {
-    type: TransformComponents.MoveXYZ;
-    xyz: XYZ;
-}
-
-interface Rotate {
-    type: TransformComponents.Rotate;
-    xyz: XYZ;
-    angle: number;
-}
-
-interface Scale {
-    type: TransformComponents.Scale;
-    xyz: number;
-}
-
-type TransformComponent = MoveX | MoveY | MoveZ | MoveXYZ | Rotate | Scale;
-
-enum Descriptions {
-    Main,
-    Navigation,
-    ContentInfo,
-    Complementary,
-    Heading,
-    Label,
-    LivePolite,
-    LiveAssertive,
-    Button,
-    Paragraph,
-}
-
-interface Main {
-    type: Descriptions.Main;
-}
-
-interface Navigation {
-    type: Descriptions.Navigation;
-}
-
-interface ContentInfo {
-    type: Descriptions.ContentInfo;
-}
-
-interface Complementary {
-    type: Descriptions.Complementary;
-}
-
-interface Heading {
-    type: Descriptions.Heading;
-    i: number;
-}
-
-interface Label {
-    type: Descriptions.Label;
-    label: string;
-}
-
-interface LivePolite {
-    type: Descriptions.LivePolite;
-}
-
-interface LiveAssertive {
-    type: Descriptions.LiveAssertive;
-}
-
-interface Button {
-    type: Descriptions.Button;
-}
-
-interface Paragraph {
-    type: Descriptions.Paragraph;
-}
-
-type Description =
-    | Main
-    | Navigation
-    | ContentInfo
-    | Complementary
-    | Heading
-    | Label
-    | LivePolite
-    | LiveAssertive
-    | Button
-    | Paragraph;
-
-enum Lengths {
-    Px,
-    Rem,
-    Content,
-    Fill,
-    MinContent,
-    MaxContent,
-}
-
-interface Px {
-    type: Lengths.Px;
-    px: number;
-}
-
-interface Rem {
-    type: Lengths.Rem;
-    rem: number;
-}
-
-interface MinMax {
-    type: Lengths.Content | Lengths.Fill;
-    size: number;
-}
-
-type Length = Px | Rem | MinMax | Lengths;
-
-enum Axis {
-    XAxis,
-    YAxis,
-    AllAxis,
-}
-
-enum Location {
-    Above,
-    Below,
-    OnRight,
-    OnLeft,
-    InFront,
-    Behind,
-}
-
-interface Channels {
-    a: number;
-    b: number;
-    c: number;
-    d: number;
-}
-
-interface Hsla {
-    hue: number;
-    saturation: number;
-    lightness: number;
-    alpha: number;
-}
-
-interface Rgba {
-    red: number;
-    green: number;
-    blue: number;
-    alpha: number;
-}
-
-type Colour = [number, number, number, number];
-
-type Color = Hsla | Rgba | string | null;
-
-enum Notation {
-    Hsl,
-    Hsla,
-    Rgb,
-    Rgba,
-    Rgb255,
-    Rgba255,
-}
-
-enum NodeNames {
-    Generic,
+    Location,
+    Attribute,
+    Descriptions,
+    Length,
+    Lengths,
+    Color,
+    Notation,
+    NodeNames,
     NodeName,
-    Embedded,
-}
-
-interface Generic {
-    type: NodeNames.Generic;
-}
-
-interface NodeName_ {
-    type: NodeNames.NodeName;
-    nodeName: string;
-}
-
-interface Embedded {
-    type: NodeNames.Embedded;
-    nodeName: string;
-    internal: string;
-}
-
-type NodeName = Generic | NodeName_ | Embedded;
-
-const div = NodeNames.Generic;
-
-enum NearbyChildrens {
-    NoNearbyChildren,
-    ChildrenBehind,
-    ChildrenInFront,
-    ChildrenBehindAndInFront,
-}
-
-interface NoNearbyChildren {
-    type: NearbyChildrens.NoNearbyChildren;
-}
-
-interface ChildrenBehind {
-    type: NearbyChildrens.ChildrenBehind;
-    existingBehind: HTMLElement[];
-}
-
-interface ChildrenInFront {
-    type: NearbyChildrens.ChildrenInFront;
-    existingInFront: HTMLElement[];
-}
-
-interface ChildrenBehindAndInFront {
-    type: NearbyChildrens.ChildrenBehindAndInFront;
-    existingBehind: HTMLElement[];
-    existingInFront: HTMLElement[];
-}
-
-type NearbyChildren =
-    | NoNearbyChildren
-    | ChildrenBehind
-    | ChildrenInFront
-    | ChildrenBehindAndInFront;
-
-interface Gathered {
-    node: NodeName;
-    attributes: globalThis.Attr[];
-    styles: Style[];
-    children: NearbyChildrens;
-    has: Field;
-}
-
-function transformClass(transform: Transformation) {
-    switch (transform.type) {
-        case Transformations.Untransformed:
-            return null;
-
-        case Transformations.Moved:
-            if (isArray(transform.xyz)) {
-                return `mv-${floatClass(transform.xyz[0])}-${floatClass(
-                    transform.xyz[1]
-                )}-${floatClass(transform.xyz[2])}`;
-            }
-            return null;
-
-        case Transformations.FullTransform:
-            if (isObject(transform) && !isArray(transform)) {
-                return `tfrm-${floatClass(transform.translate[0])}-${floatClass(
-                    transform.translate[1]
-                )}-${floatClass(transform.translate[2])}-${floatClass(
-                    transform.scale[0]
-                )}-${floatClass(transform.scale[1])}-${floatClass(
-                    transform.scale[2]
-                )}-${floatClass(transform.rotate[0])}-${floatClass(
-                    transform.rotate[1]
-                )}-${floatClass(transform.rotate[2])}-${floatClass(
-                    transform.angle
-                )}`;
-            }
-            return null;
-    }
-}
+    NearbyChildrens,
+    NearbyChildren,
+    Gathered,
+    EmbedStyles,
+    SvelteComponentProps,
+    HAlign,
+    VAlign,
+    TransformComponent,
+    TransformComponents,
+    Shadow,
+    PseudoClass,
+    Single,
+} from './data';
 
 let min = {
     message:
@@ -918,6 +188,101 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
+const div = NodeNames.Generic;
+
+const noStyleSheet = EmbedStyles.NoStyleSheet;
+
+function renderVariant(variant: Variant) {
+    switch (variant.type) {
+        case Variants.VariantActive:
+            if (isString(variant.name)) {
+                return `\'${variant.name}\'`;
+            }
+            return '';
+
+        case Variants.VariantOff:
+            if (isString(variant.name)) {
+                return `\'${variant.name}\' 0`;
+            }
+            return '';
+
+        case Variants.VariantIndexed:
+            if (isObject(variant)) {
+                return `\'${variant.name}\' ${variant.index}`;
+            }
+            return '';
+    }
+}
+
+function variantName(variant: Variant) {
+    switch (variant.type) {
+        case Variants.VariantActive:
+            if (isString(variant.name)) {
+                return variant.name;
+            }
+            return '';
+
+        case Variants.VariantOff:
+            if (isString(variant.name)) {
+                return `${variant.name}-0`;
+            }
+            return '';
+
+        case Variants.VariantIndexed:
+            if (isObject(variant)) {
+                return `${variant.name}-${variant.index}`;
+            }
+            return '';
+    }
+}
+
+function renderVariants(font: FontWith) {
+    switch (font.type) {
+        case FontFamilyType.FontWith:
+            const variants = font.variants.map((variant) => {
+                return renderVariant(variant);
+            });
+            return variants.join(', ');
+
+        default:
+            return null;
+    }
+}
+
+function isSmallCaps(variant: Variant) {
+    switch (variant.type) {
+        case Variants.VariantActive:
+            if (isString(variant.name)) {
+                return variant.name === 'smcp';
+            }
+            return false;
+
+        case Variants.VariantOff:
+            return false;
+
+        case Variants.VariantIndexed:
+            if (isObject(variant)) {
+                return variant.name === 'smcp' && variant.index === 1;
+            }
+            return false;
+    }
+}
+
+function hasSmallCaps(font: FontWith) {
+    switch (font.type) {
+        case FontFamilyType.FontWith:
+            return any(
+                font.variants,
+                font.variants.map((variant) => {
+                    return isSmallCaps(variant);
+                })
+            );
+
+        default:
+            return false;
+    }
+}
+
 function addNodeName(newNode: string, old: NodeName): NodeName {
     switch (old.type) {
         case NodeNames.Generic:
@@ -939,6 +304,332 @@ function addNodeName(newNode: string, old: NodeName): NodeName {
     }
 }
 
+function alignXName(align: HAlign) {
+    switch (align) {
+        case HAlign.Left:
+            return `${cls.alignedHorizontally} ${cls.alignLeft}`;
+
+        case HAlign.CenterX:
+            return `${cls.alignedHorizontally} ${cls.alignCenterX}`;
+
+        case HAlign.Right:
+            return `${cls.alignedHorizontally} ${cls.alignRight}`;
+    }
+}
+
+function alignYName(align: VAlign) {
+    switch (align) {
+        case VAlign.Top:
+            return `${cls.alignedHorizontally} ${cls.alignTop}`;
+
+        case VAlign.CenterY:
+            return `${cls.alignedHorizontally} ${cls.alignCenterY}`;
+
+        case VAlign.Bottom:
+            return `${cls.alignedHorizontally} ${cls.alignBottom}`;
+    }
+}
+
+function transformClass(transform: Transformation) {
+    switch (transform.type) {
+        case Transformations.Untransformed:
+            return null;
+
+        case Transformations.Moved:
+            if (isArray(transform.xyz)) {
+                return `mv-${floatClass(transform.xyz[0])}-${floatClass(
+                    transform.xyz[1]
+                )}-${floatClass(transform.xyz[2])}`;
+            }
+            return null;
+
+        case Transformations.FullTransform:
+            if (isObject(transform) && !isArray(transform)) {
+                return `tfrm-${floatClass(transform.translate[0])}-${floatClass(
+                    transform.translate[1]
+                )}-${floatClass(transform.translate[2])}-${floatClass(
+                    transform.scale[0]
+                )}-${floatClass(transform.scale[1])}-${floatClass(
+                    transform.scale[2]
+                )}-${floatClass(transform.rotate[0])}-${floatClass(
+                    transform.rotate[1]
+                )}-${floatClass(transform.rotate[2])}-${floatClass(
+                    transform.angle
+                )}`;
+            }
+            return null;
+    }
+}
+
+function transformValue(transform: Transformation) {
+    switch (transform.type) {
+        case Transformations.Untransformed:
+            return null;
+
+        case Transformations.Moved:
+            if (isArray(transform.xyz)) {
+                return `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`;
+            }
+            return null;
+
+        case Transformations.FullTransform:
+            if (isObject(transform) && !isArray(transform)) {
+                const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
+                const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
+                const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
+                return `${translate} ${scale} ${rotate}`;
+            }
+            return null;
+    }
+}
+
+function composeTransformation(
+    transform: Transformation,
+    component: TransformComponent
+): Transformation {
+    switch (transform.type) {
+        case Transformations.Untransformed:
+            switch (component.type) {
+                case TransformComponents.MoveX:
+                    return {
+                        type: Transformations.Moved,
+                        xyz: [component.x, 0, 0],
+                    };
+
+                case TransformComponents.MoveY:
+                    return {
+                        type: Transformations.Moved,
+                        xyz: [0, component.y, 0],
+                    };
+
+                case TransformComponents.MoveZ:
+                    return {
+                        type: Transformations.Moved,
+                        xyz: [0, 0, component.z],
+                    };
+
+                case TransformComponents.MoveXYZ:
+                    return {
+                        type: Transformations.Moved,
+                        xyz: component.xyz,
+                    };
+
+                case TransformComponents.Rotate:
+                    return {
+                        type: Transformations.FullTransform,
+                        translate: [0, 0, 0],
+                        scale: [1, 1, 1],
+                        rotate: component.xyz,
+                        angle: component.angle,
+                    };
+
+                case TransformComponents.Scale:
+                    return {
+                        type: Transformations.FullTransform,
+                        translate: [0, 0, 0],
+                        scale: component.xyz,
+                        rotate: [0, 0, 1],
+                        angle: 0,
+                    };
+            }
+
+        case Transformations.Moved:
+            if (isArray(transform.xyz)) {
+                switch (component.type) {
+                    case TransformComponents.MoveX:
+                        return {
+                            type: Transformations.Moved,
+                            xyz: [
+                                component.x,
+                                transform.xyz[1],
+                                transform.xyz[2],
+                            ],
+                        };
+
+                    case TransformComponents.MoveY:
+                        return {
+                            type: Transformations.Moved,
+                            xyz: [
+                                transform.xyz[0],
+                                component.y,
+                                transform.xyz[2],
+                            ],
+                        };
+
+                    case TransformComponents.MoveZ:
+                        return {
+                            type: Transformations.Moved,
+                            xyz: [
+                                transform.xyz[0],
+                                transform.xyz[1],
+                                component.z,
+                            ],
+                        };
+
+                    case TransformComponents.MoveXYZ:
+                        return {
+                            type: Transformations.Moved,
+                            xyz: component.xyz,
+                        };
+
+                    case TransformComponents.Rotate:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: transform.xyz,
+                            scale: [1, 1, 1],
+                            rotate: component.xyz,
+                            angle: component.angle,
+                        };
+
+                    case TransformComponents.Scale:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: transform.xyz,
+                            scale: component.xyz,
+                            rotate: [0, 0, 1],
+                            angle: 0,
+                        };
+                }
+            }
+            return {
+                type: Transformations.Untransformed,
+            };
+
+        case Transformations.FullTransform:
+            if (isObject(transform) && !isArray(transform)) {
+                switch (component.type) {
+                    case TransformComponents.MoveX:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: [
+                                component.x,
+                                transform.translate[1],
+                                transform.translate[2],
+                            ],
+                            scale: transform.scale,
+                            rotate: transform.rotate,
+                            angle: transform.angle,
+                        };
+
+                    case TransformComponents.MoveY:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: [
+                                transform.translate[0],
+                                component.y,
+                                transform.translate[2],
+                            ],
+                            scale: transform.scale,
+                            rotate: transform.rotate,
+                            angle: transform.angle,
+                        };
+
+                    case TransformComponents.MoveZ:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: [
+                                transform.translate[0],
+                                transform.translate[1],
+                                component.z,
+                            ],
+                            scale: transform.scale,
+                            rotate: transform.rotate,
+                            angle: transform.angle,
+                        };
+
+                    case TransformComponents.MoveXYZ:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: component.xyz,
+                            scale: transform.scale,
+                            rotate: transform.rotate,
+                            angle: transform.angle,
+                        };
+
+                    case TransformComponents.Rotate:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: transform.translate,
+                            scale: transform.scale,
+                            rotate: component.xyz,
+                            angle: component.angle,
+                        };
+
+                    case TransformComponents.Scale:
+                        return {
+                            type: Transformations.FullTransform,
+                            translate: transform.translate,
+                            scale: component.xyz,
+                            rotate: transform.rotate,
+                            angle: transform.angle,
+                        };
+                }
+            }
+            return {
+                type: Transformations.Untransformed,
+            };
+    }
+}
+
+function skippable(flag: Flag, style: Style) {
+    if (flag === borderWidth) {
+        switch (style.type) {
+            case Styles.Single:
+                switch (style.value) {
+                    case '0px':
+                        return true;
+
+                    case '1px':
+                        return true;
+
+                    case '2px':
+                        return true;
+
+                    case '3px':
+                        return true;
+
+                    case '4px':
+                        return true;
+
+                    case '5px':
+                        return true;
+
+                    case '6px':
+                        return true;
+
+                    default:
+                        return false;
+                }
+
+            default:
+                return false;
+        }
+    } else {
+        switch (style.type) {
+            case Styles.FontSize:
+                return style.i >= 8 && style.i <= 32;
+
+            case Styles.PaddingStyle:
+                return (
+                    style.top === style.bottom &&
+                    style.top === style.right &&
+                    style.top === style.left &&
+                    style.top >= 0 &&
+                    style.top <= 24
+                );
+
+            // case Styles.SpacingStyle:
+            //     return true;
+
+            // case Styles.FontFamily:
+            //     return true;
+
+            default:
+                return false;
+        }
+    }
+}
+
 function gatherAttrRecursive(
     classes: string,
     node: NodeName,
@@ -946,7 +637,7 @@ function gatherAttrRecursive(
     transform: Transformation,
     styles: Style[],
     attrs: globalThis.Attr[],
-    children: NearbyChildrens,
+    children: NearbyChildren,
     elementAttrs: Attribute[]
 ): Gathered {
     switch (elementAttrs) {
@@ -1212,6 +903,441 @@ function gatherAttrRecursive(
                         }
                         break;
 
+                    case Attributes.Class:
+                        if (present(attr.flag, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            return gatherAttrRecursive(
+                                `${attr.class} ${classes}`,
+                                node,
+                                add(attr.flag, has),
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        }
+
+                    case Attributes.StyleClass:
+                        if (present(attr.flag, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else if (skippable(attr.flag, attr.style)) {
+                            return gatherAttrRecursive(
+                                `${getStyleName(attr.style)} ${classes}`,
+                                node,
+                                add(attr.flag, has),
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            return gatherAttrRecursive(
+                                `${getStyleName(attr.style)} ${classes}`,
+                                node,
+                                add(attr.flag, has),
+                                transform,
+                                [attr.style, ...styles],
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        }
+
+                    case Attributes.AlignY:
+                        if (present(yAlign, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            const flags = add(yAlign, has);
+                            const align = attr.y;
+
+                            function has_() {
+                                switch (align) {
+                                    case VAlign.CenterY:
+                                        return add(centerY, flags);
+
+                                    case VAlign.Bottom:
+                                        return add(alignBottom, flags);
+
+                                    default:
+                                        return flags;
+                                }
+                            }
+
+                            return gatherAttrRecursive(
+                                `${alignYName(attr.y)} ${classes}`,
+                                node,
+                                has_(),
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        }
+
+                    case Attributes.AlignX:
+                        if (present(xAlign, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            const flags = add(xAlign, has);
+                            const align = attr.x;
+
+                            function has_() {
+                                switch (align) {
+                                    case HAlign.CenterX:
+                                        return add(centerX, flags);
+
+                                    case HAlign.Right:
+                                        return add(alignRight, flags);
+
+                                    default:
+                                        return flags;
+                                }
+                            }
+
+                            return gatherAttrRecursive(
+                                `${alignXName(attr.x)} ${classes}`,
+                                node,
+                                has_(),
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        }
+
+                    case Attributes.Width:
+                        if (present(width, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            switch (attr.width.type) {
+                                case Lengths.Px:
+                                    return gatherAttrRecursive(
+                                        `${cls.widthExact} width-px-${attr.width.px} ${classes}`,
+                                        node,
+                                        add(width, has),
+                                        transform,
+                                        [
+                                            {
+                                                type: Styles.Single,
+                                                class: `width-px-${attr.width.px}`,
+                                                prop: 'width',
+                                                value: `${attr.width.px}px`,
+                                            },
+                                            ...styles,
+                                        ],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Rem:
+                                    return gatherAttrRecursive(
+                                        `${cls.widthExact} width-rem-${attr.width.rem} ${classes}`,
+                                        node,
+                                        add(width, has),
+                                        transform,
+                                        [
+                                            {
+                                                type: Styles.Single,
+                                                class: `width-rem-${attr.width.rem}`,
+                                                prop: 'width',
+                                                value: `${attr.width.rem}rem`,
+                                            },
+                                            ...styles,
+                                        ],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Content:
+                                    return gatherAttrRecursive(
+                                        `${classes} ${cls.widthContent}`,
+                                        node,
+                                        add(widthContent, add(width, has)),
+                                        transform,
+                                        styles,
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Fill:
+                                    if (attr.width.i === 1) {
+                                        return gatherAttrRecursive(
+                                            `${classes} ${cls.widthFill}`,
+                                            node,
+                                            add(widthFill, add(width, has)),
+                                            transform,
+                                            styles,
+                                            attrs,
+                                            children,
+                                            elementAttrs.filter(
+                                                (attr_) =>
+                                                    attr_.type !== attr.type
+                                            )
+                                        );
+                                    } else {
+                                        return gatherAttrRecursive(
+                                            `${classes} ${cls.widthFillPortion} width-fill-${attr.width.i}`,
+                                            node,
+                                            add(widthFill, add(width, has)),
+                                            transform,
+                                            [
+                                                {
+                                                    type: Styles.Single,
+                                                    class: `${cls.any}.${
+                                                        cls.row
+                                                    } > ${dot(
+                                                        `width-fill-${attr.width.i}`
+                                                    )}`,
+                                                    prop: 'flex-grow',
+                                                    value: `${
+                                                        attr.width.i * 100000
+                                                    }`,
+                                                },
+                                                ...styles,
+                                            ],
+                                            attrs,
+                                            children,
+                                            elementAttrs.filter(
+                                                (attr_) =>
+                                                    attr_.type !== attr.type
+                                            )
+                                        );
+                                    }
+
+                                default:
+                                    const [addToFlags, newClass, newStyles] =
+                                        renderWidth(attr.width);
+                                    return gatherAttrRecursive(
+                                        `${classes} ${newClass}`,
+                                        node,
+                                        merge(addToFlags, add(width, has)),
+                                        transform,
+                                        [...newStyles, ...styles],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+                            }
+                        }
+
+                    case Attributes.Height:
+                        if (present(height, has)) {
+                            return gatherAttrRecursive(
+                                classes,
+                                node,
+                                has,
+                                transform,
+                                styles,
+                                attrs,
+                                children,
+                                elementAttrs.filter(
+                                    (attr_) => attr_.type !== attr.type
+                                )
+                            );
+                        } else {
+                            switch (attr.height.type) {
+                                case Lengths.Px:
+                                    return gatherAttrRecursive(
+                                        `${cls.heightExact} height-px-${attr.height.px} ${classes}`,
+                                        node,
+                                        add(height, has),
+                                        transform,
+                                        [
+                                            {
+                                                type: Styles.Single,
+                                                class: `height-px-${attr.height.px}`,
+                                                prop: 'height',
+                                                value: `${attr.height.px}px`,
+                                            },
+                                            ...styles,
+                                        ],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Rem:
+                                    return gatherAttrRecursive(
+                                        `${cls.heightExact} height-rem-${attr.height.rem} ${classes}`,
+                                        node,
+                                        add(height, has),
+                                        transform,
+                                        [
+                                            {
+                                                type: Styles.Single,
+                                                class: `height-rem-${attr.height.rem}`,
+                                                prop: 'height',
+                                                value: `${attr.height.rem}rem`,
+                                            },
+                                            ...styles,
+                                        ],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Content:
+                                    return gatherAttrRecursive(
+                                        `${classes} ${cls.heightContent}`,
+                                        node,
+                                        add(heightContent, add(height, has)),
+                                        transform,
+                                        styles,
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+
+                                case Lengths.Fill:
+                                    if (attr.height.i === 1) {
+                                        return gatherAttrRecursive(
+                                            `${classes} ${cls.heightFill}`,
+                                            node,
+                                            add(heightFill, add(height, has)),
+                                            transform,
+                                            styles,
+                                            attrs,
+                                            children,
+                                            elementAttrs.filter(
+                                                (attr_) =>
+                                                    attr_.type !== attr.type
+                                            )
+                                        );
+                                    } else {
+                                        return gatherAttrRecursive(
+                                            `${classes} ${cls.heightFillPortion} height-fill-${attr.height.i}`,
+                                            node,
+                                            add(heightFill, add(height, has)),
+                                            transform,
+                                            [
+                                                {
+                                                    type: Styles.Single,
+                                                    class: `${cls.any}.${
+                                                        cls.row
+                                                    } > ${dot(
+                                                        `height-fill-${attr.height.i}`
+                                                    )}`,
+                                                    prop: 'flex-grow',
+                                                    value: `${
+                                                        attr.height.i * 100000
+                                                    }`,
+                                                },
+                                                ...styles,
+                                            ],
+                                            attrs,
+                                            children,
+                                            elementAttrs.filter(
+                                                (attr_) =>
+                                                    attr_.type !== attr.type
+                                            )
+                                        );
+                                    }
+
+                                default:
+                                    const [addToFlags, newClass, newStyles] =
+                                        renderHeight(attr.height);
+                                    return gatherAttrRecursive(
+                                        `${classes} ${newClass}`,
+                                        node,
+                                        merge(addToFlags, add(width, has)),
+                                        transform,
+                                        [...newStyles, ...styles],
+                                        attrs,
+                                        children,
+                                        elementAttrs.filter(
+                                            (attr_) => attr_.type !== attr.type
+                                        )
+                                    );
+                            }
+                        }
+
                     case Attributes.Nearby:
                         return gatherAttrRecursive(
                             classes,
@@ -1220,17 +1346,42 @@ function gatherAttrRecursive(
                             transform,
                             styles,
                             attrs,
-                            children,
+                            addNearbyElement(
+                                attr.location,
+                                attr.element,
+                                children
+                            ),
                             elementAttrs.filter(
                                 (attr_) => attr_.type !== attr.type
                             )
                         );
 
-                    default:
-                        break;
+                    case Attributes.TransformComponent:
+                        return gatherAttrRecursive(
+                            classes,
+                            node,
+                            add(attr.flag, has),
+                            composeTransformation(transform, attr.component),
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
                 }
             }
     }
+    return {
+        node: node,
+        attributes: [
+            createAttribute('class', classes),
+            ...createAttributes(attrs),
+        ],
+        styles: styles,
+        children: children,
+        has: has,
+    };
 }
 
 function createAttribute(attribute: string, value: string) {
@@ -1254,16 +1405,268 @@ function addNearbyElement(
     location: Location,
     element: Element,
     existing: NearbyChildren
-) {}
+): NearbyChildren {
+    type Props = SvelteComponentProps<typeof NearbyElement>;
 
-function nearbyElement(location: Location, element: Element) {}
+    let props: Props = {
+        location,
+        element,
+    };
 
-const rowClass = classes.any + ' ' + classes.row,
-    columnClass = classes.any + ' ' + classes.column,
-    singleClass = classes.any + ' ' + classes.single,
-    gridClass = classes.any + ' ' + classes.grid,
-    paragraphClass = classes.any + ' ' + classes.paragraph,
-    pageClass = classes.any + ' ' + classes.page;
+    let nearby = new NearbyElement({
+        target: new Element(),
+        props,
+    });
+
+    switch (existing.type) {
+        case NearbyChildrens.NoNearbyChildren:
+            switch (location) {
+                case Location.Behind:
+                    return {
+                        type: NearbyChildrens.ChildrenBehind,
+                        existingBehind: [nearby],
+                    };
+
+                default:
+                    return {
+                        type: NearbyChildrens.ChildrenInFront,
+                        existingInFront: [nearby],
+                    };
+            }
+
+        case NearbyChildrens.ChildrenBehind:
+            switch (location) {
+                case Location.Behind:
+                    return {
+                        type: NearbyChildrens.ChildrenBehind,
+                        existingBehind: [nearby, ...existing.existingBehind],
+                    };
+
+                default:
+                    return {
+                        type: NearbyChildrens.ChildrenBehindAndInFront,
+                        existingBehind: existing.existingBehind,
+                        existingInFront: [nearby],
+                    };
+            }
+
+        case NearbyChildrens.ChildrenInFront:
+            switch (location) {
+                case Location.Behind:
+                    return {
+                        type: NearbyChildrens.ChildrenBehindAndInFront,
+                        existingBehind: [nearby],
+                        existingInFront: existing.existingInFront,
+                    };
+
+                default:
+                    return {
+                        type: NearbyChildrens.ChildrenInFront,
+                        existingInFront: [nearby, ...existing.existingInFront],
+                    };
+            }
+
+        case NearbyChildrens.ChildrenBehindAndInFront:
+            switch (location) {
+                case Location.Behind:
+                    return {
+                        type: NearbyChildrens.ChildrenBehindAndInFront,
+                        existingBehind: [nearby, ...existing.existingBehind],
+                        existingInFront: existing.existingInFront,
+                    };
+
+                default:
+                    return {
+                        type: NearbyChildrens.ChildrenBehindAndInFront,
+                        existingBehind: existing.existingBehind,
+                        existingInFront: [nearby, ...existing.existingInFront],
+                    };
+            }
+    }
+}
+
+function renderWidth(w: Length): [Field, string, Style[]] {
+    switch (w.type) {
+        case Lengths.Px:
+            return [
+                none,
+                `${cls.widthExact} width-px-${w.px}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `width-px-${w.px}`,
+                        prop: 'width',
+                        value: `${w.px}px`,
+                    },
+                ],
+            ];
+
+        case Lengths.Rem:
+            return [
+                none,
+                `${cls.widthExact} width-rem-${w.rem}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `width-rem-${w.rem}`,
+                        prop: 'width',
+                        value: `${w.rem}rem`,
+                    },
+                ],
+            ];
+
+        case Lengths.Content:
+            return [add(widthContent, none), cls.widthContent, []];
+
+        case Lengths.Fill:
+            if (w.i === 1) {
+                return [add(widthFill, none), cls.widthFill, []];
+            } else {
+                return [
+                    add(widthFill, none),
+                    `${cls.widthFillPortion} width-fill-${w.i}`,
+                    [
+                        {
+                            type: Styles.Single,
+                            class: `${cls.any}.${cls.row} > ${dot(
+                                `width-fill-${w.i}`
+                            )}`,
+                            prop: 'flex-grow',
+                            value: `${w.i * 100000}`,
+                        },
+                    ],
+                ];
+            }
+
+        case Lengths.MinContent:
+            const minCls = `min-width-${w.min}`,
+                minStyle: Single = {
+                    type: Styles.Single,
+                    class: minCls,
+                    prop: 'min-width',
+                    value: `${w.min}px`,
+                },
+                [minFlag, minAttrs, newMinStyle] = renderWidth(w.length);
+
+            return [
+                add(widthBetween, minFlag),
+                `${minCls} ${minAttrs}`,
+                [minStyle, ...newMinStyle],
+            ];
+
+        case Lengths.MaxContent:
+            const max = `max-width-${w.max}`,
+                maxStyle: Single = {
+                    type: Styles.Single,
+                    class: max,
+                    prop: 'max-width',
+                    value: `${w.max}px`,
+                },
+                [maxFlag, maxAttrs, newMaxStyle] = renderWidth(w.length);
+
+            return [
+                add(widthBetween, maxFlag),
+                `${max} ${maxAttrs}`,
+                [maxStyle, ...newMaxStyle],
+            ];
+    }
+}
+
+function renderHeight(w: Length): [Field, string, Style[]] {
+    switch (w.type) {
+        case Lengths.Px:
+            return [
+                none,
+                `${cls.heightExact} height-px-${w.px}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `height-px-${w.px}`,
+                        prop: 'height',
+                        value: `${w.px}px`,
+                    },
+                ],
+            ];
+
+        case Lengths.Rem:
+            return [
+                none,
+                `${cls.heightExact} height-rem-${w.rem}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `height-rem-${w.rem}`,
+                        prop: 'height',
+                        value: `${w.rem}rem`,
+                    },
+                ],
+            ];
+
+        case Lengths.Content:
+            return [add(heightContent, none), cls.heightContent, []];
+
+        case Lengths.Fill:
+            if (w.i === 1) {
+                return [add(heightFill, none), cls.heightFill, []];
+            } else {
+                return [
+                    add(heightFill, none),
+                    `${cls.heightFillPortion} height-fill-${w.i}`,
+                    [
+                        {
+                            type: Styles.Single,
+                            class: `${cls.any}.${cls.column} > ${dot(
+                                `height-fill-${w.i}`
+                            )}`,
+                            prop: 'flex-grow',
+                            value: `${w.i * 100000}`,
+                        },
+                    ],
+                ];
+            }
+
+        case Lengths.MinContent:
+            const minCls = `min-height-${w.min}`,
+                minStyle: Single = {
+                    type: Styles.Single,
+                    class: minCls,
+                    prop: 'min-height',
+                    // This needs to be !important because we're using `min-height: min-content`
+                    // to correct for safari's incorrect implementation of flexbox.
+                    value: `${w.min}px !important`,
+                },
+                [minFlag, minAttrs, newMinStyle] = renderHeight(w.length);
+
+            return [
+                add(heightBetween, minFlag),
+                `${minCls} ${minAttrs}`,
+                [minStyle, ...newMinStyle],
+            ];
+
+        case Lengths.MaxContent:
+            const max = `max-height-${w.max}`,
+                maxStyle: Single = {
+                    type: Styles.Single,
+                    class: max,
+                    prop: 'max-height',
+                    value: `${w.max}px`,
+                },
+                [maxFlag, maxAttrs, newMaxStyle] = renderHeight(w.length);
+
+            return [
+                add(heightBetween, maxFlag),
+                `${max} ${maxAttrs}`,
+                [maxStyle, ...newMaxStyle],
+            ];
+    }
+}
+
+const rowClass = cls.any + ' ' + cls.row,
+    columnClass = cls.any + ' ' + cls.column,
+    singleClass = cls.any + ' ' + cls.single,
+    gridClass = cls.any + ' ' + cls.grid,
+    paragraphClass = cls.any + ' ' + cls.paragraph,
+    pageClass = cls.any + ' ' + cls.page;
 
 function contextClasses(context: LayoutContext) {
     switch (context) {
@@ -1285,51 +1688,6 @@ function contextClasses(context: LayoutContext) {
         case LayoutContext.AsTextColumn:
             return pageClass;
     }
-}
-
-enum RenderMode {
-    Layout,
-    NoStaticStyleSheet,
-    WithVirtualCss,
-}
-
-interface OptionRecord {
-    hover: HoverSetting;
-    focus: FocusStyle;
-    mode: RenderMode;
-}
-
-enum HoverSetting {
-    NoHover,
-    AllowHover,
-    ForceHover,
-}
-
-type HoverOption = HoverSetting;
-
-type FocusStyleOption = FocusStyle;
-
-type RenderModeOption = RenderMode;
-
-type Option = HoverOption | FocusStyleOption | RenderModeOption;
-
-enum Options {
-    HoverOption,
-    FocusStyleOption,
-    RenderModeOption,
-}
-
-interface FocusStyle {
-    borderColor: Color;
-    shadow: Shadow | null;
-    backgroundColor: Color;
-}
-
-interface Shadow {
-    color: Color;
-    offset: [number, number];
-    blur: number;
-    size: number;
 }
 
 const families: Font[] = [
@@ -1413,6 +1771,71 @@ function renderFontClassName(font: Font, current: string) {
     }
 }
 
+function lengthClassName(x: Length): string {
+    switch (x.type) {
+        case Lengths.Px:
+            return `${x.px}px`;
+
+        case Lengths.Rem:
+            return `${x.rem}rem`;
+
+        case Lengths.Content:
+            return `auto`;
+
+        case Lengths.Fill:
+            return `${x.i}fr`;
+
+        case Lengths.MinContent:
+            return `min${x.min}${lengthClassName(x)}`;
+
+        case Lengths.MaxContent:
+            return `max${x.max}${lengthClassName(x)}`;
+    }
+}
+
+function formatDropShadow(shadow: Shadow) {
+    const [a, b, c, d, e] = Object.values(shadow.color);
+    return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
+        shadow.blur
+    )}px ${formatColor(a, b, c, d, e)}`;
+}
+
+function formatTextShadow(shadow: Shadow) {
+    const [a, b, c, d, e] = Object.values(shadow.color);
+    return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
+        shadow.blur
+    )}px ${formatColor(a, b, c, d, e)}`;
+}
+
+function textShadowClass(shadow: Shadow) {
+    const [a, b, c, d, e] = Object.values(shadow.color);
+    return `txt${floatClass(shadow.offset[0])}px${floatClass(
+        shadow.offset[1]
+    )}px${floatClass(shadow.blur)}px${formatColorClass(a, b, c, d, e)}`;
+}
+
+function formatBoxShadow(shadow: Shadow) {
+    const [a, b, c, d, e] = Object.values(shadow.color);
+    return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
+        shadow.offset[1]
+    }px ${floatClass(shadow.blur)}px ${floatClass(shadow.size)}px ${formatColor(
+        a,
+        b,
+        c,
+        d,
+        e
+    )}`;
+}
+
+function boxShadowClass(shadow: Shadow) {
+    const [a, b, c, d, e] = Object.values(shadow.color);
+    return `${shadow.inset ? 'box-inset' : 'box-'}${floatClass(
+        shadow.offset[0]
+    )}px${floatClass(shadow.offset[1])}px${floatClass(
+        shadow.blur
+    )}px${floatClass(shadow.size)}px${formatColorClass(a, b, c, d, e)}`;
+}
+
 function floatClass(x: number) {
     return Math.round(x * 255).toString();
 }
@@ -1422,7 +1845,7 @@ function formatColor(
     b: number,
     c: number,
     d: number,
-    type: Notation = Notation.Hsl
+    type: Notation = Notation.Hsla
 ) {
     switch (type) {
         case Notation.Hsl:
@@ -1452,7 +1875,7 @@ function formatColorClass(
     b: number,
     c: number,
     d: number,
-    type: Notation = Notation.Hsl
+    type: Notation = Notation.Hsla
 ) {
     switch (type) {
         case Notation.Hsl:
@@ -1477,18 +1900,104 @@ function formatColorClass(
     }
 }
 
+function spacingName(x: number, y: number) {
+    return `spacing-${x}-${y}`;
+}
+
+function paddingName(top: number, right: number, bottom: number, left: number) {
+    return `pad-${top}-${right}-${bottom}-${left}`;
+}
+
+function paddingNameFloat(
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+) {
+    return `pad-${floatClass(top)}-${floatClass(right)}-${floatClass(
+        bottom
+    )}-${floatClass(left)}`;
+}
+
+function getStyleName(style: Style): string {
+    switch (style.type) {
+        case Styles.Style:
+            return style.selector;
+
+        case Styles.FontFamily:
+            return style.name;
+
+        case Styles.FontSize:
+            return `font-size-${style.i}`;
+
+        case Styles.Single:
+            return style.class;
+
+        case Styles.Colored:
+            return style.class;
+
+        case Styles.SpacingStyle:
+            return style.name;
+
+        case Styles.BorderWidth:
+            return style.class;
+
+        case Styles.PaddingStyle:
+            return style.name;
+
+        case Styles.GridTemplateStyle:
+            return `grid-rows-${map(style.rows, lengthClassName).join(
+                '-'
+            )}-cols-${map(style.columns, lengthClassName).join(
+                '-'
+            )}-space-x-${lengthClassName(
+                style.spacing[0]
+            )}-space-y-${lengthClassName(style.spacing[1])}`;
+
+        case Styles.GridPosition:
+            return `gp grid-pos-${style.row}-${style.column}-${style.width}-${style.height}`;
+
+        case Styles.Transform:
+            const transform = transformClass(style.transform);
+            return transform ? transform : '';
+
+        case Styles.PseudoSelector:
+            function name(selector: PseudoClass) {
+                switch (selector) {
+                    case PseudoClass.Focus:
+                        return 'fs';
+
+                    case PseudoClass.Hover:
+                        return 'hv';
+
+                    case PseudoClass.Active:
+                        return 'act';
+                }
+            }
+            return map(style.styles, (sty) => {
+                switch (getStyleName(sty)) {
+                    case '':
+                        return '';
+
+                    default:
+                        return `${getStyleName(sty)}-${name(style.class)}`;
+                }
+            }).join(' ');
+
+        case Styles.Transparency:
+            return style.name;
+
+        case Styles.Shadows:
+            return style.name;
+    }
+}
+
 export {
-    Hsla,
-    Rgba,
-    Colour,
-    Color,
     Notation,
     ChannelsColor,
     HslaColor,
     RgbaColor,
     Rgba255Color,
     rootStyle,
-    MinMax,
-    Length,
     Lengths,
 };

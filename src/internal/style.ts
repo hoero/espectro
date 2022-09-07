@@ -323,4 +323,8 @@ const single = {
     textLeft: 'text-left',
 };
 
-export { classes, unicode, single };
+function dot(c: string) {
+    return `.${c}`;
+}
+
+export { classes, unicode, single, dot };

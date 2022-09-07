@@ -1,51 +1,53 @@
-type Field = [number, number];
+export type Field = [number, number];
 
-enum Flags {
+export enum Flags {
     Flag,
     Second,
 }
 
-interface Flag {
+export interface Flag_ {
     type: Flags.Flag;
     first: number;
 }
 
-interface Second {
+export interface Second {
     type: Flags.Second;
     second: number;
 }
 
+export type Flag = Flag_ | Second;
+
 const none: Field = [0, 0];
 
-function value(myFlag: Flags, value: number) {
-    switch (myFlag) {
+function value(myFlag: Flag) {
+    switch (myFlag.type) {
         case Flags.Flag:
-            return Math.round(Math.log2(value));
+            return Math.round(Math.log2(myFlag.first));
 
         case Flags.Second:
-            return Math.round(Math.log2(value)) + 32;
+            return Math.round(Math.log2(myFlag.second)) + 32;
     }
 }
 
 // If the query is in the truth, return true
-function present(myFlag: Flags, value: number, field: Field) {
-    switch (myFlag) {
+function present(myFlag: Flag, field: Field) {
+    switch (myFlag.type) {
         case Flags.Flag:
-            return (value & field[0]) === value;
+            return (myFlag.first & field[0]) === myFlag.first;
 
         case Flags.Second:
-            return (value & field[1]) === value;
+            return (myFlag.second & field[1]) === myFlag.second;
     }
 }
 
 // Add a flag to a field.
-function add(myFlag: Flags, value: number, field: Field): Field {
-    switch (myFlag) {
+function add(myFlag: Flag, field: Field): Field {
+    switch (myFlag.type) {
         case Flags.Flag:
-            return [value | field[0], field[1]];
+            return [myFlag.first | field[0], field[1]];
 
         case Flags.Second:
-            return [field[0], value | field[1]];
+            return [field[0], myFlag.second | field[1]];
     }
 }
 
@@ -164,10 +166,6 @@ const heightTextAreaContent = flag(47);
 const fontVariant = flag(48);
 
 export {
-    Field,
-    Flag,
-    Second,
-    Flags,
     active,
     add,
     alignBottom,
