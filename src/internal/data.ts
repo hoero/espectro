@@ -1,4 +1,6 @@
-import { Flag_, Second, Field } from './flag';
+import { DOM } from '../deps.ts';
+
+import { Flag_, Second, Field } from './flag.ts';
 
 export enum Elements {
     Unstyled,
@@ -9,13 +11,13 @@ export enum Elements {
 
 export interface Unstyled {
     type: Elements.Unstyled;
-    html: (a: LayoutContext) => _SvelteComponent;
+    html: (a: LayoutContext) => DOM.Node;
 }
 
 export interface Styled {
     type: Elements.Styled;
     styles: Style_[];
-    html: (a: EmbedStyles, b: LayoutContext) => _SvelteComponent;
+    html: (a: EmbedStyles, b: LayoutContext) => DOM.Node;
 }
 
 export interface Text {
@@ -125,7 +127,7 @@ export interface Colored {
 
 export interface SpacingStyle {
     type: Styles.SpacingStyle;
-    name: string;
+    class: string;
     x: number;
     y: number;
 }
@@ -141,7 +143,7 @@ export interface BorderWidth {
 
 export interface PaddingStyle {
     type: Styles.PaddingStyle;
-    name: string;
+    class: string;
     top: number;
     right: number;
     bottom: number;
@@ -548,6 +550,8 @@ export enum Lengths {
     Rem,
     Content,
     Fill,
+    Min,
+    Max,
     MinContent,
     MaxContent,
 }
@@ -572,18 +576,34 @@ export interface Fill {
 }
 
 export interface Min {
-    type: Lengths.MinContent;
+    type: Lengths.Min;
     min: number;
     length: Length;
 }
 
 export interface Max {
-    type: Lengths.MaxContent;
+    type: Lengths.Max;
     max: number;
     length: Length;
 }
 
-export type Length = Px | Rem | Content | Fill | Min | Max;
+export interface MinContent {
+    type: Lengths.MinContent;
+}
+
+export interface MaxContent {
+    type: Lengths.MaxContent;
+}
+
+export type Length =
+    | Px
+    | Rem
+    | Content
+    | Fill
+    | Min
+    | Max
+    | MinContent
+    | MaxContent;
 
 export enum Axis {
     XAxis,
@@ -616,7 +636,7 @@ export interface Rgba {
 
 export type Colour = [number, number, number, number];
 
-export type Color = Hsla | Rgba | string | null;
+export type Color = Hsla | Rgba | string;
 
 export enum Notation {
     Hsl,
@@ -663,18 +683,18 @@ export interface NoNearbyChildren {
 
 export interface ChildrenBehind {
     type: NearbyChildrens.ChildrenBehind;
-    existingBehind: _SvelteComponent[];
+    existingBehind: DOM.Node[];
 }
 
 export interface ChildrenInFront {
     type: NearbyChildrens.ChildrenInFront;
-    existingInFront: _SvelteComponent[];
+    existingInFront: DOM.Node[];
 }
 
 export interface ChildrenBehindAndInFront {
     type: NearbyChildrens.ChildrenBehindAndInFront;
-    existingBehind: _SvelteComponent[];
-    existingInFront: _SvelteComponent[];
+    existingBehind: DOM.Node[];
+    existingInFront: DOM.Node[];
 }
 
 export type NearbyChildren =
@@ -690,6 +710,25 @@ export interface Gathered {
     children: NearbyChildren;
     has: Field;
 }
+
+export enum Childrens {
+    Unkeyed,
+    Keyed,
+}
+
+export interface Unkeyed {
+    type: Childrens.Unkeyed;
+    // deno-lint-ignore no-explicit-any
+    unkeyed: any[];
+}
+
+export interface Keyed {
+    type: Childrens.Keyed;
+    // deno-lint-ignore no-explicit-any
+    keyed: [string, any][];
+}
+
+export type Children = Unkeyed | Keyed;
 
 export enum RenderMode {
     Layout,
@@ -724,9 +763,9 @@ export enum Options {
 }
 
 export interface FocusStyle {
-    borderColor: Color;
+    borderColor: Color | null;
     shadow: Shadow | null;
-    backgroundColor: Color;
+    backgroundColor: Color | null;
 }
 
 export interface Shadow {
@@ -750,17 +789,3 @@ export const asRow = LayoutContext.AsRow,
     asGrid = LayoutContext.AsGrid,
     asParagraph = LayoutContext.AsParagraph,
     asTextColumn = LayoutContext.AsTextColumn;
-
-// Component Types
-
-export type SvelteComponentConstructorOptions<T> = T extends abstract new (
-    opts: Svelte2TsxComponentConstructorParameters<infer P>
-) => any
-    ? Svelte2TsxComponentConstructorParameters<P>
-    : never;
-
-export type SvelteComponentProps<T> = T extends abstract new (
-    opts: Svelte2TsxComponentConstructorParameters<infer P>
-) => any
-    ? Svelte2TsxComponentConstructorParameters<P>['props']
-    : never;

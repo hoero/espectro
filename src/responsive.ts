@@ -1,4 +1,5 @@
-import { min, max } from 'lodash';
+// deno-lint-ignore-file no-explicit-any
+import { _ } from './deps.ts';
 
 /** MEDIA QUERY MANAGER
     -------------------------
@@ -149,10 +150,9 @@ function respond(device: Device, bps: Breakpoints) {
                             ? bps.phoneLandscape
                             : bps.phone;
                 }
-            } else {
-                return bps.default;
             }
-            break;
+
+            return bps.default;
 
         case DeviceClass.Tablet:
             if (bps.tablet || bps.tabletPortrait || bps.tabletLandscape) {
@@ -167,10 +167,9 @@ function respond(device: Device, bps: Breakpoints) {
                             ? bps.tabletLandscape
                             : bps.tablet;
                 }
-            } else {
-                return bps.default;
             }
-            break;
+
+            return bps.default;
 
         case DeviceClass.Desktop:
             if (bps.desktop || bps.desktopPortrait || bps.desktopLandscape) {
@@ -185,10 +184,9 @@ function respond(device: Device, bps: Breakpoints) {
                             ? bps.desktopLandscape
                             : bps.desktop;
                 }
-            } else {
-                return bps.default;
             }
-            break;
+
+            return bps.default;
 
         case DeviceClass.BigDesktop:
             if (
@@ -207,10 +205,9 @@ function respond(device: Device, bps: Breakpoints) {
                             ? bps.bigDesktopLandscape
                             : bps.bigDesktop;
                 }
-            } else {
-                return bps.default;
             }
-            break;
+
+            return bps.default;
 
         default:
             break;
@@ -227,8 +224,8 @@ function deviceData(vw: number, vh: number) {
 If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
 */
 function classifyDevice(window: { width: number; height: number }): Device {
-    const longSide = max([window.width, window.height]);
-    const shortSide = min([window.width, window.height]);
+    const longSide = _.max([window.width, window.height]);
+    const shortSide = _.min([window.width, window.height]);
 
     return {
         class: (function () {
@@ -257,10 +254,7 @@ function classifyDevice(window: { width: number; height: number }): Device {
 
 If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
 */
-
 export {
-    Breakpoints,
-    Device,
     DeviceClass,
     Orientation,
     isPhone,
@@ -279,3 +273,4 @@ export {
     deviceData,
     classifyDevice,
 };
+export type { Breakpoints, Device };

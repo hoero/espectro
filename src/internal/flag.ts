@@ -62,9 +62,9 @@ function merge(a: Field, b: Field): Field {
 function flag(i: number): Second | Flag {
     if (i > 31) {
         return { type: Flags.Second, second: (i - 32) << 1 };
-    } else {
-        return { type: Flags.Flag, first: i << 1 };
     }
+
+    return { type: Flags.Flag, first: i << 1 };
 }
 
 // Used for Style invalidation

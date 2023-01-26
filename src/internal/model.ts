@@ -1,14 +1,8 @@
-import { Min, Max } from 'class-validator';
-import {
-    reduce as foldl,
-    words,
-    some as any,
-    isArray,
-    isString,
-    isObject,
-    map,
-    template,
-} from 'lodash';
+import { classValidator } from '../deps.ts';
+import { _ } from '../deps.ts';
+import { DOM } from '../deps.ts';
+import { DOMelement } from '../deps.ts';
+import { CTOR_KEY } from '../deps.ts';
 
 import {
     Field,
@@ -36,10 +30,11 @@ import {
     heightBetween,
     merge,
     height,
-} from './flag';
-import { classes as cls, dot } from './style';
-import NearbyElement from './NearbyElement.svelte';
+    value,
+} from './flag.ts';
+import { classes as cls, dot } from './style.ts';
 import {
+    Elements,
     Element,
     Styles,
     Style,
@@ -66,7 +61,6 @@ import {
     NearbyChildren,
     Gathered,
     EmbedStyles,
-    SvelteComponentProps,
     HAlign,
     VAlign,
     TransformComponent,
@@ -74,25 +68,38 @@ import {
     Shadow,
     PseudoClass,
     Single,
-} from './data';
+    EmbedStyle,
+    Unkeyed,
+    Keyed,
+    Children,
+    Childrens,
+    TextElement,
+    asEl,
+    OptionRecord,
+    FocusStyle,
+    Style_,
+    Property,
+    Option,
+    HoverSetting,
+} from './data.ts';
 
-let min = {
+const min = {
     message:
         'Invalid value. Channel should be more or equal to $constraint1, but actual value is $value.',
 };
-let max = {
+const max = {
     message:
         'Invalid value. Channel should be less or equal to $constraint1, but actual value is $value.',
 };
 
 class ChannelsColor {
-    @Min(0, min)
+    @classValidator.Min(0, min)
     private a: number;
-    @Min(0, min)
+    @classValidator.Min(0, min)
     private b: number;
-    @Min(0, min)
+    @classValidator.Min(0, min)
     private c: number;
-    @Min(0, min)
+    @classValidator.Min(0, min)
     private d: number;
 
     constructor(
@@ -132,13 +139,13 @@ class ChannelsColor {
 }
 
 class HslaColor extends ChannelsColor {
-    @Max(360, max)
+    @classValidator.Max(360, max)
     hue: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     saturation: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     lightness: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     alpha: number;
 
     constructor(h: number, s: number, l: number, a: number) {
@@ -151,13 +158,13 @@ class HslaColor extends ChannelsColor {
 }
 
 class RgbaColor extends ChannelsColor {
-    @Max(1, max)
+    @classValidator.Max(1, max)
     red: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     green: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     blue: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     alpha: number;
 
     constructor(red: number, green: number, blue: number, alpha: number) {
@@ -170,13 +177,13 @@ class RgbaColor extends ChannelsColor {
 }
 
 class Rgba255Color extends ChannelsColor {
-    @Max(255)
+    @classValidator.Max(255)
     red: number;
-    @Max(255)
+    @classValidator.Max(255)
     green: number;
-    @Max(255)
+    @classValidator.Max(255)
     blue: number;
-    @Max(1, max)
+    @classValidator.Max(1, max)
     alpha: number;
 
     constructor(red: number, green: number, blue: number, alpha: number) {
@@ -188,71 +195,70 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
-const div = NodeNames.Generic;
+const noStyleSheet = { type: EmbedStyles.NoStyleSheet };
 
-const noStyleSheet = EmbedStyles.NoStyleSheet;
-
-function renderVariant(variant: Variant) {
+function renderVariant(variant: Variant): string {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant.name)) {
+            if (_.isString(variant.name)) {
                 return `\'${variant.name}\'`;
             }
             return '';
 
         case Variants.VariantOff:
-            if (isString(variant.name)) {
+            if (_.isString(variant.name)) {
                 return `\'${variant.name}\' 0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (isObject(variant)) {
+            if (_.isObject(variant)) {
                 return `\'${variant.name}\' ${variant.index}`;
             }
             return '';
     }
 }
 
-function variantName(variant: Variant) {
+function variantName(variant: Variant): string {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant.name)) {
+            if (_.isString(variant.name)) {
                 return variant.name;
             }
             return '';
 
         case Variants.VariantOff:
-            if (isString(variant.name)) {
+            if (_.isString(variant.name)) {
                 return `${variant.name}-0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (isObject(variant)) {
+            if (_.isObject(variant)) {
                 return `${variant.name}-${variant.index}`;
             }
             return '';
     }
 }
 
-function renderVariants(font: FontWith) {
-    switch (font.type) {
-        case FontFamilyType.FontWith:
-            const variants = font.variants.map((variant) => {
+function renderVariants(typeface: Font): string | null {
+    switch (typeface.type) {
+        case FontFamilyType.FontWith: {
+            const variants = typeface.variants.map((variant) => {
                 return renderVariant(variant);
             });
             return variants.join(', ');
+        }
 
         default:
             return null;
     }
 }
 
-function isSmallCaps(variant: Variant) {
+function isSmallCaps(variant: Variant): boolean {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (isString(variant.name)) {
+            if (_.isString(variant.name)) {
                 return variant.name === 'smcp';
             }
             return false;
@@ -261,26 +267,108 @@ function isSmallCaps(variant: Variant) {
             return false;
 
         case Variants.VariantIndexed:
-            if (isObject(variant)) {
+            if (_.isObject(variant)) {
                 return variant.name === 'smcp' && variant.index === 1;
             }
             return false;
     }
 }
 
-function hasSmallCaps(font: FontWith) {
-    switch (font.type) {
+function hasSmallCaps(typeface: Font): boolean {
+    switch (typeface.type) {
         case FontFamilyType.FontWith:
-            return any(
-                font.variants,
-                font.variants.map((variant) => {
-                    return isSmallCaps(variant);
-                })
-            );
+            return _.some(typeface.variants, isSmallCaps);
 
         default:
             return false;
     }
+}
+
+const div = { type: NodeNames.Generic };
+
+function htmlClass(cls: string): Attribute {
+    return { type: Attributes.Attr, attr: createAttribute('class', cls) };
+}
+
+function unstyled(node: (a: LayoutContext) => DOM.Node): Element {
+    return { type: Elements.Unstyled, html: node };
+}
+
+function finalizeNode(
+    has: Field,
+    node: NodeName,
+    attributes: Attr,
+    children: Children,
+    embedMode: EmbedStyle,
+    parentContext: LayoutContext
+) {
+    function createNode(nodeName: string, attrs: Attr) {
+        switch (children.type) {
+            case Childrens.Keyed:
+                break;
+
+            case Childrens.Unkeyed:
+                break;
+        }
+    }
+}
+
+function embedWith(
+    static_: boolean,
+    opts: OptionRecord,
+    styles: Style[],
+    children: any[]
+) {
+    // const dinamicStyleSheet = _.reduce(styles);
+}
+
+function embedKeyed(
+    static_: boolean,
+    opts: OptionRecord,
+    styles: Style[],
+    children: [string, any][]
+) {}
+
+function reduceStylesRecursive(
+    cache: Set<string>,
+    found: Style[],
+    styles: Style[]
+): Style[] {
+    const head = styles[0],
+        remaining = styles;
+    remaining.shift();
+
+    switch (styles) {
+        case []:
+            return found;
+
+        default: {
+            const styleName = getStyleName(head);
+
+            if (cache.has(styleName)) {
+                return reduceStylesRecursive(cache, found, remaining);
+            }
+
+            return reduceStylesRecursive(
+                cache.add(styleName),
+                [head].concat(found),
+                remaining
+            );
+        }
+    }
+}
+
+function reduceStyles(
+    style: Style,
+    nevermind: [Set<string>, Style[]]
+): [Set<string>, Style[]] {
+    const styleName = getStyleName(style);
+
+    if (nevermind[0].has(styleName)) {
+        return nevermind;
+    }
+
+    return [nevermind[0].add(styleName), [style].concat(nevermind[1])];
 }
 
 function addNodeName(newNode: string, old: NodeName): NodeName {
@@ -336,7 +424,7 @@ function transformClass(transform: Transformation) {
             return null;
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (_.isArray(transform.xyz)) {
                 return `mv-${floatClass(transform.xyz[0])}-${floatClass(
                     transform.xyz[1]
                 )}-${floatClass(transform.xyz[2])}`;
@@ -344,7 +432,7 @@ function transformClass(transform: Transformation) {
             return null;
 
         case Transformations.FullTransform:
-            if (isObject(transform) && !isArray(transform)) {
+            if (_.isObject(transform) && !_.isArray(transform)) {
                 return `tfrm-${floatClass(transform.translate[0])}-${floatClass(
                     transform.translate[1]
                 )}-${floatClass(transform.translate[2])}-${floatClass(
@@ -367,13 +455,13 @@ function transformValue(transform: Transformation) {
             return null;
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (_.isArray(transform.xyz)) {
                 return `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`;
             }
             return null;
 
         case Transformations.FullTransform:
-            if (isObject(transform) && !isArray(transform)) {
+            if (_.isObject(transform) && !_.isArray(transform)) {
                 const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
                 const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
                 const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
@@ -432,9 +520,10 @@ function composeTransformation(
                         angle: 0,
                     };
             }
+            break;
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (_.isArray(transform.xyz)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return {
@@ -496,7 +585,7 @@ function composeTransformation(
             };
 
         case Transformations.FullTransform:
-            if (isObject(transform) && !isArray(transform)) {
+            if (_.isObject(transform) && !_.isArray(transform)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return {
@@ -604,29 +693,29 @@ function skippable(flag: Flag, style: Style) {
             default:
                 return false;
         }
-    } else {
-        switch (style.type) {
-            case Styles.FontSize:
-                return style.i >= 8 && style.i <= 32;
+    }
 
-            case Styles.PaddingStyle:
-                return (
-                    style.top === style.bottom &&
-                    style.top === style.right &&
-                    style.top === style.left &&
-                    style.top >= 0 &&
-                    style.top <= 24
-                );
+    switch (style.type) {
+        case Styles.FontSize:
+            return style.i >= 8 && style.i <= 32;
 
-            // case Styles.SpacingStyle:
-            //     return true;
+        case Styles.PaddingStyle:
+            return (
+                style.top === style.bottom &&
+                style.top === style.right &&
+                style.top === style.left &&
+                style.top >= 0 &&
+                style.top <= 24
+            );
 
-            // case Styles.FontFamily:
-            //     return true;
+        // case Styles.SpacingStyle:
+        //     return true;
 
-            default:
-                return false;
-        }
+        // case Styles.FontFamily:
+        //     return true;
+
+        default:
+            return false;
     }
 }
 
@@ -636,7 +725,7 @@ function gatherAttrRecursive(
     has: Field,
     transform: Transformation,
     styles: Style[],
-    attrs: globalThis.Attr[],
+    attrs: Attr[],
     children: NearbyChildren,
     elementAttrs: Attribute[]
 ): Gathered {
@@ -655,7 +744,7 @@ function gatherAttrRecursive(
                         has: has,
                     };
 
-                default:
+                default: {
                     const class_ = transformClass(transform);
                     return {
                         node: node,
@@ -670,6 +759,7 @@ function gatherAttrRecursive(
                         children: children,
                         has: has,
                     };
+                }
             }
 
         default:
@@ -843,7 +933,7 @@ function gatherAttrRecursive(
                                     )
                                 );
 
-                            case Descriptions.LivePolite:
+                            case Descriptions.LiveAssertive:
                                 return gatherAttrRecursive(
                                     classes,
                                     node,
@@ -917,20 +1007,20 @@ function gatherAttrRecursive(
                                     (attr_) => attr_.type !== attr.type
                                 )
                             );
-                        } else {
-                            return gatherAttrRecursive(
-                                `${attr.class} ${classes}`,
-                                node,
-                                add(attr.flag, has),
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
                         }
+
+                        return gatherAttrRecursive(
+                            `${attr.class} ${classes}`,
+                            node,
+                            add(attr.flag, has),
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
 
                     case Attributes.StyleClass:
                         if (present(attr.flag, has)) {
@@ -974,7 +1064,7 @@ function gatherAttrRecursive(
                             );
                         }
 
-                    case Attributes.AlignY:
+                    case Attributes.AlignY: {
                         if (present(yAlign, has)) {
                             return gatherAttrRecursive(
                                 classes,
@@ -988,38 +1078,40 @@ function gatherAttrRecursive(
                                     (attr_) => attr_.type !== attr.type
                                 )
                             );
-                        } else {
-                            const flags = add(yAlign, has);
-                            const align = attr.y;
-
-                            function has_() {
-                                switch (align) {
-                                    case VAlign.CenterY:
-                                        return add(centerY, flags);
-
-                                    case VAlign.Bottom:
-                                        return add(alignBottom, flags);
-
-                                    default:
-                                        return flags;
-                                }
-                            }
-
-                            return gatherAttrRecursive(
-                                `${alignYName(attr.y)} ${classes}`,
-                                node,
-                                has_(),
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
                         }
 
-                    case Attributes.AlignX:
+                        const flags = add(yAlign, has);
+                        const align = attr.y;
+
+                        // deno-lint-ignore no-inner-declarations
+                        function has_() {
+                            switch (align) {
+                                case VAlign.CenterY:
+                                    return add(centerY, flags);
+
+                                case VAlign.Bottom:
+                                    return add(alignBottom, flags);
+
+                                default:
+                                    return flags;
+                            }
+                        }
+
+                        return gatherAttrRecursive(
+                            `${alignYName(attr.y)} ${classes}`,
+                            node,
+                            has_(),
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
+                    }
+
+                    case Attributes.AlignX: {
                         if (present(xAlign, has)) {
                             return gatherAttrRecursive(
                                 classes,
@@ -1033,36 +1125,38 @@ function gatherAttrRecursive(
                                     (attr_) => attr_.type !== attr.type
                                 )
                             );
-                        } else {
-                            const flags = add(xAlign, has);
-                            const align = attr.x;
-
-                            function has_() {
-                                switch (align) {
-                                    case HAlign.CenterX:
-                                        return add(centerX, flags);
-
-                                    case HAlign.Right:
-                                        return add(alignRight, flags);
-
-                                    default:
-                                        return flags;
-                                }
-                            }
-
-                            return gatherAttrRecursive(
-                                `${alignXName(attr.x)} ${classes}`,
-                                node,
-                                has_(),
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
                         }
+
+                        const flags = add(xAlign, has);
+                        const align = attr.x;
+
+                        // deno-lint-ignore no-inner-declarations no-redeclare
+                        function has_() {
+                            switch (align) {
+                                case HAlign.CenterX:
+                                    return add(centerX, flags);
+
+                                case HAlign.Right:
+                                    return add(alignRight, flags);
+
+                                default:
+                                    return flags;
+                            }
+                        }
+
+                        return gatherAttrRecursive(
+                            `${alignXName(attr.x)} ${classes}`,
+                            node,
+                            has_(),
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
+                    }
 
                     case Attributes.Width:
                         if (present(width, has)) {
@@ -1078,57 +1172,73 @@ function gatherAttrRecursive(
                                     (attr_) => attr_.type !== attr.type
                                 )
                             );
-                        } else {
-                            switch (attr.width.type) {
-                                case Lengths.Px:
-                                    return gatherAttrRecursive(
-                                        `${cls.widthExact} width-px-${attr.width.px} ${classes}`,
-                                        node,
-                                        add(width, has),
-                                        transform,
-                                        [
-                                            {
-                                                type: Styles.Single,
-                                                class: `width-px-${attr.width.px}`,
-                                                prop: 'width',
-                                                value: `${attr.width.px}px`,
-                                            },
-                                            ...styles,
-                                        ],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                        }
 
-                                case Lengths.Rem:
-                                    return gatherAttrRecursive(
-                                        `${cls.widthExact} width-rem-${attr.width.rem} ${classes}`,
-                                        node,
-                                        add(width, has),
-                                        transform,
-                                        [
-                                            {
-                                                type: Styles.Single,
-                                                class: `width-rem-${attr.width.rem}`,
-                                                prop: 'width',
-                                                value: `${attr.width.rem}rem`,
-                                            },
-                                            ...styles,
-                                        ],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                        switch (attr.width.type) {
+                            case Lengths.Px:
+                                return gatherAttrRecursive(
+                                    `${cls.widthExact} width-px-${attr.width.px} ${classes}`,
+                                    node,
+                                    add(width, has),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `width-px-${attr.width.px}`,
+                                            prop: 'width',
+                                            value: `${attr.width.px}px`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
 
-                                case Lengths.Content:
+                            case Lengths.Rem:
+                                return gatherAttrRecursive(
+                                    `${cls.widthExact} width-rem-${attr.width.rem} ${classes}`,
+                                    node,
+                                    add(width, has),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `width-rem-${attr.width.rem}`,
+                                            prop: 'width',
+                                            value: `${attr.width.rem}rem`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Lengths.Content:
+                                return gatherAttrRecursive(
+                                    `${classes} ${cls.widthContent}`,
+                                    node,
+                                    add(widthContent, add(width, has)),
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Lengths.Fill:
+                                if (attr.width.i === 1) {
                                     return gatherAttrRecursive(
-                                        `${classes} ${cls.widthContent}`,
+                                        `${classes} ${cls.widthFill}`,
                                         node,
-                                        add(widthContent, add(width, has)),
+                                        add(widthFill, add(width, has)),
                                         transform,
                                         styles,
                                         attrs,
@@ -1137,67 +1247,48 @@ function gatherAttrRecursive(
                                             (attr_) => attr_.type !== attr.type
                                         )
                                     );
+                                }
 
-                                case Lengths.Fill:
-                                    if (attr.width.i === 1) {
-                                        return gatherAttrRecursive(
-                                            `${classes} ${cls.widthFill}`,
-                                            node,
-                                            add(widthFill, add(width, has)),
-                                            transform,
-                                            styles,
-                                            attrs,
-                                            children,
-                                            elementAttrs.filter(
-                                                (attr_) =>
-                                                    attr_.type !== attr.type
-                                            )
-                                        );
-                                    } else {
-                                        return gatherAttrRecursive(
-                                            `${classes} ${cls.widthFillPortion} width-fill-${attr.width.i}`,
-                                            node,
-                                            add(widthFill, add(width, has)),
-                                            transform,
-                                            [
-                                                {
-                                                    type: Styles.Single,
-                                                    class: `${cls.any}.${
-                                                        cls.row
-                                                    } > ${dot(
-                                                        `width-fill-${attr.width.i}`
-                                                    )}`,
-                                                    prop: 'flex-grow',
-                                                    value: `${
-                                                        attr.width.i * 100000
-                                                    }`,
-                                                },
-                                                ...styles,
-                                            ],
-                                            attrs,
-                                            children,
-                                            elementAttrs.filter(
-                                                (attr_) =>
-                                                    attr_.type !== attr.type
-                                            )
-                                        );
-                                    }
+                                return gatherAttrRecursive(
+                                    `${classes} ${cls.widthFillPortion} width-fill-${attr.width.i}`,
+                                    node,
+                                    add(widthFill, add(width, has)),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `${cls.any}.${
+                                                cls.row
+                                            } > ${dot(
+                                                `width-fill-${attr.width.i}`
+                                            )}`,
+                                            prop: 'flex-grow',
+                                            value: `${attr.width.i * 100000}`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
 
-                                default:
-                                    const [addToFlags, newClass, newStyles] =
-                                        renderWidth(attr.width);
-                                    return gatherAttrRecursive(
-                                        `${classes} ${newClass}`,
-                                        node,
-                                        merge(addToFlags, add(width, has)),
-                                        transform,
-                                        [...newStyles, ...styles],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                            default: {
+                                const [addToFlags, newClass, newStyles] =
+                                    renderWidth(attr.width);
+                                return gatherAttrRecursive(
+                                    `${classes} ${newClass}`,
+                                    node,
+                                    merge(addToFlags, add(width, has)),
+                                    transform,
+                                    [...newStyles, ...styles],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
                             }
                         }
 
@@ -1215,57 +1306,73 @@ function gatherAttrRecursive(
                                     (attr_) => attr_.type !== attr.type
                                 )
                             );
-                        } else {
-                            switch (attr.height.type) {
-                                case Lengths.Px:
-                                    return gatherAttrRecursive(
-                                        `${cls.heightExact} height-px-${attr.height.px} ${classes}`,
-                                        node,
-                                        add(height, has),
-                                        transform,
-                                        [
-                                            {
-                                                type: Styles.Single,
-                                                class: `height-px-${attr.height.px}`,
-                                                prop: 'height',
-                                                value: `${attr.height.px}px`,
-                                            },
-                                            ...styles,
-                                        ],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                        }
 
-                                case Lengths.Rem:
-                                    return gatherAttrRecursive(
-                                        `${cls.heightExact} height-rem-${attr.height.rem} ${classes}`,
-                                        node,
-                                        add(height, has),
-                                        transform,
-                                        [
-                                            {
-                                                type: Styles.Single,
-                                                class: `height-rem-${attr.height.rem}`,
-                                                prop: 'height',
-                                                value: `${attr.height.rem}rem`,
-                                            },
-                                            ...styles,
-                                        ],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                        switch (attr.height.type) {
+                            case Lengths.Px:
+                                return gatherAttrRecursive(
+                                    `${cls.heightExact} height-px-${attr.height.px} ${classes}`,
+                                    node,
+                                    add(height, has),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `height-px-${attr.height.px}`,
+                                            prop: 'height',
+                                            value: `${attr.height.px}px`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
 
-                                case Lengths.Content:
+                            case Lengths.Rem:
+                                return gatherAttrRecursive(
+                                    `${cls.heightExact} height-rem-${attr.height.rem} ${classes}`,
+                                    node,
+                                    add(height, has),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `height-rem-${attr.height.rem}`,
+                                            prop: 'height',
+                                            value: `${attr.height.rem}rem`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Lengths.Content:
+                                return gatherAttrRecursive(
+                                    `${classes} ${cls.heightContent}`,
+                                    node,
+                                    add(heightContent, add(height, has)),
+                                    transform,
+                                    styles,
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
+
+                            case Lengths.Fill:
+                                if (attr.height.i === 1) {
                                     return gatherAttrRecursive(
-                                        `${classes} ${cls.heightContent}`,
+                                        `${classes} ${cls.heightFill}`,
                                         node,
-                                        add(heightContent, add(height, has)),
+                                        add(heightFill, add(height, has)),
                                         transform,
                                         styles,
                                         attrs,
@@ -1274,67 +1381,48 @@ function gatherAttrRecursive(
                                             (attr_) => attr_.type !== attr.type
                                         )
                                     );
+                                }
 
-                                case Lengths.Fill:
-                                    if (attr.height.i === 1) {
-                                        return gatherAttrRecursive(
-                                            `${classes} ${cls.heightFill}`,
-                                            node,
-                                            add(heightFill, add(height, has)),
-                                            transform,
-                                            styles,
-                                            attrs,
-                                            children,
-                                            elementAttrs.filter(
-                                                (attr_) =>
-                                                    attr_.type !== attr.type
-                                            )
-                                        );
-                                    } else {
-                                        return gatherAttrRecursive(
-                                            `${classes} ${cls.heightFillPortion} height-fill-${attr.height.i}`,
-                                            node,
-                                            add(heightFill, add(height, has)),
-                                            transform,
-                                            [
-                                                {
-                                                    type: Styles.Single,
-                                                    class: `${cls.any}.${
-                                                        cls.row
-                                                    } > ${dot(
-                                                        `height-fill-${attr.height.i}`
-                                                    )}`,
-                                                    prop: 'flex-grow',
-                                                    value: `${
-                                                        attr.height.i * 100000
-                                                    }`,
-                                                },
-                                                ...styles,
-                                            ],
-                                            attrs,
-                                            children,
-                                            elementAttrs.filter(
-                                                (attr_) =>
-                                                    attr_.type !== attr.type
-                                            )
-                                        );
-                                    }
+                                return gatherAttrRecursive(
+                                    `${classes} ${cls.heightFillPortion} height-fill-${attr.height.i}`,
+                                    node,
+                                    add(heightFill, add(height, has)),
+                                    transform,
+                                    [
+                                        {
+                                            type: Styles.Single,
+                                            class: `${cls.any}.${
+                                                cls.row
+                                            } > ${dot(
+                                                `height-fill-${attr.height.i}`
+                                            )}`,
+                                            prop: 'flex-grow',
+                                            value: `${attr.height.i * 100000}`,
+                                        },
+                                        ...styles,
+                                    ],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
 
-                                default:
-                                    const [addToFlags, newClass, newStyles] =
-                                        renderHeight(attr.height);
-                                    return gatherAttrRecursive(
-                                        `${classes} ${newClass}`,
-                                        node,
-                                        merge(addToFlags, add(width, has)),
-                                        transform,
-                                        [...newStyles, ...styles],
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
+                            default: {
+                                const [addToFlags, newClass, newStyles] =
+                                    renderHeight(attr.height);
+                                return gatherAttrRecursive(
+                                    `${classes} ${newClass}`,
+                                    node,
+                                    merge(addToFlags, add(width, has)),
+                                    transform,
+                                    [...newStyles, ...styles],
+                                    attrs,
+                                    children,
+                                    elementAttrs.filter(
+                                        (attr_) => attr_.type !== attr.type
+                                    )
+                                );
                             }
                         }
 
@@ -1384,14 +1472,14 @@ function gatherAttrRecursive(
     };
 }
 
-function createAttribute(attribute: string, value: string) {
+function createAttribute(attribute: string, value: string): Attr {
     const attr = document.createAttribute(attribute);
     attr.value = value;
     return attr;
 }
 
-function createAttributes(attributes: globalThis.Attr[]) {
-    let attrs = [];
+function createAttributes(attributes: Attr[]): Attr[] {
+    const attrs = [];
 
     for (const { name, value } of attributes) {
         const attr = createAttribute(name, value);
@@ -1406,17 +1494,7 @@ function addNearbyElement(
     element: Element,
     existing: NearbyChildren
 ): NearbyChildren {
-    type Props = SvelteComponentProps<typeof NearbyElement>;
-
-    let props: Props = {
-        location,
-        element,
-    };
-
-    let nearby = new NearbyElement({
-        target: new Element(),
-        props,
-    });
+    const nearby = nearbyElement(location, element);
 
     switch (existing.type) {
         case NearbyChildrens.NoNearbyChildren:
@@ -1485,6 +1563,58 @@ function addNearbyElement(
     }
 }
 
+function nearbyElement(location: Location, element: Element): DOM.Element {
+    const common = [cls.nearby, cls.single];
+
+    function classes_(location: Location) {
+        switch (location) {
+            case Location.Above:
+                return [...common, cls.above].join(' ');
+
+            case Location.Below:
+                return [...common, cls.below].join(' ');
+
+            case Location.OnRight:
+                return [...common, cls.onRight].join(' ');
+
+            case Location.OnLeft:
+                return [...common, cls.onLeft].join(' ');
+
+            case Location.InFront:
+                return [...common, cls.inFront].join(' ');
+
+            case Location.Behind:
+                return [...common, cls.behind].join(' ');
+        }
+    }
+
+    function child(element: Element) {
+        switch (element.type) {
+            case Elements.Empty:
+                return new DOM.Text('');
+
+            case Elements.Text:
+                return textElement(TextElement.Text, element.str);
+
+            case Elements.Unstyled:
+                return element.html(asEl);
+
+            case Elements.Styled:
+                return element.html(EmbedStyles.NoStyleSheet, asEl);
+        }
+    }
+
+    const element_ = new DOMelement.Element(
+        'div',
+        null,
+        [['class', classes_(location)]],
+        CTOR_KEY.CTOR_KEY
+    );
+    element_.append(child(element));
+
+    return element_;
+}
+
 function renderWidth(w: Length): [Field, string, Style[]] {
     switch (w.type) {
         case Lengths.Px:
@@ -1521,24 +1651,24 @@ function renderWidth(w: Length): [Field, string, Style[]] {
         case Lengths.Fill:
             if (w.i === 1) {
                 return [add(widthFill, none), cls.widthFill, []];
-            } else {
-                return [
-                    add(widthFill, none),
-                    `${cls.widthFillPortion} width-fill-${w.i}`,
-                    [
-                        {
-                            type: Styles.Single,
-                            class: `${cls.any}.${cls.row} > ${dot(
-                                `width-fill-${w.i}`
-                            )}`,
-                            prop: 'flex-grow',
-                            value: `${w.i * 100000}`,
-                        },
-                    ],
-                ];
             }
 
-        case Lengths.MinContent:
+            return [
+                add(widthFill, none),
+                `${cls.widthFillPortion} width-fill-${w.i}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `${cls.any}.${cls.row} > ${dot(
+                            `width-fill-${w.i}`
+                        )}`,
+                        prop: 'flex-grow',
+                        value: `${w.i * 100000}`,
+                    },
+                ],
+            ];
+
+        case Lengths.Min: {
             const minCls = `min-width-${w.min}`,
                 minStyle: Single = {
                     type: Styles.Single,
@@ -1553,8 +1683,9 @@ function renderWidth(w: Length): [Field, string, Style[]] {
                 `${minCls} ${minAttrs}`,
                 [minStyle, ...newMinStyle],
             ];
+        }
 
-        case Lengths.MaxContent:
+        case Lengths.Max: {
             const max = `max-width-${w.max}`,
                 maxStyle: Single = {
                     type: Styles.Single,
@@ -1569,21 +1700,50 @@ function renderWidth(w: Length): [Field, string, Style[]] {
                 `${max} ${maxAttrs}`,
                 [maxStyle, ...newMaxStyle],
             ];
-    }
-}
+        }
 
-function renderHeight(w: Length): [Field, string, Style[]] {
-    switch (w.type) {
-        case Lengths.Px:
+        case Lengths.MinContent:
             return [
                 none,
-                `${cls.heightExact} height-px-${w.px}`,
+                'min-width',
                 [
                     {
                         type: Styles.Single,
-                        class: `height-px-${w.px}`,
+                        class: 'min-width',
+                        prop: 'min-width',
+                        value: 'min-content',
+                    },
+                ],
+            ];
+
+        case Lengths.MaxContent:
+            return [
+                none,
+                'max-width',
+                [
+                    {
+                        type: Styles.Single,
+                        class: 'max-width',
+                        prop: 'max-width',
+                        value: 'max-content',
+                    },
+                ],
+            ];
+    }
+}
+
+function renderHeight(h: Length): [Field, string, Style[]] {
+    switch (h.type) {
+        case Lengths.Px:
+            return [
+                none,
+                `${cls.heightExact} height-px-${h.px}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `height-px-${h.px}`,
                         prop: 'height',
-                        value: `${w.px}px`,
+                        value: `${h.px}px`,
                     },
                 ],
             ];
@@ -1591,13 +1751,13 @@ function renderHeight(w: Length): [Field, string, Style[]] {
         case Lengths.Rem:
             return [
                 none,
-                `${cls.heightExact} height-rem-${w.rem}`,
+                `${cls.heightExact} height-rem-${h.rem}`,
                 [
                     {
                         type: Styles.Single,
-                        class: `height-rem-${w.rem}`,
+                        class: `height-rem-${h.rem}`,
                         prop: 'height',
-                        value: `${w.rem}rem`,
+                        value: `${h.rem}rem`,
                     },
                 ],
             ];
@@ -1606,57 +1766,87 @@ function renderHeight(w: Length): [Field, string, Style[]] {
             return [add(heightContent, none), cls.heightContent, []];
 
         case Lengths.Fill:
-            if (w.i === 1) {
+            if (h.i === 1) {
                 return [add(heightFill, none), cls.heightFill, []];
-            } else {
-                return [
-                    add(heightFill, none),
-                    `${cls.heightFillPortion} height-fill-${w.i}`,
-                    [
-                        {
-                            type: Styles.Single,
-                            class: `${cls.any}.${cls.column} > ${dot(
-                                `height-fill-${w.i}`
-                            )}`,
-                            prop: 'flex-grow',
-                            value: `${w.i * 100000}`,
-                        },
-                    ],
-                ];
             }
 
-        case Lengths.MinContent:
-            const minCls = `min-height-${w.min}`,
+            return [
+                add(heightFill, none),
+                `${cls.heightFillPortion} height-fill-${h.i}`,
+                [
+                    {
+                        type: Styles.Single,
+                        class: `${cls.any}.${cls.column} > ${dot(
+                            `height-fill-${h.i}`
+                        )}`,
+                        prop: 'flex-grow',
+                        value: `${h.i * 100000}`,
+                    },
+                ],
+            ];
+
+        case Lengths.Min: {
+            const minCls = `min-height-${h.min}`,
                 minStyle: Single = {
                     type: Styles.Single,
                     class: minCls,
                     prop: 'min-height',
                     // This needs to be !important because we're using `min-height: min-content`
                     // to correct for safari's incorrect implementation of flexbox.
-                    value: `${w.min}px !important`,
+                    value: `${h.min}px !important`,
                 },
-                [minFlag, minAttrs, newMinStyle] = renderHeight(w.length);
+                [minFlag, minAttrs, newMinStyle] = renderHeight(h.length);
 
             return [
                 add(heightBetween, minFlag),
                 `${minCls} ${minAttrs}`,
                 [minStyle, ...newMinStyle],
             ];
+        }
 
-        case Lengths.MaxContent:
-            const max = `max-height-${w.max}`,
+        case Lengths.Max: {
+            const max = `max-height-${h.max}`,
                 maxStyle: Single = {
                     type: Styles.Single,
                     class: max,
                     prop: 'max-height',
-                    value: `${w.max}px`,
+                    value: `${h.max}px`,
                 },
-                [maxFlag, maxAttrs, newMaxStyle] = renderHeight(w.length);
+                [maxFlag, maxAttrs, newMaxStyle] = renderHeight(h.length);
 
             return [
                 add(heightBetween, maxFlag),
                 `${max} ${maxAttrs}`,
                 [maxStyle, ...newMaxStyle],
+            ];
+        }
+
+        case Lengths.MinContent:
+            return [
+                none,
+                'min-height',
+                [
+                    {
+                        type: Styles.Single,
+                        class: 'min-height',
+                        prop: 'min-height',
+                        value: 'min-content',
+                    },
+                ],
+            ];
+
+        case Lengths.MaxContent:
+            return [
+                none,
+                'max-height',
+                [
+                    {
+                        type: Styles.Single,
+                        class: 'max-height',
+                        prop: 'max-height',
+                        value: 'max-content',
+                    },
+                ],
             ];
     }
 }
@@ -1688,6 +1878,31 @@ function contextClasses(context: LayoutContext) {
         case LayoutContext.AsTextColumn:
             return pageClass;
     }
+}
+
+function textElement(type: TextElement, str: string): DOM.Element {
+    const textClasses = `${cls.any} ${cls.text} ${cls.widthContent} ${cls.heightContent}`,
+        textFillClasses = `${cls.any} ${cls.text} ${cls.widthFill} ${cls.heightFill}`;
+
+    function classes_(mode: TextElement) {
+        switch (mode) {
+            case TextElement.Text:
+                return textClasses;
+
+            case TextElement.Fill:
+                return textFillClasses;
+        }
+    }
+
+    const element = new DOMelement.Element(
+        'div',
+        null,
+        [['class', classes_(type)]],
+        CTOR_KEY.CTOR_KEY
+    );
+    element.append(new DOM.Text(str));
+
+    return element;
 }
 
 const families: Font[] = [
@@ -1731,10 +1946,10 @@ const rootStyle: StyleClass[] = [
         flag: fontFamily,
         style: {
             type: Styles.FontFamily,
-            name: foldl(
+            name: _.reduce(
                 families,
-                (result: string, n: Font) => {
-                    return renderFontClassName(n, result);
+                (acc: string, font: Font) => {
+                    return renderFontClassName(font, acc);
                 },
                 'font-'
             ),
@@ -1755,19 +1970,680 @@ function renderFontClassName(font: Font, current: string) {
             return current + 'monospace';
 
         case FontFamilyType.Typeface:
-            if (isString(font)) {
-                return current + words(font).join('-');
+            if (_.isString(font)) {
+                return current + _.words(font.name.toLowerCase()).join('-');
             }
             return '';
 
         case FontFamilyType.ImportFont || FontFamilyType.FontWith:
-            if (isObject(font)) {
-                return current + words(font.name).join('-');
+            if (_.isObject(font)) {
+                return current + _.words(font.name.toLowerCase()).join('-');
             }
             return '';
 
         default:
             return '';
+    }
+}
+
+function renderFocusStyle(focus: FocusStyle): Style_[] {
+    return [
+        {
+            type: Styles.Style,
+            selector: dot(cls.focusedWithin + ':focus-within'),
+            props: [
+                ((color: Color | null): Property => {
+                    if (color) {
+                        const [a, b, c, d, e] = Object.values(color);
+                        return {
+                            key: 'border-color',
+                            value: formatColor(a, b, c, d, e),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.borderColor),
+                ((color: Color | null): Property => {
+                    if (color) {
+                        const [a, b, c, d, e] = Object.values(color);
+                        return {
+                            key: 'background-color',
+                            value: formatColor(a, b, c, d, e),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.backgroundColor),
+                ((shadow: Shadow | null): Property => {
+                    if (shadow) {
+                        return {
+                            key: 'box-shadow',
+                            value: formatBoxShadow(shadow),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.shadow),
+                { key: 'outline', value: 'none' },
+            ],
+        },
+        {
+            type: Styles.Style,
+            selector: `${dot(cls.any + ':focus .focusable, ')}${dot(
+                cls.any + '.focusable:focus, '
+            )}.ui-slide-bar:focus + ${dot(cls.any + ' .focusable-thumb')}`,
+            props: [
+                ((color: Color | null): Property => {
+                    if (color) {
+                        const [a, b, c, d, e] = Object.values(color);
+                        return {
+                            key: 'border-color',
+                            value: formatColor(a, b, c, d, e),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.borderColor),
+                ((color: Color | null): Property => {
+                    if (color) {
+                        const [a, b, c, d, e] = Object.values(color);
+                        return {
+                            key: 'background-color',
+                            value: formatColor(a, b, c, d, e),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.backgroundColor),
+                ((shadow: Shadow | null): Property => {
+                    if (shadow) {
+                        return {
+                            key: 'box-shadow',
+                            value: formatBoxShadow(shadow),
+                        };
+                    }
+                    return { key: '', value: '' };
+                })(focus.shadow),
+                { key: 'outline', value: 'none' },
+            ],
+        },
+    ];
+}
+
+const focusDefaultStyle: FocusStyle = {
+    backgroundColor: null,
+    borderColor: null,
+    shadow: {
+        color: {
+            red: 155 / 255,
+            green: 203 / 255,
+            blue: 1,
+            alpha: 1,
+            type: Notation.Rgba,
+        },
+        offset: [0, 0],
+        blur: 0,
+        size: 3,
+    },
+};
+
+// function toStyleSheet(
+//     options: OptionRecord,
+//     styleSheet: Style_[]
+// ): DOM.Element {}
+
+function bracket(selector: string, rules: [string, string][]): string {
+    function renderPair(rule: [string, string]) {
+        return `${rule[0]}: ${rule[1]};`;
+    }
+    return `${selector} {${rules
+        .map((rule: [string, string]): string => renderPair(rule))
+        .join('')}}`;
+}
+
+function fontAdjustmentRules(converted: {
+    height: number;
+    vertical: number;
+    size: number;
+}): [[string, string][], [string, string][]] {
+    return [
+        [['display', 'block']],
+        [
+            ['display', 'inline-block'],
+            ['line-height', converted.height.toString()],
+            ['vertical-align', converted.vertical.toString() + 'em'],
+            ['font-size', converted.size.toString() + 'em'],
+        ],
+    ];
+}
+
+function fontName(font: Font): string {
+    switch (font.type) {
+        case FontFamilyType.Serif:
+            return 'serif';
+
+        case FontFamilyType.SansSerif:
+            return 'sans-serif';
+
+        case FontFamilyType.Monospace:
+            return 'monospace';
+
+        case FontFamilyType.Typeface ||
+            FontFamilyType.ImportFont ||
+            FontFamilyType.FontWith:
+            return `"${font.name}"`;
+
+        default:
+            return '';
+    }
+}
+
+function topLevelValue(rule: Style): (string | Font[])[] | null {
+    switch (rule.type) {
+        case Styles.FontFamily:
+            return [rule.name, rule.typefaces];
+
+        default:
+            return null;
+    }
+}
+
+function renderProps(
+    force: boolean,
+    property: Property,
+    existing: string
+): string {
+    if (force) {
+        return `${existing} \n ${property.key}: ${property.value} !important;`;
+    }
+    return `${existing} \n ${property.key}: ${property.value};`;
+}
+
+// function toStyleSheetString(
+//     options: OptionRecord,
+//     styleSheet: Style_[]
+// ): string {
+//     // function combine(params: type) {}
+// }
+
+function renderStyle(
+    options: OptionRecord,
+    pseudo: PseudoClass | null,
+    selector: string,
+    props: Property[]
+): string[] {
+    switch (pseudo) {
+        case null:
+            return [
+                `${selector}{${_.reduce(
+                    props,
+                    (acc: string, prop: Property): string => {
+                        return renderProps(false, prop, acc);
+                    },
+                    ''
+                )}\n}`,
+            ];
+
+        case PseudoClass.Hover:
+            switch (options.hover) {
+                case HoverSetting.NoHover:
+                    return [];
+
+                case HoverSetting.ForceHover:
+                    return [
+                        `${selector}-hv {${_.reduce(
+                            props,
+                            (acc: string, prop: Property): string => {
+                                return renderProps(true, prop, acc);
+                            }
+                        )}\n}`,
+                    ];
+
+                case HoverSetting.AllowHover:
+                    return [
+                        `${selector}-hv:hover {${_.reduce(
+                            props,
+                            (acc: string, prop: Property): string => {
+                                return renderProps(false, prop, acc);
+                            }
+                        )}\n}`,
+                    ];
+            }
+            break;
+
+        case PseudoClass.Focus: {
+            const renderedProps = _.reduce(
+                props,
+                (acc: string, prop: Property): string => {
+                    return renderProps(false, prop, acc);
+                },
+                ''
+            );
+            return [
+                `${selector}-fs:focus {${renderedProps}\n}`,
+                `.${cls.any}:focus ${selector}-fs {${renderedProps}\n}`,
+                `${selector}-fs:focus-within {${renderedProps}\n}`,
+                `.ui-slide-bar:focus + ${dot(
+                    cls.any + ' .focusable-thumb' + selector
+                )}-fs {${renderedProps}\n}`,
+            ];
+        }
+
+        case PseudoClass.Active:
+            return [
+                `${selector}-act:active {${_.reduce(
+                    props,
+                    (acc: string, prop: Property): string => {
+                        return renderProps(false, prop, acc);
+                    },
+                    ''
+                )}\n}`,
+            ];
+    }
+}
+
+function renderStyleRule(
+    options: OptionRecord,
+    rule: Style,
+    pseudo: PseudoClass | null
+): string[] | undefined {
+    switch (rule.type) {
+        case Styles.Style:
+            return renderStyle(options, pseudo, rule.selector, rule.props);
+
+        case Styles.Shadows:
+            return renderStyle(options, pseudo, '.' + rule.name, [
+                { key: 'box-shadow', value: rule.prop },
+            ]);
+
+        case Styles.Transparency: {
+            const opacity: number = _.max(0, _.min(1, 1 - rule.transparency));
+            return renderStyle(options, pseudo, '.' + rule.name, [
+                { key: 'opacity', value: opacity.toString() },
+            ]);
+        }
+
+        case Styles.FontSize:
+            return renderStyle(
+                options,
+                pseudo,
+                '.font-size-' + rule.i.toString(),
+                [{ key: 'font-size', value: rule.i.toString() + 'px' }]
+            );
+
+        case Styles.FontFamily: {
+            const features: string = rule.typefaces
+                .filter((value: Font) => {
+                    return renderVariants(value);
+                })
+                .join(', ');
+            const families: Property[] = [
+                {
+                    key: 'font-family',
+                    value: rule.typefaces
+                        .map((value: Font) => {
+                            return fontName(value);
+                        })
+                        .join(', '),
+                },
+                { key: 'font-feature-settings', value: features },
+                {
+                    key: 'font-variant',
+                    value: _.some(rule.typefaces, hasSmallCaps)
+                        ? 'small-caps'
+                        : 'normal',
+                },
+            ];
+            return renderStyle(options, pseudo, '.' + rule.name, families);
+        }
+
+        case Styles.Single:
+            return renderStyle(options, pseudo, '.' + rule.class, [
+                { key: rule.prop, value: rule.value },
+            ]);
+
+        case Styles.Colored: {
+            const [a, b, c, d, e] = Object.values(rule.color);
+            return renderStyle(options, pseudo, '.' + rule.class, [
+                { key: rule.prop, value: formatColor(a, b, c, d, e) },
+            ]);
+        }
+
+        case Styles.SpacingStyle: {
+            const class_: string = '.' + rule.class,
+                halfX: string = (rule.x / 2).toString() + 'px',
+                halfY: string = (rule.y / 2).toString() + 'px',
+                xPx: string = rule.x.toString() + 'px',
+                yPx: string = rule.y.toString() + 'px',
+                row: string = '.' + cls.row,
+                wrappedRow: string = '.' + cls.wrapped + row,
+                column: string = '.' + cls.column,
+                page: string = '.' + cls.page,
+                paragraph: string = '.' + cls.paragraph,
+                left: string = '.' + cls.alignLeft,
+                right: string = '.' + cls.alignRight,
+                any: string = '.' + cls.any,
+                single: string = '.' + cls.single;
+            return renderStyle(
+                options,
+                pseudo,
+                `${class_}${row} > ${any} + ${any}`,
+                [{ key: 'margin-left', value: xPx }]
+            ).concat(
+                // margins don't apply to last element of normal, unwrapped rows
+                // renderStyle(
+                //     options,
+                //     pseudo,
+                //     `${class_}${row} > ${any}:first-child`,
+                //     [{ key: 'margin', value: '0' }]
+                // For wrapped rows, margins always apply because we handle "canceling out" the other margins manually in the element.
+                renderStyle(
+                    options,
+                    pseudo,
+                    `${class_}${wrappedRow} > ${any}`,
+                    [{ key: 'margin', value: halfY + ' ' + halfX }]
+                ),
+                // renderStyle(
+                //     options,
+                //     pseudo,
+                //     `${class_}${wrappedRow} > ${any}:last-child`,
+                //     [{ key: 'margin-right', value: '0' }]
+                // Columns
+                renderStyle(
+                    options,
+                    pseudo,
+                    `${class_}${column} > ${any} + ${any}`,
+                    [{ key: 'margin-top', value: yPx }]
+                ),
+                renderStyle(
+                    options,
+                    pseudo,
+                    `${class_}${page} > ${any} + ${any}`,
+                    [{ key: 'margin-top', value: yPx }]
+                ),
+                renderStyle(options, pseudo, `${class_}${page} > ${left}`, [
+                    { key: 'margin-right', value: xPx },
+                ]),
+                renderStyle(options, pseudo, `${class_}${page} > ${right}`, [
+                    { key: 'margin-left', value: xPx },
+                ]),
+                renderStyle(options, pseudo, `${class_}${paragraph}`, [
+                    {
+                        key: 'line-height',
+                        value: `calc(1em + ${rule.y.toString()}px)`,
+                    },
+                ]),
+                renderStyle(options, pseudo, `textarea${any}${class_}`, [
+                    {
+                        key: 'line-height',
+                        value: `calc(1em + ${rule.y.toString()}px)`,
+                    },
+                    {
+                        key: 'height',
+                        value: `calc(100% + ${rule.y.toString()}px)`,
+                    },
+                ]),
+                // renderStyle(options, pseudo, `${class_}${paragraph} > ${any}`, [
+                //     { key: 'margin-right', value: xPx },
+                //     { key: 'margin-bottom', value: yPx },
+                // ]),
+                renderStyle(
+                    options,
+                    pseudo,
+                    `${class_}${paragraph} > ${left}`,
+                    [{ key: 'margin-right', value: xPx }]
+                ),
+                renderStyle(
+                    options,
+                    pseudo,
+                    `${class_}${paragraph} > ${right}`,
+                    [{ key: 'margin-left', value: xPx }]
+                ),
+                renderStyle(options, pseudo, `${class_}${paragraph}::after`, [
+                    {
+                        key: 'content',
+                        value: `''`,
+                    },
+                    {
+                        key: 'display',
+                        value: 'block',
+                    },
+                    {
+                        key: 'height',
+                        value: '0',
+                    },
+                    {
+                        key: 'width',
+                        value: '0',
+                    },
+                    {
+                        key: 'margin-top',
+                        value: _.floor(-1 * (rule.y / 2)).toString() + 'px',
+                    },
+                ]),
+                renderStyle(options, pseudo, `${class_}${paragraph}::before`, [
+                    {
+                        key: 'content',
+                        value: `''`,
+                    },
+                    {
+                        key: 'display',
+                        value: 'block',
+                    },
+                    {
+                        key: 'height',
+                        value: '0',
+                    },
+                    {
+                        key: 'width',
+                        value: '0',
+                    },
+                    {
+                        key: 'margin-bottom',
+                        value: _.floor(-1 * (rule.y / 2)).toString() + 'px',
+                    },
+                ])
+            );
+        }
+
+        case Styles.PaddingStyle:
+            return renderStyle(options, pseudo, '.' + rule.class, [
+                {
+                    key: 'padding',
+                    value: `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`,
+                },
+            ]);
+
+        case Styles.BorderWidth:
+            return renderStyle(options, pseudo, '.' + rule.class, [
+                {
+                    key: 'padding',
+                    value: `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`,
+                },
+            ]);
+
+        case Styles.GridTemplateStyle: {
+            const class_ = `.grid-rows-${rule.rows
+                .map((row: Length): string => lengthClassName(row))
+                .join('-')}-cols-${rule.columns
+                .map((column: Length): string => lengthClassName(column))
+                .join('-')}-space-x-${lengthClassName(
+                rule.spacing[0]
+            )}-space-y-${lengthClassName(rule.spacing[1])}`;
+
+            const toGridLength = (x: Length): string | undefined =>
+                toGridLengthHelper(null, null, x);
+            const toGridLengthHelper = (
+                minimum: number | null,
+                maximum: number | null,
+                x: Length
+            ): string | undefined => {
+                switch (x.type) {
+                    case Lengths.Px:
+                        return x.px.toString() + 'px';
+
+                    case Lengths.Rem:
+                        return x.rem.toString() + 'rem';
+
+                    case Lengths.Content:
+                        switch ([minimum, maximum]) {
+                            case [null, null]:
+                                return 'max-content';
+
+                            case [minimum, null]:
+                                if (typeof minimum === 'number') {
+                                    return `minmax(${minimum.toString()}px, max-content)`;
+                                }
+                                break;
+
+                            case [null, maximum]:
+                                if (typeof maximum === 'number') {
+                                    return `minmax(max-content, ${maximum.toString()}px)`;
+                                }
+                                break;
+
+                            case [minimum, maximum]:
+                                if (
+                                    typeof minimum === 'number' &&
+                                    typeof maximum === 'number'
+                                ) {
+                                    return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
+                                }
+                                break;
+                        }
+                        break;
+
+                    case Lengths.Fill:
+                        switch ([minimum, maximum]) {
+                            case [null, null]:
+                                return x.i.toString() + 'fr';
+
+                            case [minimum, null]:
+                                if (typeof minimum === 'number') {
+                                    return `minmax(${minimum.toString()}px, ${x.i.toString()}frfr)`;
+                                }
+                                break;
+
+                            case [null, maximum]:
+                                if (typeof maximum === 'number') {
+                                    return `minmax(max-content, ${maximum.toString()}px)`;
+                                }
+                                break;
+
+                            case [minimum, maximum]:
+                                if (
+                                    typeof minimum === 'number' &&
+                                    typeof maximum === 'number'
+                                ) {
+                                    return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
+                                }
+                                break;
+                        }
+                        break;
+
+                    case Lengths.Min:
+                        return toGridLengthHelper(x.min, maximum, x.length);
+
+                    case Lengths.Max:
+                        return toGridLengthHelper(minimum, x.max, x.length);
+
+                    case Lengths.MinContent:
+                        return 'min-content';
+
+                    case Lengths.MaxContent:
+                        return 'max-content';
+                }
+            };
+
+            const ySpacing = toGridLength(rule.spacing[1]);
+            const xSpacing = toGridLength(rule.spacing[0]);
+
+            const msColumns = `-ms-grid-columns: ${rule.columns
+                .map((column: Length): string | undefined =>
+                    toGridLength(column)
+                )
+                .join(ySpacing)};`;
+            const msRows = `-ms-grid-rows: ${rule.rows
+                .map((row: Length): string | undefined => toGridLength(row))
+                .join(xSpacing)};`;
+            const base = `${class_}{${msColumns}${msRows}}`;
+
+            const columns = `grid-template-columns: ${rule.columns
+                .map((column: Length): string | undefined =>
+                    toGridLength(column)
+                )
+                .join(' ')};`;
+            const rows = `grid-template-rows: ${rule.rows
+                .map((row: Length): string | undefined => toGridLength(row))
+                .join(' ')};`;
+
+            const gapX = `grid-column-gap:${toGridLength(rule.spacing[0])}`;
+            const gapY = `grid-row-gap:${toGridLength(rule.spacing[1])}`;
+
+            const modernGrid = `${class_}{${columns}${rows}${gapX}${gapY}}`;
+            const supports = `@supports (display:grid) {${modernGrid}}`;
+
+            return [base, supports];
+        }
+
+        case Styles.GridPosition: {
+            const class_ = `.grid-pos-${rule.row}-${rule.column}-${rule.width}-${rule.height}`;
+            const msPosition = [
+                '-ms-grid-row: ' + rule.row.toString() + ';',
+                '-ms-grid-row-span: ' + rule.height.toString() + ';',
+                '-ms-grid-column: ' + rule.column.toString() + ';',
+                '-ms-grid-column-span: ' + rule.width.toString() + ';',
+            ].join(' ');
+            const base = `${class_}{${msPosition}}`;
+
+            const modernPosition = [
+                'grid-row: ' +
+                    rule.row.toString() +
+                    ' / ' +
+                    (rule.row + rule.height).toString() +
+                    ';',
+                'grid-column: ' +
+                    rule.column.toString() +
+                    ' / ' +
+                    (rule.column + rule.width).toString() +
+                    ';',
+            ].join(' ');
+            const modernGrid = `${class_}{${modernPosition}}`;
+            const supports = `@supports (display:grid) {${modernGrid}}`;
+
+            return [base, supports];
+        }
+
+        case Styles.PseudoSelector: {
+            const renderPseudoRule = (style: Style_): string[] | undefined =>
+                renderStyleRule(options, style, rule.class);
+            return rule.styles.flatMap((style: Style_): string[] => {
+                const render = renderPseudoRule(style);
+                if (typeof render !== 'undefined') {
+                    return render;
+                }
+                return [];
+            });
+        }
+
+        case Styles.Transform: {
+            const value: string | null = transformValue(rule.transform);
+            const class_: string | null = transformClass(rule.transform);
+
+            switch ([class_, value]) {
+                case [class_, value]:
+                    if (
+                        typeof class_ === 'string' &&
+                        typeof value === 'string'
+                    ) {
+                        return renderStyle(options, pseudo, '.' + class_, [
+                            {
+                                key: 'transform',
+                                value: value,
+                            },
+                        ]);
+                    }
+                    break;
+
+                default:
+                    return [];
+            }
+        }
     }
 }
 
@@ -1785,11 +2661,17 @@ function lengthClassName(x: Length): string {
         case Lengths.Fill:
             return `${x.i}fr`;
 
-        case Lengths.MinContent:
+        case Lengths.Min:
             return `min${x.min}${lengthClassName(x)}`;
 
-        case Lengths.MaxContent:
+        case Lengths.Max:
             return `max${x.max}${lengthClassName(x)}`;
+
+        case Lengths.MinContent:
+            return `min-content`;
+
+        case Lengths.MaxContent:
+            return `max-content`;
     }
 }
 
@@ -1920,6 +2802,19 @@ function paddingNameFloat(
 }
 
 function getStyleName(style: Style): string {
+    function name(selector: PseudoClass) {
+        switch (selector) {
+            case PseudoClass.Focus:
+                return 'fs';
+
+            case PseudoClass.Hover:
+                return 'hv';
+
+            case PseudoClass.Active:
+                return 'act';
+        }
+    }
+
     switch (style.type) {
         case Styles.Style:
             return style.selector;
@@ -1937,18 +2832,18 @@ function getStyleName(style: Style): string {
             return style.class;
 
         case Styles.SpacingStyle:
-            return style.name;
+            return style.class;
 
         case Styles.BorderWidth:
             return style.class;
 
         case Styles.PaddingStyle:
-            return style.name;
+            return style.class;
 
         case Styles.GridTemplateStyle:
-            return `grid-rows-${map(style.rows, lengthClassName).join(
+            return `grid-rows-${_.map(style.rows, lengthClassName).join(
                 '-'
-            )}-cols-${map(style.columns, lengthClassName).join(
+            )}-cols-${_.map(style.columns, lengthClassName).join(
                 '-'
             )}-space-x-${lengthClassName(
                 style.spacing[0]
@@ -1957,24 +2852,13 @@ function getStyleName(style: Style): string {
         case Styles.GridPosition:
             return `gp grid-pos-${style.row}-${style.column}-${style.width}-${style.height}`;
 
-        case Styles.Transform:
+        case Styles.Transform: {
             const transform = transformClass(style.transform);
             return transform ? transform : '';
+        }
 
-        case Styles.PseudoSelector:
-            function name(selector: PseudoClass) {
-                switch (selector) {
-                    case PseudoClass.Focus:
-                        return 'fs';
-
-                    case PseudoClass.Hover:
-                        return 'hv';
-
-                    case PseudoClass.Active:
-                        return 'act';
-                }
-            }
-            return map(style.styles, (sty) => {
+        case Styles.PseudoSelector: {
+            return _.map(style.styles, (sty: Style) => {
                 switch (getStyleName(sty)) {
                     case '':
                         return '';
@@ -1983,6 +2867,7 @@ function getStyleName(style: Style): string {
                         return `${getStyleName(sty)}-${name(style.class)}`;
                 }
             }).join(' ');
+        }
 
         case Styles.Transparency:
             return style.name;
@@ -1993,11 +2878,46 @@ function getStyleName(style: Style): string {
 }
 
 export {
-    Notation,
     ChannelsColor,
     HslaColor,
     RgbaColor,
     Rgba255Color,
+    noStyleSheet,
+    variantName,
+    renderVariants,
+    isSmallCaps,
+    hasSmallCaps,
+    div,
+    htmlClass,
+    unstyled,
+    addNodeName,
+    alignXName,
+    alignYName,
+    transformClass,
+    transformValue,
+    composeTransformation,
+    skippable,
+    gatherAttrRecursive,
+    createAttribute,
+    createAttributes,
+    addNearbyElement,
+    renderWidth,
+    renderHeight,
+    contextClasses,
+    families,
     rootStyle,
-    Lengths,
+    renderFontClassName,
+    lengthClassName,
+    formatDropShadow,
+    formatTextShadow,
+    textShadowClass,
+    formatBoxShadow,
+    boxShadowClass,
+    floatClass,
+    formatColor,
+    formatColorClass,
+    spacingName,
+    paddingName,
+    paddingNameFloat,
+    getStyleName,
 };
