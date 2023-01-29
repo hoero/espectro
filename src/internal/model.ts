@@ -3,6 +3,7 @@ import { _ } from '../deps.ts';
 import { DOM } from '../deps.ts';
 import { DOMelement } from '../deps.ts';
 import { CTOR_KEY } from '../deps.ts';
+import { elmish } from '../deps.ts';
 
 import {
     Field,
@@ -81,7 +82,10 @@ import {
     Property,
     Option,
     HoverSetting,
+    Adjustment,
 } from './data.ts';
+
+const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
 const min = {
     message:
@@ -241,17 +245,18 @@ function variantName(variant: Variant): string {
     }
 }
 
-function renderVariants(typeface: Font): string | null {
+function renderVariants(typeface: Font): elmish.Maybe.Maybe<string> {
     switch (typeface.type) {
         case FontFamilyType.FontWith: {
-            const variants = typeface.variants.map((variant) => {
-                return renderVariant(variant);
-            });
-            return variants.join(', ');
+            return Just(
+                typeface.variants
+                    .map((variant) => renderVariant(variant))
+                    .join(', ')
+            );
         }
 
         default:
-            return null;
+            return Nothing();
     }
 }
 
@@ -360,15 +365,15 @@ function reduceStylesRecursive(
 
 function reduceStyles(
     style: Style,
-    nevermind: [Set<string>, Style[]]
+    [cache, existing]: [Set<string>, Style[]]
 ): [Set<string>, Style[]] {
     const styleName = getStyleName(style);
 
-    if (nevermind[0].has(styleName)) {
-        return nevermind;
+    if (cache.has(styleName)) {
+        return [cache, existing];
     }
 
-    return [nevermind[0].add(styleName), [style].concat(nevermind[1])];
+    return [cache.add(styleName), [style].concat(existing)];
 }
 
 function addNodeName(newNode: string, old: NodeName): NodeName {
@@ -418,57 +423,65 @@ function alignYName(align: VAlign) {
     }
 }
 
-function transformClass(transform: Transformation) {
+function transformClass(transform: Transformation): elmish.Maybe.Maybe<string> {
     switch (transform.type) {
         case Transformations.Untransformed:
-            return null;
+            return Nothing();
 
         case Transformations.Moved:
             if (_.isArray(transform.xyz)) {
-                return `mv-${floatClass(transform.xyz[0])}-${floatClass(
-                    transform.xyz[1]
-                )}-${floatClass(transform.xyz[2])}`;
+                return Just(
+                    `mv-${floatClass(transform.xyz[0])}-${floatClass(
+                        transform.xyz[1]
+                    )}-${floatClass(transform.xyz[2])}`
+                );
             }
-            return null;
+            break;
 
         case Transformations.FullTransform:
             if (_.isObject(transform) && !_.isArray(transform)) {
-                return `tfrm-${floatClass(transform.translate[0])}-${floatClass(
-                    transform.translate[1]
-                )}-${floatClass(transform.translate[2])}-${floatClass(
-                    transform.scale[0]
-                )}-${floatClass(transform.scale[1])}-${floatClass(
-                    transform.scale[2]
-                )}-${floatClass(transform.rotate[0])}-${floatClass(
-                    transform.rotate[1]
-                )}-${floatClass(transform.rotate[2])}-${floatClass(
-                    transform.angle
-                )}`;
+                return Just(
+                    `tfrm-${floatClass(transform.translate[0])}-${floatClass(
+                        transform.translate[1]
+                    )}-${floatClass(transform.translate[2])}-${floatClass(
+                        transform.scale[0]
+                    )}-${floatClass(transform.scale[1])}-${floatClass(
+                        transform.scale[2]
+                    )}-${floatClass(transform.rotate[0])}-${floatClass(
+                        transform.rotate[1]
+                    )}-${floatClass(transform.rotate[2])}-${floatClass(
+                        transform.angle
+                    )}`
+                );
             }
-            return null;
+            break;
     }
+    return Just('');
 }
 
-function transformValue(transform: Transformation) {
+function transformValue(transform: Transformation): elmish.Maybe.Maybe<string> {
     switch (transform.type) {
         case Transformations.Untransformed:
-            return null;
+            return Nothing();
 
         case Transformations.Moved:
             if (_.isArray(transform.xyz)) {
-                return `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`;
+                return Just(
+                    `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`
+                );
             }
-            return null;
+            break;
 
         case Transformations.FullTransform:
             if (_.isObject(transform) && !_.isArray(transform)) {
                 const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
                 const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
                 const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
-                return `${translate} ${scale} ${rotate}`;
+                return Just(`${translate} ${scale} ${rotate}`);
             }
-            return null;
+            break;
     }
+    return Just('');
 }
 
 function composeTransformation(
@@ -732,7 +745,7 @@ function gatherAttrRecursive(
     switch (elementAttrs) {
         case []:
             switch (transformClass(transform)) {
-                case null:
+                case Nothing():
                     return {
                         node: node,
                         attributes: [
@@ -1080,11 +1093,10 @@ function gatherAttrRecursive(
                             );
                         }
 
-                        const flags = add(yAlign, has);
-                        const align = attr.y;
+                        const flags: Field = add(yAlign, has);
+                        const align: VAlign = attr.y;
 
-                        // deno-lint-ignore no-inner-declarations
-                        function has_() {
+                        const has_ = (): Field => {
                             switch (align) {
                                 case VAlign.CenterY:
                                     return add(centerY, flags);
@@ -1095,7 +1107,7 @@ function gatherAttrRecursive(
                                 default:
                                     return flags;
                             }
-                        }
+                        };
 
                         return gatherAttrRecursive(
                             `${alignYName(attr.y)} ${classes}`,
@@ -1127,11 +1139,10 @@ function gatherAttrRecursive(
                             );
                         }
 
-                        const flags = add(xAlign, has);
-                        const align = attr.x;
+                        const flags: Field = add(xAlign, has);
+                        const align: HAlign = attr.x;
 
-                        // deno-lint-ignore no-inner-declarations no-redeclare
-                        function has_() {
+                        const has_ = (): Field => {
                             switch (align) {
                                 case HAlign.CenterX:
                                     return add(centerX, flags);
@@ -1142,7 +1153,7 @@ function gatherAttrRecursive(
                                 default:
                                     return flags;
                             }
-                        }
+                        };
 
                         return gatherAttrRecursive(
                             `${alignXName(attr.x)} ${classes}`,
@@ -1987,40 +1998,40 @@ function renderFontClassName(font: Font, current: string) {
 }
 
 function renderFocusStyle(focus: FocusStyle): Style_[] {
+    function withDefault_(prop: elmish.Maybe.Maybe<Property>) {
+        return withDefault({ key: '', value: '' }, prop);
+    }
     return [
         {
             type: Styles.Style,
             selector: dot(cls.focusedWithin + ':focus-within'),
             props: [
-                ((color: Color | null): Property => {
-                    if (color) {
+                withDefault_(
+                    map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
                         return {
                             key: 'border-color',
                             value: formatColor(a, b, c, d, e),
                         };
-                    }
-                    return { key: '', value: '' };
-                })(focus.borderColor),
-                ((color: Color | null): Property => {
-                    if (color) {
+                    }, focus.borderColor)
+                ),
+                withDefault_(
+                    map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
                         return {
                             key: 'background-color',
                             value: formatColor(a, b, c, d, e),
                         };
-                    }
-                    return { key: '', value: '' };
-                })(focus.backgroundColor),
-                ((shadow: Shadow | null): Property => {
-                    if (shadow) {
+                    }, focus.backgroundColor)
+                ),
+                withDefault_(
+                    map((shadow: Shadow): Property => {
                         return {
                             key: 'box-shadow',
                             value: formatBoxShadow(shadow),
                         };
-                    }
-                    return { key: '', value: '' };
-                })(focus.shadow),
+                    }, focus.shadow)
+                ),
                 { key: 'outline', value: 'none' },
             ],
         },
@@ -2030,35 +2041,35 @@ function renderFocusStyle(focus: FocusStyle): Style_[] {
                 cls.any + '.focusable:focus, '
             )}.ui-slide-bar:focus + ${dot(cls.any + ' .focusable-thumb')}`,
             props: [
-                ((color: Color | null): Property => {
-                    if (color) {
+                withDefault_(
+                    map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
                         return {
                             key: 'border-color',
                             value: formatColor(a, b, c, d, e),
                         };
-                    }
-                    return { key: '', value: '' };
-                })(focus.borderColor),
-                ((color: Color | null): Property => {
-                    if (color) {
+                    }, focus.borderColor)
+                ),
+                withDefault_(
+                    map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
                         return {
                             key: 'background-color',
                             value: formatColor(a, b, c, d, e),
                         };
-                    }
-                    return { key: '', value: '' };
-                })(focus.backgroundColor),
-                ((shadow: Shadow | null): Property => {
-                    if (shadow) {
-                        return {
-                            key: 'box-shadow',
-                            value: formatBoxShadow(shadow),
-                        };
-                    }
-                    return { key: '', value: '' };
-                })(focus.shadow),
+                    }, focus.backgroundColor)
+                ),
+                withDefault_(
+                    map((shadow: Shadow): Property => {
+                        if (shadow) {
+                            return {
+                                key: 'box-shadow',
+                                value: formatBoxShadow(shadow),
+                            };
+                        }
+                        return { key: '', value: '' };
+                    }, focus.shadow)
+                ),
                 { key: 'outline', value: 'none' },
             ],
         },
@@ -2066,9 +2077,9 @@ function renderFocusStyle(focus: FocusStyle): Style_[] {
 }
 
 const focusDefaultStyle: FocusStyle = {
-    backgroundColor: null,
-    borderColor: null,
-    shadow: {
+    backgroundColor: Nothing(),
+    borderColor: Nothing(),
+    shadow: Just({
         color: {
             red: 155 / 255,
             green: 203 / 255,
@@ -2079,7 +2090,7 @@ const focusDefaultStyle: FocusStyle = {
         offset: [0, 0],
         blur: 0,
         size: 3,
-    },
+    }),
 };
 
 // function toStyleSheet(
@@ -2087,9 +2098,91 @@ const focusDefaultStyle: FocusStyle = {
 //     styleSheet: Style_[]
 // ): DOM.Element {}
 
+function renderTopLevelValues(rules: [string, string][]) {
+    function withImport(font: Font): elmish.Maybe.Maybe<string> {
+        switch (font.type) {
+            case FontFamilyType.ImportFont:
+                return Just(`@import url('${font.url}');`);
+
+            default:
+                return Nothing();
+        }
+    }
+
+    const allNames: string[] = rules.map((rule) => rule[0]);
+
+    function fontImports(name: string, typefaces: Font[]): string {
+        return typefaces.filter((typeface) => withImport(typeface)).join('\n');
+    }
+
+    // function fontAdjustments(name: string, typefaces: Font[]): string {
+    //     switch (typefaceAdjustment(typefaces)) {
+    //         case value:
+    //             break;
+
+    //         default:
+    //             break;
+    //     }
+    // }
+}
+
+function renderNullAdjustmentRule(
+    fontToAdjust: string,
+    otherFontName: string
+): string {
+    const name: string =
+        fontToAdjust === otherFontName
+            ? fontToAdjust
+            : `${otherFontName} .${fontToAdjust}`;
+    return [
+        bracket(
+            `.${name}.${cls.sizeByCapital}, .${name} .${cls.sizeByCapital}`,
+            [['line-height', '1']]
+        ),
+        bracket(
+            `.${name}.${cls.sizeByCapital} > .${cls.text}, .${name} .${cls.sizeByCapital} > .${cls.text}`,
+            [
+                ['vertical-align', '0'],
+                ['line-height', '1'],
+            ]
+        ),
+    ].join(' ');
+}
+
+function fontRule(
+    name: string,
+    modifier: string,
+    [parentAdj, textAdjustment]: [[string, string][], [string, string][]]
+): string[] {
+    return [
+        bracket(`.${name}.${modifier}, .${name} .${modifier}`, parentAdj),
+        bracket(
+            `.${name}.${modifier} > .${cls.text}, .${name} .${modifier} > .${cls.text}`,
+            textAdjustment
+        ),
+    ];
+}
+
+function renderFontAdjustmentRule(
+    fontToAdjust: string,
+    [full, capital]: [
+        [[string, string][], [string, string][]],
+        [[string, string][], [string, string][]]
+    ],
+    otherFontName: string
+): string {
+    const name: string =
+        fontToAdjust === otherFontName
+            ? fontToAdjust
+            : `${otherFontName} .${fontToAdjust}`;
+    return fontRule(name, cls.sizeByCapital, capital)
+        .concat(fontRule(name, cls.fullSize, full))
+        .join(' ');
+}
+
 function bracket(selector: string, rules: [string, string][]): string {
-    function renderPair(rule: [string, string]) {
-        return `${rule[0]}: ${rule[1]};`;
+    function renderPair([name, value]: [string, string]) {
+        return `${name}: ${value};`;
     }
     return `${selector} {${rules
         .map((rule: [string, string]): string => renderPair(rule))
@@ -2112,6 +2205,36 @@ function fontAdjustmentRules(converted: {
     ];
 }
 
+// function typefaceAdjustment(typefaces: Font[]) {
+//     return _.reduce(
+//         typefaces,
+//         (face: Font, found: Font) => {
+//             switch (found) {
+//                 case Nothing():
+//                     switch (face.type) {
+//                         case FontFamilyType.FontWith:
+//                             switch (face.adjustment) {
+//                                 case Nothing():
+//                                     return found;
+
+//                                 default:
+//                                     return [fontAdjustmentRules()];
+//                             }
+//                             break;
+
+//                         default:
+//                             return found;
+//                     }
+//                     break;
+
+//                 default:
+//                     return found;
+//             }
+//         },
+//         Nothing()
+//     );
+// }
+
 function fontName(font: Font): string {
     switch (font.type) {
         case FontFamilyType.Serif:
@@ -2133,13 +2256,13 @@ function fontName(font: Font): string {
     }
 }
 
-function topLevelValue(rule: Style): (string | Font[])[] | null {
+function topLevelValue(rule: Style): elmish.Maybe.Maybe<(string | Font[])[]> {
     switch (rule.type) {
         case Styles.FontFamily:
-            return [rule.name, rule.typefaces];
+            return Just([rule.name, rule.typefaces]);
 
         default:
-            return null;
+            return Nothing();
     }
 }
 
@@ -2158,17 +2281,21 @@ function renderProps(
 //     options: OptionRecord,
 //     styleSheet: Style_[]
 // ): string {
-//     // function combine(params: type) {}
+//     function combine(style: Style_, rendered: {}) {
+//         return {
+//             rules: rendered.rules + renderStyleRule(options, style, Nothing()),
+//         };
+//     }
 // }
 
 function renderStyle(
     options: OptionRecord,
-    pseudo: PseudoClass | null,
+    pseudo: elmish.Maybe.Maybe<PseudoClass>,
     selector: string,
     props: Property[]
 ): string[] {
     switch (pseudo) {
-        case null:
+        case Nothing():
             return [
                 `${selector}{${_.reduce(
                     props,
@@ -2179,7 +2306,7 @@ function renderStyle(
                 )}\n}`,
             ];
 
-        case PseudoClass.Hover:
+        case Just(PseudoClass.Hover):
             switch (options.hover) {
                 case HoverSetting.NoHover:
                     return [];
@@ -2206,7 +2333,7 @@ function renderStyle(
             }
             break;
 
-        case PseudoClass.Focus: {
+        case Just(PseudoClass.Focus): {
             const renderedProps = _.reduce(
                 props,
                 (acc: string, prop: Property): string => {
@@ -2224,7 +2351,7 @@ function renderStyle(
             ];
         }
 
-        case PseudoClass.Active:
+        case Just(PseudoClass.Active):
             return [
                 `${selector}-act:active {${_.reduce(
                     props,
@@ -2235,13 +2362,14 @@ function renderStyle(
                 )}\n}`,
             ];
     }
+    return [];
 }
 
 function renderStyleRule(
     options: OptionRecord,
     rule: Style,
-    pseudo: PseudoClass | null
-): string[] | undefined {
+    pseudo: elmish.Maybe.Maybe<PseudoClass>
+): string[] {
     switch (rule.type) {
         case Styles.Style:
             return renderStyle(options, pseudo, rule.selector, rule.props);
@@ -2467,10 +2595,10 @@ function renderStyleRule(
             )}-space-y-${lengthClassName(rule.spacing[1])}`;
 
             const toGridLength = (x: Length): string | undefined =>
-                toGridLengthHelper(null, null, x);
+                toGridLengthHelper(Nothing(), Nothing(), x);
             const toGridLengthHelper = (
-                minimum: number | null,
-                maximum: number | null,
+                minimum: elmish.Maybe.Maybe<number>,
+                maximum: elmish.Maybe.Maybe<number>,
                 x: Length
             ): string | undefined => {
                 switch (x.type) {
@@ -2482,65 +2610,50 @@ function renderStyleRule(
 
                     case Lengths.Content:
                         switch ([minimum, maximum]) {
-                            case [null, null]:
+                            case [Nothing(), Nothing()]:
                                 return 'max-content';
 
-                            case [minimum, null]:
-                                if (typeof minimum === 'number') {
-                                    return `minmax(${minimum.toString()}px, max-content)`;
-                                }
-                                break;
+                            case [minimum, Nothing()]:
+                                return `minmax(${minimum.toString()}px, max-content)`;
 
-                            case [null, maximum]:
-                                if (typeof maximum === 'number') {
-                                    return `minmax(max-content, ${maximum.toString()}px)`;
-                                }
-                                break;
+                            case [Nothing(), maximum]:
+                                return `minmax(max-content, ${maximum.toString()}px)`;
 
                             case [minimum, maximum]:
-                                if (
-                                    typeof minimum === 'number' &&
-                                    typeof maximum === 'number'
-                                ) {
-                                    return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
-                                }
-                                break;
+                                return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
                         }
                         break;
 
                     case Lengths.Fill:
                         switch ([minimum, maximum]) {
-                            case [null, null]:
+                            case [Nothing(), Nothing()]:
                                 return x.i.toString() + 'fr';
 
-                            case [minimum, null]:
-                                if (typeof minimum === 'number') {
-                                    return `minmax(${minimum.toString()}px, ${x.i.toString()}frfr)`;
-                                }
-                                break;
+                            case [minimum, Nothing()]:
+                                // TODO: Check frfr
+                                return `minmax(${minimum.toString()}px, ${x.i.toString()}frfr)`;
 
-                            case [null, maximum]:
-                                if (typeof maximum === 'number') {
-                                    return `minmax(max-content, ${maximum.toString()}px)`;
-                                }
-                                break;
+                            case [Nothing(), maximum]:
+                                return `minmax(max-content, ${maximum.toString()}px)`;
 
                             case [minimum, maximum]:
-                                if (
-                                    typeof minimum === 'number' &&
-                                    typeof maximum === 'number'
-                                ) {
-                                    return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
-                                }
-                                break;
+                                return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
                         }
                         break;
 
                     case Lengths.Min:
-                        return toGridLengthHelper(x.min, maximum, x.length);
+                        return toGridLengthHelper(
+                            Just(x.min),
+                            maximum,
+                            x.length
+                        );
 
                     case Lengths.Max:
-                        return toGridLengthHelper(minimum, x.max, x.length);
+                        return toGridLengthHelper(
+                            minimum,
+                            Just(x.max),
+                            x.length
+                        );
 
                     case Lengths.MinContent:
                         return 'min-content';
@@ -2611,7 +2724,7 @@ function renderStyleRule(
 
         case Styles.PseudoSelector: {
             const renderPseudoRule = (style: Style_): string[] | undefined =>
-                renderStyleRule(options, style, rule.class);
+                renderStyleRule(options, style, Just(rule.class));
             return rule.styles.flatMap((style: Style_): string[] => {
                 const render = renderPseudoRule(style);
                 if (typeof render !== 'undefined') {
@@ -2622,8 +2735,12 @@ function renderStyleRule(
         }
 
         case Styles.Transform: {
-            const value: string | null = transformValue(rule.transform);
-            const class_: string | null = transformClass(rule.transform);
+            const value: elmish.Maybe.Maybe<string> = transformValue(
+                rule.transform
+            );
+            const class_: elmish.Maybe.Maybe<string> = transformClass(
+                rule.transform
+            );
 
             switch ([class_, value]) {
                 case [class_, value]:
@@ -2645,6 +2762,7 @@ function renderStyleRule(
             }
         }
     }
+    return [];
 }
 
 function lengthClassName(x: Length): string {
@@ -2853,8 +2971,7 @@ function getStyleName(style: Style): string {
             return `gp grid-pos-${style.row}-${style.column}-${style.width}-${style.height}`;
 
         case Styles.Transform: {
-            const transform = transformClass(style.transform);
-            return transform ? transform : '';
+            return withDefault('', transformClass(style.transform));
         }
 
         case Styles.PseudoSelector: {
@@ -2875,6 +2992,40 @@ function getStyleName(style: Style): string {
         case Styles.Shadows:
             return style.name;
     }
+}
+
+// Font Adjustments
+// function convertAdjustment(adjustment: elmish.Maybe.Maybe<Adjustment>) {
+//     const lineHeight = 1.5,
+//         base = lineHeight,
+//         normalDescender = (lineHeight - 1) / 2,
+//         oldMiddle = lineHeight / 2,
+//         newCapitalMiddle = (ascender - newBaseLine) / 2 + newBaseLine,
+//         newFullMiddle = (ascender - descender) / 2 + descender,
+//         lines = [
+//             adjustment?.capital,
+//             adjustment?.baseline,
+//             adjustment?.descender,
+//             adjustment?.lowercase,
+//         ];
+//     ascender =
+//         typeof adjustment?.capital === 'number' ? lines : adjustment?.capital;
+// }
+
+function adjust(
+    size: number,
+    height: number,
+    vertical: number
+): {
+    vertical: number;
+    height: number;
+    size: number;
+} {
+    return {
+        vertical: vertical,
+        height: height / size,
+        size: size,
+    };
 }
 
 export {

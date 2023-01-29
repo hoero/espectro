@@ -1,4 +1,5 @@
 import { DOM } from '../deps.ts';
+import { elmish } from '../deps.ts';
 
 import { Flag_, Second, Field } from './flag.ts';
 
@@ -73,8 +74,8 @@ export enum VAlign {
 }
 
 export interface Align {
-    hAlign: HAlign | null;
-    vAlign: VAlign | null;
+    hAlign: elmish.Maybe.Maybe<HAlign>;
+    vAlign: elmish.Maybe.Maybe<VAlign>;
 }
 
 export enum Styles {
@@ -277,7 +278,7 @@ export interface ImportFont {
 export interface FontWith {
     type: FontFamilyType.FontWith;
     name: string;
-    adjustment: Adjustment | null;
+    adjustment: elmish.Maybe.Maybe<Adjustment>;
     variants: Variant[];
 }
 
@@ -763,9 +764,9 @@ export enum Options {
 }
 
 export interface FocusStyle {
-    borderColor: Color | null;
-    shadow: Shadow | null;
-    backgroundColor: Color | null;
+    borderColor: elmish.Maybe.Maybe<Color>;
+    shadow: elmish.Maybe.Maybe<Shadow>;
+    backgroundColor: elmish.Maybe.Maybe<Color>;
 }
 
 export interface Shadow {

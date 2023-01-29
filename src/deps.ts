@@ -3,6 +3,7 @@ export * as _ from 'npm:lodash@^4.17.21';
 export * as DOM from 'https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts';
 export * as DOMelement from 'https://deno.land/x/deno_dom@v0.1.36-alpha/src/dom/element.ts';
 export * as CTOR_KEY from 'https://deno.land/x/deno_dom@v0.1.36-alpha/src/constructor-lock.ts';
+export * as elmish from 'https://deno.land/x/elmish@v0.0.4/mod.ts';
 
 // dev
 export * as svelte from 'npm:svelte@^3.49.0';
