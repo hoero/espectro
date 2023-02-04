@@ -1,9 +1,9 @@
 import { classValidator } from '../deps.ts';
-import { _ } from '../deps.ts';
 import { DOM } from '../deps.ts';
 import { DOMelement } from '../deps.ts';
 import { CTOR_KEY } from '../deps.ts';
 import { elmish } from '../deps.ts';
+import _ from 'lodash';
 
 import {
     Field,
@@ -42,6 +42,11 @@ import {
     Transformations,
     Transformation,
     FontFamilyType,
+    Serif,
+    SansSerif,
+    Monospace,
+    Typeface,
+    ImportFont,
     FontWith,
     Font,
     Variants,
@@ -83,6 +88,25 @@ import {
     Option,
     HoverSetting,
     Adjustment,
+    Maybe,
+    RenderMode,
+    Hsla,
+    Rgba,
+    NoStyleSheet,
+    Generic,
+    Attr,
+    Unstyled,
+    Embedded,
+    Untransformed,
+    Moved,
+    FullTransform,
+    NoNearbyChildren,
+    ChildrenBehind,
+    ChildrenInFront,
+    ChildrenBehindAndInFront,
+    Colored,
+    FontSize,
+    FontFamily,
 } from './data.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
@@ -122,19 +146,9 @@ class ChannelsColor {
     get color(): Color {
         switch (this.notation) {
             case Notation.Hsla:
-                return {
-                    hue: this.a,
-                    saturation: this.b,
-                    lightness: this.c,
-                    alpha: this.d,
-                };
+                return Hsla(this.a, this.b, this.c, this.d);
             case Notation.Rgba:
-                return {
-                    red: this.a,
-                    green: this.b,
-                    blue: this.c,
-                    alpha: this.d,
-                };
+                return Rgba(this.a, this.b, this.c, this.d);
 
             default:
                 throw new Error('Use Hsla or Rgba notation.');
@@ -199,7 +213,7 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
-const noStyleSheet = { type: EmbedStyles.NoStyleSheet };
+const noStyleSheet = NoStyleSheet();
 
 function renderVariant(variant: Variant): string {
     switch (variant.type) {
@@ -245,7 +259,7 @@ function variantName(variant: Variant): string {
     }
 }
 
-function renderVariants(typeface: Font): elmish.Maybe.Maybe<string> {
+function renderVariants(typeface: Font): Maybe<string> {
     switch (typeface.type) {
         case FontFamilyType.FontWith: {
             return Just(
@@ -289,50 +303,61 @@ function hasSmallCaps(typeface: Font): boolean {
     }
 }
 
-const div = { type: NodeNames.Generic };
+const div: Generic = Generic();
 
 function htmlClass(cls: string): Attribute {
-    return { type: Attributes.Attr, attr: createAttribute('class', cls) };
+    return Attr(createAttribute('class', cls));
 }
 
 function unstyled(node: (a: LayoutContext) => DOM.Node): Element {
-    return { type: Elements.Unstyled, html: node };
+    return Unstyled(node);
 }
 
-function finalizeNode(
-    has: Field,
-    node: NodeName,
-    attributes: Attr,
-    children: Children,
-    embedMode: EmbedStyle,
-    parentContext: LayoutContext
-) {
-    function createNode(nodeName: string, attrs: Attr) {
-        switch (children.type) {
-            case Childrens.Keyed:
-                break;
+// function finalizeNode(
+//     has: Field,
+//     node: NodeName,
+//     attributes: Attr,
+//     children: Children,
+//     embedMode: EmbedStyle,
+//     parentContext: LayoutContext
+// ) {
+//     function createNode(nodeName: string, attrs: Attr) {
+//         switch (children.type) {
+//             case Childrens.Keyed:
+//                 break;
 
-            case Childrens.Unkeyed:
-                break;
-        }
-    }
-}
+//             case Childrens.Unkeyed:
+//                 break;
+//         }
+//     }
+// }
 
-function embedWith(
-    static_: boolean,
-    opts: OptionRecord,
-    styles: Style[],
-    children: any[]
-) {
-    // const dinamicStyleSheet = _.reduce(styles);
-}
+// function embedWith(
+//     static_: boolean,
+//     opts: OptionRecord,
+//     styles: Style_[],
+//     children: any[]
+// ) {
+//     const dinamicStyleSheet: DOMelement.Element = toStyleSheet(
+//         opts,
+//         styles.reduce(
+//             (
+//                 acc: [Set<string>, Style_[]],
+//                 style: Style_
+//             ): [Set<string>, Style_[]] => reduceStyles(style, acc),
+//             [new Set(''), renderFocusStyle(opts.focus)]
+//         )[1]
+//     );
+//     // if (static_) {
+//     // }
+// }
 
-function embedKeyed(
-    static_: boolean,
-    opts: OptionRecord,
-    styles: Style[],
-    children: [string, any][]
-) {}
+// function embedKeyed(
+//     static_: boolean,
+//     opts: OptionRecord,
+//     styles: Style[],
+//     children: [string, any][]
+// ) {}
 
 function reduceStylesRecursive(
     cache: Set<string>,
@@ -356,7 +381,7 @@ function reduceStylesRecursive(
 
             return reduceStylesRecursive(
                 cache.add(styleName),
-                [head].concat(found),
+                [head, ...found],
                 remaining
             );
         }
@@ -364,36 +389,28 @@ function reduceStylesRecursive(
 }
 
 function reduceStyles(
-    style: Style,
-    [cache, existing]: [Set<string>, Style[]]
-): [Set<string>, Style[]] {
+    style: Style_,
+    [cache, existing]: [Set<string>, Style_[]]
+): [Set<string>, Style_[]] {
     const styleName = getStyleName(style);
 
     if (cache.has(styleName)) {
         return [cache, existing];
     }
 
-    return [cache.add(styleName), [style].concat(existing)];
+    return [cache.add(styleName), [style, ...existing]];
 }
 
 function addNodeName(newNode: string, old: NodeName): NodeName {
     switch (old.type) {
         case NodeNames.Generic:
-            return { type: NodeNames.NodeName, nodeName: newNode };
+            return NodeName(newNode);
 
         case NodeNames.NodeName:
-            return {
-                type: NodeNames.Embedded,
-                nodeName: old.nodeName,
-                internal: newNode,
-            };
+            return Embedded(old.nodeName, newNode);
 
         case NodeNames.Embedded:
-            return {
-                type: NodeNames.Embedded,
-                nodeName: old.nodeName,
-                internal: old.internal,
-            };
+            return Embedded(old.nodeName, old.internal);
     }
 }
 
@@ -423,7 +440,7 @@ function alignYName(align: VAlign) {
     }
 }
 
-function transformClass(transform: Transformation): elmish.Maybe.Maybe<string> {
+function transformClass(transform: Transformation): Maybe<string> {
     switch (transform.type) {
         case Transformations.Untransformed:
             return Nothing();
@@ -459,7 +476,7 @@ function transformClass(transform: Transformation): elmish.Maybe.Maybe<string> {
     return Just('');
 }
 
-function transformValue(transform: Transformation): elmish.Maybe.Maybe<string> {
+function transformValue(transform: Transformation): Maybe<string> {
     switch (transform.type) {
         case Transformations.Untransformed:
             return Nothing();
@@ -492,46 +509,32 @@ function composeTransformation(
         case Transformations.Untransformed:
             switch (component.type) {
                 case TransformComponents.MoveX:
-                    return {
-                        type: Transformations.Moved,
-                        xyz: [component.x, 0, 0],
-                    };
+                    return Moved([component.x, 0, 0]);
 
                 case TransformComponents.MoveY:
-                    return {
-                        type: Transformations.Moved,
-                        xyz: [0, component.y, 0],
-                    };
+                    return Moved([0, component.y, 0]);
 
                 case TransformComponents.MoveZ:
-                    return {
-                        type: Transformations.Moved,
-                        xyz: [0, 0, component.z],
-                    };
+                    return Moved([0, 0, component.z]);
 
                 case TransformComponents.MoveXYZ:
-                    return {
-                        type: Transformations.Moved,
-                        xyz: component.xyz,
-                    };
+                    return Moved(component.xyz);
 
                 case TransformComponents.Rotate:
-                    return {
-                        type: Transformations.FullTransform,
-                        translate: [0, 0, 0],
-                        scale: [1, 1, 1],
-                        rotate: component.xyz,
-                        angle: component.angle,
-                    };
+                    return FullTransform(
+                        [0, 0, 0],
+                        [1, 1, 1],
+                        component.xyz,
+                        component.angle
+                    );
 
                 case TransformComponents.Scale:
-                    return {
-                        type: Transformations.FullTransform,
-                        translate: [0, 0, 0],
-                        scale: component.xyz,
-                        rotate: [0, 0, 1],
-                        angle: 0,
-                    };
+                    return FullTransform(
+                        [0, 0, 0],
+                        component.xyz,
+                        [0, 0, 1],
+                        0
+                    );
             }
             break;
 
@@ -539,137 +542,113 @@ function composeTransformation(
             if (_.isArray(transform.xyz)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
-                        return {
-                            type: Transformations.Moved,
-                            xyz: [
-                                component.x,
-                                transform.xyz[1],
-                                transform.xyz[2],
-                            ],
-                        };
+                        return Moved([
+                            component.x,
+                            transform.xyz[1],
+                            transform.xyz[2],
+                        ]);
 
                     case TransformComponents.MoveY:
-                        return {
-                            type: Transformations.Moved,
-                            xyz: [
-                                transform.xyz[0],
-                                component.y,
-                                transform.xyz[2],
-                            ],
-                        };
+                        return Moved([
+                            transform.xyz[0],
+                            component.y,
+                            transform.xyz[2],
+                        ]);
 
                     case TransformComponents.MoveZ:
-                        return {
-                            type: Transformations.Moved,
-                            xyz: [
-                                transform.xyz[0],
-                                transform.xyz[1],
-                                component.z,
-                            ],
-                        };
+                        return Moved([
+                            transform.xyz[0],
+                            transform.xyz[1],
+                            component.z,
+                        ]);
 
                     case TransformComponents.MoveXYZ:
-                        return {
-                            type: Transformations.Moved,
-                            xyz: component.xyz,
-                        };
+                        return Moved(component.xyz);
 
                     case TransformComponents.Rotate:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: transform.xyz,
-                            scale: [1, 1, 1],
-                            rotate: component.xyz,
-                            angle: component.angle,
-                        };
+                        return FullTransform(
+                            transform.xyz,
+                            [1, 1, 1],
+                            component.xyz,
+                            component.angle
+                        );
 
                     case TransformComponents.Scale:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: transform.xyz,
-                            scale: component.xyz,
-                            rotate: [0, 0, 1],
-                            angle: 0,
-                        };
+                        return FullTransform(
+                            transform.xyz,
+                            component.xyz,
+                            [0, 0, 1],
+                            0
+                        );
                 }
             }
-            return {
-                type: Transformations.Untransformed,
-            };
+            return Untransformed();
 
         case Transformations.FullTransform:
             if (_.isObject(transform) && !_.isArray(transform)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: [
+                        return FullTransform(
+                            [
                                 component.x,
                                 transform.translate[1],
                                 transform.translate[2],
                             ],
-                            scale: transform.scale,
-                            rotate: transform.rotate,
-                            angle: transform.angle,
-                        };
+                            transform.scale,
+                            transform.rotate,
+                            transform.angle
+                        );
 
                     case TransformComponents.MoveY:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: [
+                        return FullTransform(
+                            [
                                 transform.translate[0],
                                 component.y,
                                 transform.translate[2],
                             ],
-                            scale: transform.scale,
-                            rotate: transform.rotate,
-                            angle: transform.angle,
-                        };
+                            transform.scale,
+                            transform.rotate,
+                            transform.angle
+                        );
 
                     case TransformComponents.MoveZ:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: [
+                        return FullTransform(
+                            [
                                 transform.translate[0],
                                 transform.translate[1],
                                 component.z,
                             ],
-                            scale: transform.scale,
-                            rotate: transform.rotate,
-                            angle: transform.angle,
-                        };
+                            transform.scale,
+                            transform.rotate,
+                            transform.angle
+                        );
 
                     case TransformComponents.MoveXYZ:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: component.xyz,
-                            scale: transform.scale,
-                            rotate: transform.rotate,
-                            angle: transform.angle,
-                        };
+                        return FullTransform(
+                            component.xyz,
+                            transform.scale,
+                            transform.rotate,
+                            transform.angle
+                        );
 
                     case TransformComponents.Rotate:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: transform.translate,
-                            scale: transform.scale,
-                            rotate: component.xyz,
-                            angle: component.angle,
-                        };
+                        return FullTransform(
+                            transform.translate,
+                            transform.scale,
+                            component.xyz,
+                            component.angle
+                        );
 
                     case TransformComponents.Scale:
-                        return {
-                            type: Transformations.FullTransform,
-                            translate: transform.translate,
-                            scale: component.xyz,
-                            rotate: transform.rotate,
-                            angle: transform.angle,
-                        };
+                        return FullTransform(
+                            transform.translate,
+                            component.xyz,
+                            transform.rotate,
+                            transform.angle
+                        );
                 }
             }
-            return {
-                type: Transformations.Untransformed,
-            };
+            return Untransformed();
     }
 }
 
@@ -738,7 +717,7 @@ function gatherAttrRecursive(
     has: Field,
     transform: Transformation,
     styles: Style[],
-    attrs: Attr[],
+    attrs: DOM.Attr[],
     children: NearbyChildren,
     elementAttrs: Attribute[]
 ): Gathered {
@@ -746,32 +725,32 @@ function gatherAttrRecursive(
         case []:
             switch (transformClass(transform)) {
                 case Nothing():
-                    return {
-                        node: node,
-                        attributes: [
+                    return Gathered(
+                        node,
+                        [
                             createAttribute('class', classes),
                             ...createAttributes(attrs),
                         ],
-                        styles: styles,
-                        children: children,
-                        has: has,
-                    };
+                        styles,
+                        children,
+                        has
+                    );
 
                 default: {
                     const class_ = transformClass(transform);
-                    return {
-                        node: node,
-                        attributes: [
+                    return Gathered(
+                        node,
+                        [
                             createAttribute('class', `${classes} ${class_}`),
                             ...createAttributes(attrs),
                         ],
-                        styles: [
+                        [
                             { type: Styles.Transform, transform: transform },
                             ...styles,
                         ],
-                        children: children,
-                        has: has,
-                    };
+                        children,
+                        has
+                    );
                 }
             }
 
@@ -1023,7 +1002,7 @@ function gatherAttrRecursive(
                         }
 
                         return gatherAttrRecursive(
-                            `${attr.class} ${classes}`,
+                            `${attr.class_} ${classes}`,
                             node,
                             add(attr.flag, has),
                             transform,
@@ -1193,12 +1172,11 @@ function gatherAttrRecursive(
                                     add(width, has),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `width-px-${attr.width.px}`,
-                                            prop: 'width',
-                                            value: `${attr.width.px}px`,
-                                        },
+                                        Single(
+                                            `width-px-${attr.width.px}`,
+                                            'width',
+                                            `${attr.width.px}px`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1215,12 +1193,11 @@ function gatherAttrRecursive(
                                     add(width, has),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `width-rem-${attr.width.rem}`,
-                                            prop: 'width',
-                                            value: `${attr.width.rem}rem`,
-                                        },
+                                        Single(
+                                            `width-rem-${attr.width.rem}`,
+                                            'width',
+                                            `${attr.width.rem}rem`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1266,16 +1243,13 @@ function gatherAttrRecursive(
                                     add(widthFill, add(width, has)),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `${cls.any}.${
-                                                cls.row
-                                            } > ${dot(
+                                        Single(
+                                            `${cls.any}.${cls.row} > ${dot(
                                                 `width-fill-${attr.width.i}`
                                             )}`,
-                                            prop: 'flex-grow',
-                                            value: `${attr.width.i * 100000}`,
-                                        },
+                                            'flex-grow',
+                                            `${attr.width.i * 100000}`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1327,12 +1301,11 @@ function gatherAttrRecursive(
                                     add(height, has),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `height-px-${attr.height.px}`,
-                                            prop: 'height',
-                                            value: `${attr.height.px}px`,
-                                        },
+                                        Single(
+                                            `height-px-${attr.height.px}`,
+                                            'height',
+                                            `${attr.height.px}px`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1349,12 +1322,11 @@ function gatherAttrRecursive(
                                     add(height, has),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `height-rem-${attr.height.rem}`,
-                                            prop: 'height',
-                                            value: `${attr.height.rem}rem`,
-                                        },
+                                        Single(
+                                            `height-rem-${attr.height.rem}`,
+                                            'height',
+                                            `${attr.height.rem}rem`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1400,16 +1372,13 @@ function gatherAttrRecursive(
                                     add(heightFill, add(height, has)),
                                     transform,
                                     [
-                                        {
-                                            type: Styles.Single,
-                                            class: `${cls.any}.${
-                                                cls.row
-                                            } > ${dot(
+                                        Single(
+                                            `${cls.any}.${cls.row} > ${dot(
                                                 `height-fill-${attr.height.i}`
                                             )}`,
-                                            prop: 'flex-grow',
-                                            value: `${attr.height.i * 100000}`,
-                                        },
+                                            'flex-grow',
+                                            `${attr.height.i * 100000}`
+                                        ),
                                         ...styles,
                                     ],
                                     attrs,
@@ -1471,30 +1440,25 @@ function gatherAttrRecursive(
                 }
             }
     }
-    return {
-        node: node,
-        attributes: [
-            createAttribute('class', classes),
-            ...createAttributes(attrs),
-        ],
-        styles: styles,
-        children: children,
-        has: has,
-    };
+    return Gathered(
+        node,
+        [createAttribute('class', classes), ...createAttributes(attrs)],
+        styles,
+        children,
+        has
+    );
 }
 
-function createAttribute(attribute: string, value: string): Attr {
-    const attr = document.createAttribute(attribute);
-    attr.value = value;
-    return attr;
+function createAttribute(name: string, value: string): DOM.Attr {
+    return new DOMelement.Attr(null, name, value, CTOR_KEY.CTOR_KEY);
 }
 
-function createAttributes(attributes: Attr[]): Attr[] {
-    const attrs = [];
+function createAttributes(attributes: DOM.Attr[]): DOM.Attr[] {
+    const attrs: DOM.Attr[] = [];
 
     for (const { name, value } of attributes) {
-        const attr = createAttribute(name, value);
-        attrs.push(attr);
+        const attr_ = createAttribute(name, value);
+        attrs.push(attr_);
     }
 
     return attrs;
@@ -1511,65 +1475,51 @@ function addNearbyElement(
         case NearbyChildrens.NoNearbyChildren:
             switch (location) {
                 case Location.Behind:
-                    return {
-                        type: NearbyChildrens.ChildrenBehind,
-                        existingBehind: [nearby],
-                    };
+                    return ChildrenBehind([nearby]);
 
                 default:
-                    return {
-                        type: NearbyChildrens.ChildrenInFront,
-                        existingInFront: [nearby],
-                    };
+                    return ChildrenInFront([nearby]);
             }
 
         case NearbyChildrens.ChildrenBehind:
             switch (location) {
                 case Location.Behind:
-                    return {
-                        type: NearbyChildrens.ChildrenBehind,
-                        existingBehind: [nearby, ...existing.existingBehind],
-                    };
+                    return ChildrenBehind([nearby, ...existing.existingBehind]);
 
                 default:
-                    return {
-                        type: NearbyChildrens.ChildrenBehindAndInFront,
-                        existingBehind: existing.existingBehind,
-                        existingInFront: [nearby],
-                    };
+                    return ChildrenBehindAndInFront(existing.existingBehind, [
+                        nearby,
+                    ]);
             }
 
         case NearbyChildrens.ChildrenInFront:
             switch (location) {
                 case Location.Behind:
-                    return {
-                        type: NearbyChildrens.ChildrenBehindAndInFront,
-                        existingBehind: [nearby],
-                        existingInFront: existing.existingInFront,
-                    };
+                    return ChildrenBehindAndInFront(
+                        [nearby],
+                        existing.existingInFront
+                    );
 
                 default:
-                    return {
-                        type: NearbyChildrens.ChildrenInFront,
-                        existingInFront: [nearby, ...existing.existingInFront],
-                    };
+                    return ChildrenInFront([
+                        nearby,
+                        ...existing.existingInFront,
+                    ]);
             }
 
         case NearbyChildrens.ChildrenBehindAndInFront:
             switch (location) {
                 case Location.Behind:
-                    return {
-                        type: NearbyChildrens.ChildrenBehindAndInFront,
-                        existingBehind: [nearby, ...existing.existingBehind],
-                        existingInFront: existing.existingInFront,
-                    };
+                    return ChildrenBehindAndInFront(
+                        [nearby, ...existing.existingBehind],
+                        existing.existingInFront
+                    );
 
                 default:
-                    return {
-                        type: NearbyChildrens.ChildrenBehindAndInFront,
-                        existingBehind: existing.existingBehind,
-                        existingInFront: [nearby, ...existing.existingInFront],
-                    };
+                    return ChildrenBehindAndInFront(existing.existingBehind, [
+                        nearby,
+                        ...existing.existingInFront,
+                    ]);
             }
     }
 }
@@ -1632,28 +1582,14 @@ function renderWidth(w: Length): [Field, string, Style[]] {
             return [
                 none,
                 `${cls.widthExact} width-px-${w.px}`,
-                [
-                    {
-                        type: Styles.Single,
-                        class: `width-px-${w.px}`,
-                        prop: 'width',
-                        value: `${w.px}px`,
-                    },
-                ],
+                [Single(`width-px-${w.px}`, 'width', `${w.px}px`)],
             ];
 
         case Lengths.Rem:
             return [
                 none,
                 `${cls.widthExact} width-rem-${w.rem}`,
-                [
-                    {
-                        type: Styles.Single,
-                        class: `width-rem-${w.rem}`,
-                        prop: 'width',
-                        value: `${w.rem}rem`,
-                    },
-                ],
+                [Single(`width-rem-${w.rem}`, 'width', `${w.rem}rem`)],
             ];
 
         case Lengths.Content:
@@ -1668,25 +1604,17 @@ function renderWidth(w: Length): [Field, string, Style[]] {
                 add(widthFill, none),
                 `${cls.widthFillPortion} width-fill-${w.i}`,
                 [
-                    {
-                        type: Styles.Single,
-                        class: `${cls.any}.${cls.row} > ${dot(
-                            `width-fill-${w.i}`
-                        )}`,
-                        prop: 'flex-grow',
-                        value: `${w.i * 100000}`,
-                    },
+                    Single(
+                        `${cls.any}.${cls.row} > ${dot(`width-fill-${w.i}`)}`,
+                        'flex-grow',
+                        `${w.i * 100000}`
+                    ),
                 ],
             ];
 
         case Lengths.Min: {
             const minCls = `min-width-${w.min}`,
-                minStyle: Single = {
-                    type: Styles.Single,
-                    class: minCls,
-                    prop: 'min-width',
-                    value: `${w.min}px`,
-                },
+                minStyle = Single(minCls, 'min-width', `${w.min}px`),
                 [minFlag, minAttrs, newMinStyle] = renderWidth(w.length);
 
             return [
@@ -1698,12 +1626,7 @@ function renderWidth(w: Length): [Field, string, Style[]] {
 
         case Lengths.Max: {
             const max = `max-width-${w.max}`,
-                maxStyle: Single = {
-                    type: Styles.Single,
-                    class: max,
-                    prop: 'max-width',
-                    value: `${w.max}px`,
-                },
+                maxStyle = Single(max, 'max-width', `${w.max}px`),
                 [maxFlag, maxAttrs, newMaxStyle] = renderWidth(w.length);
 
             return [
@@ -1717,28 +1640,14 @@ function renderWidth(w: Length): [Field, string, Style[]] {
             return [
                 none,
                 'min-width',
-                [
-                    {
-                        type: Styles.Single,
-                        class: 'min-width',
-                        prop: 'min-width',
-                        value: 'min-content',
-                    },
-                ],
+                [Single('min-width', 'min-width', 'min-content')],
             ];
 
         case Lengths.MaxContent:
             return [
                 none,
                 'max-width',
-                [
-                    {
-                        type: Styles.Single,
-                        class: 'max-width',
-                        prop: 'max-width',
-                        value: 'max-content',
-                    },
-                ],
+                [Single('max-width', 'max-width', 'max-content')],
             ];
     }
 }
@@ -1749,28 +1658,14 @@ function renderHeight(h: Length): [Field, string, Style[]] {
             return [
                 none,
                 `${cls.heightExact} height-px-${h.px}`,
-                [
-                    {
-                        type: Styles.Single,
-                        class: `height-px-${h.px}`,
-                        prop: 'height',
-                        value: `${h.px}px`,
-                    },
-                ],
+                [Single(`height-px-${h.px}`, 'height', `${h.px}px`)],
             ];
 
         case Lengths.Rem:
             return [
                 none,
                 `${cls.heightExact} height-rem-${h.rem}`,
-                [
-                    {
-                        type: Styles.Single,
-                        class: `height-rem-${h.rem}`,
-                        prop: 'height',
-                        value: `${h.rem}rem`,
-                    },
-                ],
+                [Single(`height-rem-${h.rem}`, 'height', `${h.rem}rem`)],
             ];
 
         case Lengths.Content:
@@ -1785,27 +1680,25 @@ function renderHeight(h: Length): [Field, string, Style[]] {
                 add(heightFill, none),
                 `${cls.heightFillPortion} height-fill-${h.i}`,
                 [
-                    {
-                        type: Styles.Single,
-                        class: `${cls.any}.${cls.column} > ${dot(
+                    Single(
+                        `${cls.any}.${cls.column} > ${dot(
                             `height-fill-${h.i}`
                         )}`,
-                        prop: 'flex-grow',
-                        value: `${h.i * 100000}`,
-                    },
+                        'flex-grow',
+                        `${h.i * 100000}`
+                    ),
                 ],
             ];
 
         case Lengths.Min: {
             const minCls = `min-height-${h.min}`,
-                minStyle: Single = {
-                    type: Styles.Single,
-                    class: minCls,
-                    prop: 'min-height',
+                minStyle = Single(
+                    minCls,
+                    'min-height',
                     // This needs to be !important because we're using `min-height: min-content`
                     // to correct for safari's incorrect implementation of flexbox.
-                    value: `${h.min}px !important`,
-                },
+                    `${h.min}px !important`
+                ),
                 [minFlag, minAttrs, newMinStyle] = renderHeight(h.length);
 
             return [
@@ -1817,12 +1710,7 @@ function renderHeight(h: Length): [Field, string, Style[]] {
 
         case Lengths.Max: {
             const max = `max-height-${h.max}`,
-                maxStyle: Single = {
-                    type: Styles.Single,
-                    class: max,
-                    prop: 'max-height',
-                    value: `${h.max}px`,
-                },
+                maxStyle = Single(max, 'max-height', `${h.max}px`),
                 [maxFlag, maxAttrs, newMaxStyle] = renderHeight(h.length);
 
             return [
@@ -1836,28 +1724,14 @@ function renderHeight(h: Length): [Field, string, Style[]] {
             return [
                 none,
                 'min-height',
-                [
-                    {
-                        type: Styles.Single,
-                        class: 'min-height',
-                        prop: 'min-height',
-                        value: 'min-content',
-                    },
-                ],
+                [Single('min-height', 'min-height', 'min-content')],
             ];
 
         case Lengths.MaxContent:
             return [
                 none,
                 'max-height',
-                [
-                    {
-                        type: Styles.Single,
-                        class: 'max-height',
-                        prop: 'max-height',
-                        value: 'max-content',
-                    },
-                ],
+                [Single('max-height', 'max-height', 'max-content')],
             ];
     }
 }
@@ -1891,6 +1765,80 @@ function contextClasses(context: LayoutContext) {
     }
 }
 
+const unit = 0;
+
+const focusDefaultStyle = FocusStyle(
+    Nothing(),
+    Just(Shadow(Rgba(155 / 255, 203 / 255, 1, 1, Notation.Rgba), [0, 0], 0, 3)),
+    Nothing()
+);
+
+const defaultOptions = OptionRecord(
+    HoverSetting.AllowHover,
+    focusDefaultStyle,
+    RenderMode.Layout
+);
+
+// TODO:
+// function staticRoot(options: OptionRecord): DOM.Element {
+//     switch (options.mode) {
+//         case RenderMode.Layout: {
+//             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
+//             const div = new DOMelement.Element(
+//                     'div',
+//                     null,
+//                     [],
+//                     CTOR_KEY.CTOR_KEY
+//                 ),
+//                 style = new DOMelement.Element(
+//                     'style',
+//                     div,
+//                     [],
+//                     CTOR_KEY.CTOR_KEY
+//                 );
+//             style.append(new DOM.Text());
+//             div.append(style);
+//             return div;
+//         }
+
+//         case RenderMode.NoStaticStyleSheet: {
+//             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
+//             const div = new DOMelement.Element(
+//                     'div',
+//                     null,
+//                     [],
+//                     CTOR_KEY.CTOR_KEY
+//                 ),
+//                 style = new DOMelement.Element(
+//                     'style',
+//                     div,
+//                     [],
+//                     CTOR_KEY.CTOR_KEY
+//                 );
+//             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
+//             div.append(style);
+//             return div;
+//         }
+
+//         case RenderMode.WithVirtualCss: {
+//             const rules = new DOMelement.Element(
+//                     'espectro-rules',
+//                     null,
+//                     [],
+//                     CTOR_KEY.CTOR_KEY
+//                 ),
+//                 rules_ = new DOMelement.Attr(
+//                     null,
+//                     'rules',
+//                     encodeStyles(options, stylesheet),
+//                     CTOR_KEY.CTOR_KEY
+//                 );
+//             rules.append(rules_);
+//             return rules;
+//         }
+//     }
+// }
+
 function textElement(type: TextElement, str: string): DOM.Element {
     const textClasses = `${cls.any} ${cls.text} ${cls.widthContent} ${cls.heightContent}`,
         textFillClasses = `${cls.any} ${cls.text} ${cls.widthFill} ${cls.heightFill}`;
@@ -1917,59 +1865,43 @@ function textElement(type: TextElement, str: string): DOM.Element {
 }
 
 const families: Font[] = [
-    { type: FontFamilyType.Typeface, name: 'Open Sans' },
-    { type: FontFamilyType.Typeface, name: 'Helvetica' },
-    { type: FontFamilyType.Typeface, name: 'Verdana' },
-    { type: FontFamilyType.SansSerif },
+    Typeface('Open Sans'),
+    Typeface('Helvetica'),
+    Typeface('Verdana'),
+    SansSerif(),
 ];
 
 const rootStyle: StyleClass[] = [
-    {
-        type: Attributes.StyleClass,
-        flag: bgColor,
-        style: {
-            type: Styles.Colored,
-            class: `bg-${formatColorClass(0, 0, 1, 0)}`,
-            prop: 'background-color',
-            color: formatColor(0, 0, 1, 0),
-        },
-    },
-    {
-        type: Attributes.StyleClass,
-        flag: fontColor,
-        style: {
-            type: Styles.Colored,
-            class: `fc-${formatColorClass(0, 0, 0, 1)}`,
-            prop: 'color',
-            color: formatColor(0, 0, 0, 1),
-        },
-    },
-    {
-        type: Attributes.StyleClass,
-        flag: fontSize,
-        style: {
-            type: Styles.FontSize,
-            i: 20,
-        },
-    },
-    {
-        type: Attributes.StyleClass,
-        flag: fontFamily,
-        style: {
-            type: Styles.FontFamily,
-            name: _.reduce(
-                families,
-                (acc: string, font: Font) => {
-                    return renderFontClassName(font, acc);
-                },
+    StyleClass(
+        bgColor,
+        Colored(
+            `bg-${formatColorClass(0, 0, 1, 0)}`,
+            'background-color',
+            formatColor(0, 0, 1, 0)
+        )
+    ),
+    StyleClass(
+        fontColor,
+        Colored(
+            `fc-${formatColorClass(0, 0, 0, 1)}`,
+            'color',
+            formatColor(0, 0, 0, 1)
+        )
+    ),
+    StyleClass(fontSize, FontSize(20)),
+    StyleClass(
+        fontFamily,
+        FontFamily(
+            families.reduce(
+                (acc: string, font: Font) => renderFontClassName(font, acc),
                 'font-'
             ),
-            typefaces: families,
-        },
-    },
+            families
+        )
+    ),
 ];
 
-function renderFontClassName(font: Font, current: string) {
+function renderFontClassName(font: Font, current: string): string {
     switch (font.type) {
         case FontFamilyType.Serif:
             return current + 'serif';
@@ -1998,108 +1930,137 @@ function renderFontClassName(font: Font, current: string) {
 }
 
 function renderFocusStyle(focus: FocusStyle): Style_[] {
-    function withDefault_(prop: elmish.Maybe.Maybe<Property>) {
-        return withDefault({ key: '', value: '' }, prop);
+    function withDefault_(prop: Maybe<Property>) {
+        return withDefault(Property('', ''), prop);
     }
     return [
-        {
-            type: Styles.Style,
-            selector: dot(cls.focusedWithin + ':focus-within'),
-            props: [
-                withDefault_(
-                    map((color: Color): Property => {
-                        const [a, b, c, d, e] = Object.values(color);
-                        return {
-                            key: 'border-color',
-                            value: formatColor(a, b, c, d, e),
-                        };
-                    }, focus.borderColor)
-                ),
-                withDefault_(
-                    map((color: Color): Property => {
-                        const [a, b, c, d, e] = Object.values(color);
-                        return {
-                            key: 'background-color',
-                            value: formatColor(a, b, c, d, e),
-                        };
-                    }, focus.backgroundColor)
-                ),
-                withDefault_(
-                    map((shadow: Shadow): Property => {
-                        return {
-                            key: 'box-shadow',
-                            value: formatBoxShadow(shadow),
-                        };
-                    }, focus.shadow)
-                ),
-                { key: 'outline', value: 'none' },
-            ],
-        },
-        {
-            type: Styles.Style,
-            selector: `${dot(cls.any + ':focus .focusable, ')}${dot(
+        Style_(dot(cls.focusedWithin + ':focus-within'), [
+            withDefault_(
+                map((color: Color): Property => {
+                    const [a, b, c, d, e] = Object.values(color);
+                    return Property('border-color', formatColor(a, b, c, d, e));
+                }, focus.borderColor)
+            ),
+            withDefault_(
+                map((color: Color): Property => {
+                    const [a, b, c, d, e] = Object.values(color);
+                    return Property(
+                        'background-color',
+                        formatColor(a, b, c, d, e)
+                    );
+                }, focus.backgroundColor)
+            ),
+            withDefault_(
+                map((shadow: Shadow): Property => {
+                    return Property('box-shadow', formatBoxShadow(shadow));
+                }, focus.shadow)
+            ),
+            Property('outline', 'none'),
+        ]),
+        Style_(
+            `${dot(cls.any + ':focus .focusable, ')}${dot(
                 cls.any + '.focusable:focus, '
             )}.ui-slide-bar:focus + ${dot(cls.any + ' .focusable-thumb')}`,
-            props: [
+            [
                 withDefault_(
                     map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
-                        return {
-                            key: 'border-color',
-                            value: formatColor(a, b, c, d, e),
-                        };
+                        return Property(
+                            'border-color',
+                            formatColor(a, b, c, d, e)
+                        );
                     }, focus.borderColor)
                 ),
                 withDefault_(
                     map((color: Color): Property => {
                         const [a, b, c, d, e] = Object.values(color);
-                        return {
-                            key: 'background-color',
-                            value: formatColor(a, b, c, d, e),
-                        };
+                        return Property(
+                            'background-color',
+                            formatColor(a, b, c, d, e)
+                        );
                     }, focus.backgroundColor)
                 ),
                 withDefault_(
                     map((shadow: Shadow): Property => {
                         if (shadow) {
-                            return {
-                                key: 'box-shadow',
-                                value: formatBoxShadow(shadow),
-                            };
+                            return Property(
+                                'box-shadow',
+                                formatBoxShadow(shadow)
+                            );
                         }
-                        return { key: '', value: '' };
+                        return Property('', '');
                     }, focus.shadow)
                 ),
-                { key: 'outline', value: 'none' },
-            ],
-        },
+                Property('outline', 'none'),
+            ]
+        ),
     ];
 }
 
-const focusDefaultStyle: FocusStyle = {
-    backgroundColor: Nothing(),
-    borderColor: Nothing(),
-    shadow: Just({
-        color: {
-            red: 155 / 255,
-            green: 203 / 255,
-            blue: 1,
-            alpha: 1,
-            type: Notation.Rgba,
-        },
-        offset: [0, 0],
-        blur: 0,
-        size: 3,
-    }),
-};
+function toStyleSheet(
+    options: OptionRecord,
+    stylesheet: Style_[]
+): DOM.Element {
+    switch (options.mode) {
+        case RenderMode.Layout: {
+            // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
+            const div = new DOMelement.Element(
+                    'div',
+                    null,
+                    [],
+                    CTOR_KEY.CTOR_KEY
+                ),
+                style = new DOMelement.Element(
+                    'style',
+                    div,
+                    [],
+                    CTOR_KEY.CTOR_KEY
+                );
+            style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
+            div.append(style);
+            return div;
+        }
 
-// function toStyleSheet(
-//     options: OptionRecord,
-//     styleSheet: Style_[]
-// ): DOM.Element {}
+        case RenderMode.NoStaticStyleSheet: {
+            // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
+            const div = new DOMelement.Element(
+                    'div',
+                    null,
+                    [],
+                    CTOR_KEY.CTOR_KEY
+                ),
+                style = new DOMelement.Element(
+                    'style',
+                    div,
+                    [],
+                    CTOR_KEY.CTOR_KEY
+                );
+            style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
+            div.append(style);
+            return div;
+        }
 
-function renderTopLevelValues(rules: [string, string][]) {
-    function withImport(font: Font): elmish.Maybe.Maybe<string> {
+        case RenderMode.WithVirtualCss: {
+            const rules = new DOMelement.Element(
+                    'espectro-rules',
+                    null,
+                    [],
+                    CTOR_KEY.CTOR_KEY
+                ),
+                rules_ = new DOMelement.Attr(
+                    null,
+                    'rules',
+                    encodeStyles(options, stylesheet),
+                    CTOR_KEY.CTOR_KEY
+                );
+            rules.append(rules_);
+            return rules;
+        }
+    }
+}
+
+function renderTopLevelValues(rules: [string, Font[]][]): string {
+    function withImport(font: Font): Maybe<string> {
         switch (font.type) {
             case FontFamilyType.ImportFont:
                 return Just(`@import url('${font.url}');`);
@@ -2111,19 +2072,45 @@ function renderTopLevelValues(rules: [string, string][]) {
 
     const allNames: string[] = rules.map((rule) => rule[0]);
 
-    function fontImports(name: string, typefaces: Font[]): string {
+    function fontImports([_name, typefaces]: [string, Font[]]): string {
         return typefaces.filter((typeface) => withImport(typeface)).join('\n');
     }
 
-    // function fontAdjustments(name: string, typefaces: Font[]): string {
-    //     switch (typefaceAdjustment(typefaces)) {
-    //         case value:
-    //             break;
+    function fontAdjustments([name, typefaces]: [string, Font[]]): string {
+        switch (typefaceAdjustment(typefaces)) {
+            case Nothing():
+                return allNames
+                    .map((name_: string) =>
+                        renderNullAdjustmentRule(name, name_)
+                    )
+                    .join('');
 
-    //         default:
-    //             break;
-    //     }
-    // }
+            default: {
+                const adjustment: [[string, string][], [string, string][]][] =
+                    withDefault(
+                        [
+                            [[['', '']], [['', '']]],
+                            [[['', '']], [['', '']]],
+                        ],
+                        typefaceAdjustment(typefaces)
+                    );
+                return allNames
+                    .map((name_: string) =>
+                        renderFontAdjustmentRule(
+                            name,
+                            [adjustment[0], adjustment[1]],
+                            name_
+                        )
+                    )
+                    .join('');
+            }
+        }
+    }
+
+    return (
+        rules.map((rule) => fontImports(rule)).join('\n') +
+        rules.map((rule) => fontAdjustments(rule)).join('\n')
+    );
 }
 
 function renderNullAdjustmentRule(
@@ -2205,35 +2192,48 @@ function fontAdjustmentRules(converted: {
     ];
 }
 
-// function typefaceAdjustment(typefaces: Font[]) {
-//     return _.reduce(
-//         typefaces,
-//         (face: Font, found: Font) => {
-//             switch (found) {
-//                 case Nothing():
-//                     switch (face.type) {
-//                         case FontFamilyType.FontWith:
-//                             switch (face.adjustment) {
-//                                 case Nothing():
-//                                     return found;
+function typefaceAdjustment(
+    typefaces: Font[]
+): Maybe<[[string, string][], [string, string][]][]> {
+    return typefaces.reduce(
+        (
+            _acc: Maybe<[[string, string][], [string, string][]][]>,
+            typeface: Font
+        ) => {
+            switch (typeface.type) {
+                case FontFamilyType.FontWith:
+                    switch (typeface.adjustment) {
+                        case Nothing():
+                            return Nothing();
 
-//                                 default:
-//                                     return [fontAdjustmentRules()];
-//                             }
-//                             break;
+                        default:
+                            return Just([
+                                fontAdjustmentRules(
+                                    convertAdjustment(
+                                        withDefault(
+                                            Adjustment(0, 0, 0, 0),
+                                            typeface.adjustment
+                                        )
+                                    ).full
+                                ),
+                                fontAdjustmentRules(
+                                    convertAdjustment(
+                                        withDefault(
+                                            Adjustment(0, 0, 0, 0),
+                                            typeface.adjustment
+                                        )
+                                    ).capital
+                                ),
+                            ]);
+                    }
 
-//                         default:
-//                             return found;
-//                     }
-//                     break;
-
-//                 default:
-//                     return found;
-//             }
-//         },
-//         Nothing()
-//     );
-// }
+                default:
+                    return Nothing();
+            }
+        },
+        Nothing()
+    );
+}
 
 function fontName(font: Font): string {
     switch (font.type) {
@@ -2256,7 +2256,7 @@ function fontName(font: Font): string {
     }
 }
 
-function topLevelValue(rule: Style): elmish.Maybe.Maybe<(string | Font[])[]> {
+function topLevelValue(rule: Style): Maybe<[string, Font[]]> {
     switch (rule.type) {
         case Styles.FontFamily:
             return Just([rule.name, rule.typefaces]);
@@ -2277,31 +2277,74 @@ function renderProps(
     return `${existing} \n ${property.key}: ${property.value};`;
 }
 
-// function toStyleSheetString(
-//     options: OptionRecord,
-//     styleSheet: Style_[]
-// ): string {
-//     function combine(style: Style_, rendered: {}) {
-//         return {
-//             rules: rendered.rules + renderStyleRule(options, style, Nothing()),
-//         };
-//     }
-// }
+function encodeStyles(options: OptionRecord, stylesheet: Style_[]): string {
+    const stylesheet_: [string, string][] = stylesheet.map(
+        (style: Style_): [string, string] => {
+            const styled: string[] = renderStyleRule(options, style, Nothing());
+            return [getStyleName(style), JSON.stringify(styled)];
+        }
+    );
+    return JSON.stringify(stylesheet_);
+}
+
+function toStyleSheetString(
+    options: OptionRecord,
+    stylesheet: Style_[]
+): string {
+    function combine(
+        style: Style_,
+        rendered: { rules: string[]; topLevel: [string, Font[]][] }
+    ): { rules: string[]; topLevel: [string, Font[]][] } {
+        const topLevel: Maybe<[string, Font[]]> = topLevelValue(style);
+        return {
+            rules: rendered.rules.concat(
+                renderStyleRule(options, style, Nothing())
+            ),
+            topLevel: (() => {
+                switch (topLevel) {
+                    case Nothing():
+                        return rendered.topLevel;
+
+                    default: {
+                        return [
+                            withDefault(['', []], topLevel),
+                            ...rendered.topLevel,
+                        ];
+                    }
+                }
+            })(),
+        };
+    }
+
+    const rendered_: { rules: string[]; topLevel: [string, Font[]][] } =
+        stylesheet.reduce(
+            (
+                acc: { rules: string[]; topLevel: [string, Font[]][] },
+                style: Style_
+            ) => combine(style, acc),
+            { rules: [], topLevel: [] }
+        );
+
+    switch (rendered_) {
+        default: {
+            const { rules, topLevel } = rendered_;
+            return renderTopLevelValues(topLevel) + rules.join('');
+        }
+    }
+}
 
 function renderStyle(
     options: OptionRecord,
-    pseudo: elmish.Maybe.Maybe<PseudoClass>,
+    pseudo: Maybe<PseudoClass>,
     selector: string,
     props: Property[]
 ): string[] {
     switch (pseudo) {
         case Nothing():
             return [
-                `${selector}{${_.reduce(
-                    props,
-                    (acc: string, prop: Property): string => {
-                        return renderProps(false, prop, acc);
-                    },
+                `${selector}{${props.reduce(
+                    (acc: string, prop: Property): string =>
+                        renderProps(false, prop, acc),
                     ''
                 )}\n}`,
             ];
@@ -2313,32 +2356,28 @@ function renderStyle(
 
                 case HoverSetting.ForceHover:
                     return [
-                        `${selector}-hv {${_.reduce(
-                            props,
-                            (acc: string, prop: Property): string => {
-                                return renderProps(true, prop, acc);
-                            }
+                        `${selector}-hv {${props.reduce(
+                            (acc: string, prop: Property): string =>
+                                renderProps(true, prop, acc),
+                            ''
                         )}\n}`,
                     ];
 
                 case HoverSetting.AllowHover:
                     return [
-                        `${selector}-hv:hover {${_.reduce(
-                            props,
-                            (acc: string, prop: Property): string => {
-                                return renderProps(false, prop, acc);
-                            }
+                        `${selector}-hv:hover {${props.reduce(
+                            (acc: string, prop: Property): string =>
+                                renderProps(false, prop, acc),
+                            ''
                         )}\n}`,
                     ];
             }
             break;
 
         case Just(PseudoClass.Focus): {
-            const renderedProps = _.reduce(
-                props,
-                (acc: string, prop: Property): string => {
-                    return renderProps(false, prop, acc);
-                },
+            const renderedProps = props.reduce(
+                (acc: string, prop: Property): string =>
+                    renderProps(false, prop, acc),
                 ''
             );
             return [
@@ -2353,11 +2392,9 @@ function renderStyle(
 
         case Just(PseudoClass.Active):
             return [
-                `${selector}-act:active {${_.reduce(
-                    props,
-                    (acc: string, prop: Property): string => {
-                        return renderProps(false, prop, acc);
-                    },
+                `${selector}-act:active {${props.reduce(
+                    (acc: string, prop: Property): string =>
+                        renderProps(false, prop, acc),
                     ''
                 )}\n}`,
             ];
@@ -2368,7 +2405,7 @@ function renderStyle(
 function renderStyleRule(
     options: OptionRecord,
     rule: Style,
-    pseudo: elmish.Maybe.Maybe<PseudoClass>
+    pseudo: Maybe<PseudoClass>
 ): string[] {
     switch (rule.type) {
         case Styles.Style:
@@ -2376,13 +2413,19 @@ function renderStyleRule(
 
         case Styles.Shadows:
             return renderStyle(options, pseudo, '.' + rule.name, [
-                { key: 'box-shadow', value: rule.prop },
+                Property('box-shadow', rule.prop),
             ]);
 
         case Styles.Transparency: {
-            const opacity: number = _.max(0, _.min(1, 1 - rule.transparency));
+            const opacity: number | undefined = _.max([
+                0,
+                _.min([1, 1 - rule.transparency]),
+            ]);
             return renderStyle(options, pseudo, '.' + rule.name, [
-                { key: 'opacity', value: opacity.toString() },
+                Property(
+                    'opacity',
+                    _.isNumber(opacity) ? opacity.toString() : '1'
+                ),
             ]);
         }
 
@@ -2391,7 +2434,7 @@ function renderStyleRule(
                 options,
                 pseudo,
                 '.font-size-' + rule.i.toString(),
-                [{ key: 'font-size', value: rule.i.toString() + 'px' }]
+                [Property('font-size', rule.i.toString() + 'px')]
             );
 
         case Styles.FontFamily: {
@@ -2401,39 +2444,39 @@ function renderStyleRule(
                 })
                 .join(', ');
             const families: Property[] = [
-                {
-                    key: 'font-family',
-                    value: rule.typefaces
+                Property(
+                    'font-family',
+                    rule.typefaces
                         .map((value: Font) => {
                             return fontName(value);
                         })
-                        .join(', '),
-                },
-                { key: 'font-feature-settings', value: features },
-                {
-                    key: 'font-variant',
-                    value: _.some(rule.typefaces, hasSmallCaps)
+                        .join(', ')
+                ),
+                Property('font-feature-settings', features),
+                Property(
+                    'font-variant',
+                    _.some(rule.typefaces, hasSmallCaps)
                         ? 'small-caps'
-                        : 'normal',
-                },
+                        : 'normal'
+                ),
             ];
             return renderStyle(options, pseudo, '.' + rule.name, families);
         }
 
         case Styles.Single:
-            return renderStyle(options, pseudo, '.' + rule.class, [
-                { key: rule.prop, value: rule.value },
+            return renderStyle(options, pseudo, '.' + rule.class_, [
+                Property(rule.prop, rule.value),
             ]);
 
         case Styles.Colored: {
             const [a, b, c, d, e] = Object.values(rule.color);
-            return renderStyle(options, pseudo, '.' + rule.class, [
-                { key: rule.prop, value: formatColor(a, b, c, d, e) },
+            return renderStyle(options, pseudo, '.' + rule.class_, [
+                Property(rule.prop, formatColor(a, b, c, d, e)),
             ]);
         }
 
         case Styles.SpacingStyle: {
-            const class_: string = '.' + rule.class,
+            const class_: string = '.' + rule.class_,
                 halfX: string = (rule.x / 2).toString() + 'px',
                 halfY: string = (rule.y / 2).toString() + 'px',
                 xPx: string = rule.x.toString() + 'px',
@@ -2445,13 +2488,13 @@ function renderStyleRule(
                 paragraph: string = '.' + cls.paragraph,
                 left: string = '.' + cls.alignLeft,
                 right: string = '.' + cls.alignRight,
-                any: string = '.' + cls.any,
-                single: string = '.' + cls.single;
+                any: string = '.' + cls.any;
+            // single: string = '.' + cls.single;
             return renderStyle(
                 options,
                 pseudo,
                 `${class_}${row} > ${any} + ${any}`,
-                [{ key: 'margin-left', value: xPx }]
+                [Property('margin-left', xPx)]
             ).concat(
                 // margins don't apply to last element of normal, unwrapped rows
                 // renderStyle(
@@ -2464,7 +2507,7 @@ function renderStyleRule(
                     options,
                     pseudo,
                     `${class_}${wrappedRow} > ${any}`,
-                    [{ key: 'margin', value: halfY + ' ' + halfX }]
+                    [Property('margin', halfY + ' ' + halfX)]
                 ),
                 // renderStyle(
                 //     options,
@@ -2476,35 +2519,32 @@ function renderStyleRule(
                     options,
                     pseudo,
                     `${class_}${column} > ${any} + ${any}`,
-                    [{ key: 'margin-top', value: yPx }]
+                    [Property('margin-top', yPx)]
                 ),
                 renderStyle(
                     options,
                     pseudo,
                     `${class_}${page} > ${any} + ${any}`,
-                    [{ key: 'margin-top', value: yPx }]
+                    [Property('margin-top', yPx)]
                 ),
                 renderStyle(options, pseudo, `${class_}${page} > ${left}`, [
-                    { key: 'margin-right', value: xPx },
+                    Property('margin-right', xPx),
                 ]),
                 renderStyle(options, pseudo, `${class_}${page} > ${right}`, [
-                    { key: 'margin-left', value: xPx },
+                    Property('margin-left', xPx),
                 ]),
                 renderStyle(options, pseudo, `${class_}${paragraph}`, [
-                    {
-                        key: 'line-height',
-                        value: `calc(1em + ${rule.y.toString()}px)`,
-                    },
+                    Property(
+                        'line-height',
+                        `calc(1em + ${rule.y.toString()}px)`
+                    ),
                 ]),
                 renderStyle(options, pseudo, `textarea${any}${class_}`, [
-                    {
-                        key: 'line-height',
-                        value: `calc(1em + ${rule.y.toString()}px)`,
-                    },
-                    {
-                        key: 'height',
-                        value: `calc(100% + ${rule.y.toString()}px)`,
-                    },
+                    Property(
+                        'line-height',
+                        `calc(1em + ${rule.y.toString()}px)`
+                    ),
+                    Property('height', `calc(100% + ${rule.y.toString()}px)`),
                 ]),
                 // renderStyle(options, pseudo, `${class_}${paragraph} > ${any}`, [
                 //     { key: 'margin-right', value: xPx },
@@ -2514,75 +2554,51 @@ function renderStyleRule(
                     options,
                     pseudo,
                     `${class_}${paragraph} > ${left}`,
-                    [{ key: 'margin-right', value: xPx }]
+                    [Property('margin-right', xPx)]
                 ),
                 renderStyle(
                     options,
                     pseudo,
                     `${class_}${paragraph} > ${right}`,
-                    [{ key: 'margin-left', value: xPx }]
+                    [Property('margin-left', xPx)]
                 ),
                 renderStyle(options, pseudo, `${class_}${paragraph}::after`, [
-                    {
-                        key: 'content',
-                        value: `''`,
-                    },
-                    {
-                        key: 'display',
-                        value: 'block',
-                    },
-                    {
-                        key: 'height',
-                        value: '0',
-                    },
-                    {
-                        key: 'width',
-                        value: '0',
-                    },
-                    {
-                        key: 'margin-top',
-                        value: _.floor(-1 * (rule.y / 2)).toString() + 'px',
-                    },
+                    Property('content', `''`),
+                    Property('display', `block`),
+                    Property('height', `0`),
+                    Property('width', `0`),
+                    Property(
+                        'margin-top',
+                        _.floor(-1 * (rule.y / 2)).toString() + 'px'
+                    ),
                 ]),
                 renderStyle(options, pseudo, `${class_}${paragraph}::before`, [
-                    {
-                        key: 'content',
-                        value: `''`,
-                    },
-                    {
-                        key: 'display',
-                        value: 'block',
-                    },
-                    {
-                        key: 'height',
-                        value: '0',
-                    },
-                    {
-                        key: 'width',
-                        value: '0',
-                    },
-                    {
-                        key: 'margin-bottom',
-                        value: _.floor(-1 * (rule.y / 2)).toString() + 'px',
-                    },
+                    Property('content', `''`),
+                    Property('display', `block`),
+                    Property('height', `0`),
+                    Property('width', `0`),
+                    Property(
+                        'margin-top',
+                        _.floor(-1 * (rule.y / 2)).toString() + 'px'
+                    ),
                 ])
             );
         }
 
         case Styles.PaddingStyle:
-            return renderStyle(options, pseudo, '.' + rule.class, [
-                {
-                    key: 'padding',
-                    value: `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`,
-                },
+            return renderStyle(options, pseudo, '.' + rule.class_, [
+                Property(
+                    'padding',
+                    `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`
+                ),
             ]);
 
         case Styles.BorderWidth:
-            return renderStyle(options, pseudo, '.' + rule.class, [
-                {
-                    key: 'padding',
-                    value: `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`,
-                },
+            return renderStyle(options, pseudo, '.' + rule.class_, [
+                Property(
+                    'padding',
+                    `${rule.top.toString()}px ${rule.right.toString()}px ${rule.bottom.toString()}px ${rule.left.toString()}px`
+                ),
             ]);
 
         case Styles.GridTemplateStyle: {
@@ -2594,13 +2610,13 @@ function renderStyleRule(
                 rule.spacing[0]
             )}-space-y-${lengthClassName(rule.spacing[1])}`;
 
-            const toGridLength = (x: Length): string | undefined =>
+            const toGridLength = (x: Length): string =>
                 toGridLengthHelper(Nothing(), Nothing(), x);
             const toGridLengthHelper = (
-                minimum: elmish.Maybe.Maybe<number>,
-                maximum: elmish.Maybe.Maybe<number>,
+                minimum: Maybe<number>,
+                maximum: Maybe<number>,
                 x: Length
-            ): string | undefined => {
+            ): string => {
                 switch (x.type) {
                     case Lengths.Px:
                         return x.px.toString() + 'px';
@@ -2661,28 +2677,25 @@ function renderStyleRule(
                     case Lengths.MaxContent:
                         return 'max-content';
                 }
+                return '';
             };
 
-            const ySpacing = toGridLength(rule.spacing[1]);
-            const xSpacing = toGridLength(rule.spacing[0]);
+            const ySpacing: string = toGridLength(rule.spacing[1]);
+            const xSpacing: string = toGridLength(rule.spacing[0]);
 
             const msColumns = `-ms-grid-columns: ${rule.columns
-                .map((column: Length): string | undefined =>
-                    toGridLength(column)
-                )
+                .map((column: Length): string => toGridLength(column))
                 .join(ySpacing)};`;
             const msRows = `-ms-grid-rows: ${rule.rows
-                .map((row: Length): string | undefined => toGridLength(row))
+                .map((row: Length): string => toGridLength(row))
                 .join(xSpacing)};`;
             const base = `${class_}{${msColumns}${msRows}}`;
 
             const columns = `grid-template-columns: ${rule.columns
-                .map((column: Length): string | undefined =>
-                    toGridLength(column)
-                )
+                .map((column: Length): string => toGridLength(column))
                 .join(' ')};`;
             const rows = `grid-template-rows: ${rule.rows
-                .map((row: Length): string | undefined => toGridLength(row))
+                .map((row: Length): string => toGridLength(row))
                 .join(' ')};`;
 
             const gapX = `grid-column-gap:${toGridLength(rule.spacing[0])}`;
@@ -2723,8 +2736,8 @@ function renderStyleRule(
         }
 
         case Styles.PseudoSelector: {
-            const renderPseudoRule = (style: Style_): string[] | undefined =>
-                renderStyleRule(options, style, Just(rule.class));
+            const renderPseudoRule = (style: Style_): string[] =>
+                renderStyleRule(options, style, Just(rule.class_));
             return rule.styles.flatMap((style: Style_): string[] => {
                 const render = renderPseudoRule(style);
                 if (typeof render !== 'undefined') {
@@ -2735,12 +2748,8 @@ function renderStyleRule(
         }
 
         case Styles.Transform: {
-            const value: elmish.Maybe.Maybe<string> = transformValue(
-                rule.transform
-            );
-            const class_: elmish.Maybe.Maybe<string> = transformClass(
-                rule.transform
-            );
+            const value: Maybe<string> = transformValue(rule.transform);
+            const class_: Maybe<string> = transformClass(rule.transform);
 
             switch ([class_, value]) {
                 case [class_, value]:
@@ -2749,10 +2758,7 @@ function renderStyleRule(
                         typeof value === 'string'
                     ) {
                         return renderStyle(options, pseudo, '.' + class_, [
-                            {
-                                key: 'transform',
-                                value: value,
-                            },
+                            Property('transform', value),
                         ]);
                     }
                     break;
@@ -2793,28 +2799,28 @@ function lengthClassName(x: Length): string {
     }
 }
 
-function formatDropShadow(shadow: Shadow) {
+function formatDropShadow(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-function formatTextShadow(shadow: Shadow) {
+function formatTextShadow(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-function textShadowClass(shadow: Shadow) {
+function textShadowClass(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
     return `txt${floatClass(shadow.offset[0])}px${floatClass(
         shadow.offset[1]
     )}px${floatClass(shadow.blur)}px${formatColorClass(a, b, c, d, e)}`;
 }
 
-function formatBoxShadow(shadow: Shadow) {
+function formatBoxShadow(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
         shadow.offset[1]
@@ -2827,7 +2833,7 @@ function formatBoxShadow(shadow: Shadow) {
     )}`;
 }
 
-function boxShadowClass(shadow: Shadow) {
+function boxShadowClass(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.inset ? 'box-inset' : 'box-'}${floatClass(
         shadow.offset[0]
@@ -2836,7 +2842,7 @@ function boxShadowClass(shadow: Shadow) {
     )}px${floatClass(shadow.size)}px${formatColorClass(a, b, c, d, e)}`;
 }
 
-function floatClass(x: number) {
+function floatClass(x: number): string {
     return Math.round(x * 255).toString();
 }
 
@@ -2846,7 +2852,7 @@ function formatColor(
     c: number,
     d: number,
     type: Notation = Notation.Hsla
-) {
+): string {
     switch (type) {
         case Notation.Hsl:
             return `hsl(${a}, ${b * 100}%, ${c * 100}%)`;
@@ -2876,7 +2882,7 @@ function formatColorClass(
     c: number,
     d: number,
     type: Notation = Notation.Hsla
-) {
+): string {
     switch (type) {
         case Notation.Hsl:
             return `${a}-${b * 100}-${c * 100}`;
@@ -2900,11 +2906,16 @@ function formatColorClass(
     }
 }
 
-function spacingName(x: number, y: number) {
+function spacingName(x: number, y: number): string {
     return `spacing-${x}-${y}`;
 }
 
-function paddingName(top: number, right: number, bottom: number, left: number) {
+function paddingName(
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+): string {
     return `pad-${top}-${right}-${bottom}-${left}`;
 }
 
@@ -2913,14 +2924,14 @@ function paddingNameFloat(
     right: number,
     bottom: number,
     left: number
-) {
+): string {
     return `pad-${floatClass(top)}-${floatClass(right)}-${floatClass(
         bottom
     )}-${floatClass(left)}`;
 }
 
 function getStyleName(style: Style): string {
-    function name(selector: PseudoClass) {
+    function name(selector: PseudoClass): string {
         switch (selector) {
             case PseudoClass.Focus:
                 return 'fs';
@@ -2944,19 +2955,19 @@ function getStyleName(style: Style): string {
             return `font-size-${style.i}`;
 
         case Styles.Single:
-            return style.class;
+            return style.class_;
 
         case Styles.Colored:
-            return style.class;
+            return style.class_;
 
         case Styles.SpacingStyle:
-            return style.class;
+            return style.class_;
 
         case Styles.BorderWidth:
-            return style.class;
+            return style.class_;
 
         case Styles.PaddingStyle:
-            return style.class;
+            return style.class_;
 
         case Styles.GridTemplateStyle:
             return `grid-rows-${_.map(style.rows, lengthClassName).join(
@@ -2981,7 +2992,7 @@ function getStyleName(style: Style): string {
                         return '';
 
                     default:
-                        return `${getStyleName(sty)}-${name(style.class)}`;
+                        return `${getStyleName(sty)}-${name(style.class_)}`;
                 }
             }).join(' ');
         }
@@ -2995,22 +3006,65 @@ function getStyleName(style: Style): string {
 }
 
 // Font Adjustments
-// function convertAdjustment(adjustment: elmish.Maybe.Maybe<Adjustment>) {
-//     const lineHeight = 1.5,
-//         base = lineHeight,
-//         normalDescender = (lineHeight - 1) / 2,
-//         oldMiddle = lineHeight / 2,
-//         newCapitalMiddle = (ascender - newBaseLine) / 2 + newBaseLine,
-//         newFullMiddle = (ascender - descender) / 2 + descender,
-//         lines = [
-//             adjustment?.capital,
-//             adjustment?.baseline,
-//             adjustment?.descender,
-//             adjustment?.lowercase,
-//         ];
-//     ascender =
-//         typeof adjustment?.capital === 'number' ? lines : adjustment?.capital;
-// }
+function convertAdjustment(adjustment: Adjustment): {
+    full: {
+        vertical: number;
+        height: number;
+        size: number;
+    };
+    capital: {
+        vertical: number;
+        height: number;
+        size: number;
+    };
+} {
+    const lines: number[] = [
+            adjustment.capital,
+            adjustment.baseline,
+            adjustment.descender,
+            adjustment.lowercase,
+        ],
+        // lineHeight: number = 1.5,
+        // base: number = lineHeight,
+        // normalDescender: number = (lineHeight - 1) / 2,
+        // oldMiddle: number = lineHeight / 2,
+        ascender: number | undefined =
+            _.max(lines) === undefined ? adjustment.capital : _.max(lines),
+        descender: number | undefined =
+            _.min(lines) === undefined ? adjustment.descender : _.min(lines),
+        baseLine: number | undefined = _.min(
+            lines.filter((value: number) => value !== descender)
+        ),
+        newBaseLine: number =
+            baseLine === undefined ? adjustment.baseline : baseLine,
+        // newCapitalMiddle: number = (ascender - newBaseLine) / 2 + newBaseLine,
+        // newFullMiddle: number = (ascender - descender) / 2 + descender,
+        capitalVertical: number = _.isNumber(ascender) ? 1 - ascender : 0,
+        capitalSize: number = _.isNumber(ascender)
+            ? 1 / (ascender - newBaseLine)
+            : 0,
+        fullSize: number =
+            _.isNumber(ascender) && _.isNumber(descender)
+                ? 1 / (ascender - descender)
+                : 0,
+        // TODO: Same as capitalVertical
+        fullVertical: number = _.isNumber(ascender) ? 1 - ascender : 0;
+
+    return {
+        full: adjust(
+            fullSize,
+            _.isNumber(ascender) && _.isNumber(descender)
+                ? ascender - descender
+                : 0,
+            fullVertical
+        ),
+        capital: adjust(
+            capitalSize,
+            _.isNumber(ascender) ? ascender - newBaseLine : 0,
+            capitalVertical
+        ),
+    };
+}
 
 function adjust(
     size: number,
