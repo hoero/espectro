@@ -1,5 +1,4 @@
 import { DOM } from '../deps.ts';
-import { DOMelement } from '../deps.ts';
 import { elmish } from '../deps.ts';
 
 import { Flag_, Second, Field } from './flag.ts';
@@ -24,12 +23,12 @@ export function Unstyled(html: (a: LayoutContext) => DOM.Node): Unstyled {
 
 export interface Styled {
     type: Elements.Styled;
-    styles: Style_[];
+    styles: Style[];
     html: (a: EmbedStyles, b: LayoutContext) => DOM.Node;
 }
 
 export function Styled(
-    styles: Style_[],
+    styles: Style[],
     html: (a: EmbedStyles, b: LayoutContext) => DOM.Node
 ): Styled {
     return { type: Elements.Styled, styles, html };
@@ -1256,35 +1255,51 @@ export enum Childrens {
     Keyed,
 }
 
-export interface Unkeyed {
+export interface Unkeyed<T> {
     type: Childrens.Unkeyed;
-    // deno-lint-ignore no-explicit-any
-    unkeyed: any[];
+    unkeyed: T[];
 }
 
 // deno-lint-ignore no-explicit-any
-export function Unkeyed(unkeyed: any[]): Unkeyed {
+export function Unkeyed(unkeyed: any[]): Unkeyed<any> {
     return {
         type: Childrens.Unkeyed,
         unkeyed,
     };
 }
 
-export interface Keyed {
+export interface Keyed<T> {
     type: Childrens.Keyed;
-    // deno-lint-ignore no-explicit-any
-    keyed: [string, any][];
+    keyed: [string, T][];
 }
 
 // deno-lint-ignore no-explicit-any
-export function Keyed(keyed: any[]): Keyed {
+export function Keyed(keyed: [string, any][]): Keyed<any> {
     return {
         type: Childrens.Keyed,
         keyed,
     };
 }
 
-export type Children = Unkeyed | Keyed;
+export type Children<T> = Unkeyed<T> | Keyed<T>;
+
+export interface Spaced {
+    name: string;
+    x: number;
+    y: number;
+}
+
+export type Spacing = Spaced;
+
+export interface Padding_ {
+    name: string;
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+}
+
+export type Padding = Padding_;
 
 export enum RenderMode {
     Layout,

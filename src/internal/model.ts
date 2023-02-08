@@ -1,7 +1,5 @@
 import { classValidator } from '../deps.ts';
 import { DOM } from '../deps.ts';
-import { DOMelement } from '../deps.ts';
-import { CTOR_KEY } from '../deps.ts';
 import { elmish } from '../deps.ts';
 import _ from 'lodash';
 
@@ -33,7 +31,7 @@ import {
     height,
     value,
 } from './flag.ts';
-import { classes as cls, dot } from './style.ts';
+import { classes as cls, dot, rules } from './style.ts';
 import {
     Elements,
     Element,
@@ -80,7 +78,12 @@ import {
     Children,
     Childrens,
     TextElement,
+    asRow,
+    asColumn,
     asEl,
+    asGrid,
+    asParagraph,
+    asTextColumn,
     OptionRecord,
     FocusStyle,
     Style_,
@@ -96,6 +99,9 @@ import {
     Generic,
     Attr,
     Unstyled,
+    Styled,
+    Text,
+    Empty,
     Embedded,
     Untransformed,
     Moved,
@@ -107,7 +113,11 @@ import {
     Colored,
     FontSize,
     FontFamily,
+    Options,
+    Transform,
 } from './data.ts';
+import { attribute, attributes } from '../dom/attribute.ts';
+import { element } from '../dom/element.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -262,11 +272,7 @@ function variantName(variant: Variant): string {
 function renderVariants(typeface: Font): Maybe<string> {
     switch (typeface.type) {
         case FontFamilyType.FontWith: {
-            return Just(
-                typeface.variants
-                    .map((variant) => renderVariant(variant))
-                    .join(', ')
-            );
+            return Just(typeface.variants.map(renderVariant).join(', '));
         }
 
         default:
@@ -296,68 +302,257 @@ function isSmallCaps(variant: Variant): boolean {
 function hasSmallCaps(typeface: Font): boolean {
     switch (typeface.type) {
         case FontFamilyType.FontWith:
-            return _.some(typeface.variants, isSmallCaps);
+            return typeface.variants.some(isSmallCaps);
 
         default:
             return false;
     }
 }
 
-const div: Generic = Generic();
+const div = Generic();
 
 function htmlClass(cls: string): Attribute {
-    return Attr(createAttribute('class', cls));
+    return Attr(attribute('class', cls));
 }
 
 function unstyled(node: (a: LayoutContext) => DOM.Node): Element {
     return Unstyled(node);
 }
 
-// function finalizeNode(
-//     has: Field,
-//     node: NodeName,
-//     attributes: Attr,
-//     children: Children,
-//     embedMode: EmbedStyle,
-//     parentContext: LayoutContext
-// ) {
-//     function createNode(nodeName: string, attrs: Attr) {
-//         switch (children.type) {
-//             case Childrens.Keyed:
-//                 break;
+function finalizeNode(
+    has: Field,
+    node: NodeName,
+    attributes: DOM.Attr[],
+    children: Children<DOM.Node>,
+    embedMode: EmbedStyle,
+    parentContext: LayoutContext
+): DOM.Node {
+    const attributes_: [string, string][] = attributes.map((x: DOM.Attr) => [
+        x.name,
+        x.value,
+    ]);
+    const html: DOM.Node = (() => {
+        switch (node.type) {
+            case NodeNames.Generic:
+                return createNode('div', attributes_);
 
-//             case Childrens.Unkeyed:
-//                 break;
-//         }
-//     }
-// }
+            case NodeNames.NodeName:
+                return createNode(node.nodeName, attributes_);
 
-// function embedWith(
-//     static_: boolean,
-//     opts: OptionRecord,
-//     styles: Style_[],
-//     children: any[]
-// ) {
-//     const dinamicStyleSheet: DOMelement.Element = toStyleSheet(
-//         opts,
-//         styles.reduce(
-//             (
-//                 acc: [Set<string>, Style_[]],
-//                 style: Style_
-//             ): [Set<string>, Style_[]] => reduceStyles(style, acc),
-//             [new Set(''), renderFocusStyle(opts.focus)]
-//         )[1]
-//     );
-//     // if (static_) {
-//     // }
-// }
+            case NodeNames.Embedded: {
+                const el = element(node.nodeName, attributes_);
+                const child = element(
+                    node.internal,
+                    [['class', cls.any + ' ' + cls.single]],
+                    el
+                );
+                el.append(child);
+                return el;
+            }
+        }
+    })();
 
-// function embedKeyed(
-//     static_: boolean,
-//     opts: OptionRecord,
-//     styles: Style[],
-//     children: [string, any][]
-// ) {}
+    function createNode(nodeName: string, attrs: [string, string][]): DOM.Node {
+        switch (children.type) {
+            case Childrens.Keyed: {
+                const keyedNode = element(nodeName, attrs);
+                const child = (embedMode: EmbedStyle): [string, DOM.Node][] => {
+                    switch (embedMode.type) {
+                        case EmbedStyles.NoStyleSheet:
+                            return children.keyed;
+
+                        case EmbedStyles.OnlyDynamic:
+                            return embedKeyed(
+                                false,
+                                embedMode.options,
+                                embedMode.styles,
+                                children.keyed
+                            );
+
+                        case EmbedStyles.StaticRootAndDynamic:
+                            return embedKeyed(
+                                true,
+                                embedMode.options,
+                                embedMode.styles,
+                                children.keyed
+                            );
+                    }
+                };
+
+                child(embedMode).map((value: [string, DOM.Node]) => {
+                    const html = element(value[0], [], keyedNode);
+                    html.append(value[1]);
+                    keyedNode.append(html);
+                });
+                return keyedNode;
+            }
+
+            case Childrens.Unkeyed: {
+                const unkeyedNode: DOM.Element = (() => {
+                    switch (nodeName) {
+                        case 'div':
+                            return element('div', attrs);
+
+                        case 'p':
+                            return element('p', attrs);
+
+                        default:
+                            return element(nodeName, attrs);
+                    }
+                })();
+                const child = (embedMode: EmbedStyle): DOM.Node[] => {
+                    switch (embedMode.type) {
+                        case EmbedStyles.NoStyleSheet:
+                            return children.unkeyed;
+
+                        case EmbedStyles.OnlyDynamic:
+                            return embedWith(
+                                false,
+                                embedMode.options,
+                                embedMode.styles,
+                                children.unkeyed
+                            );
+
+                        case EmbedStyles.StaticRootAndDynamic:
+                            return embedWith(
+                                true,
+                                embedMode.options,
+                                embedMode.styles,
+                                children.unkeyed
+                            );
+                    }
+                };
+
+                child(embedMode).map((value: DOM.Node) =>
+                    unkeyedNode.append(value)
+                );
+                return unkeyedNode;
+            }
+        }
+    }
+
+    switch (parentContext) {
+        case LayoutContext.AsRow:
+            if (present(widthFill, has) && !present(widthBetween, has)) {
+                return html;
+            } else if (present(alignRight, has)) {
+                const el = element('u', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.contentCenterY,
+                            cls.alignContainerRight,
+                        ].join(' '),
+                    ],
+                ]);
+                el.append(html);
+                return el;
+            } else if (present(centerX, has)) {
+                const el = element('s', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.contentCenterY,
+                            cls.alignContainerCenterX,
+                        ].join(' '),
+                    ],
+                ]);
+                el.append(html);
+                return el;
+            } else {
+                return html;
+            }
+
+        case LayoutContext.AsColumn:
+            if (present(heightFill, has) && !present(heightBetween, has)) {
+                return html;
+            } else if (present(centerY, has)) {
+                const el = element('s', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.alignContainerCenterY,
+                        ].join(' '),
+                    ],
+                ]);
+                el.append(html);
+                return el;
+            } else if (present(alignBottom, has)) {
+                const el = element('u', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.alignContainerBottom,
+                        ].join(' '),
+                    ],
+                ]);
+                el.append(html);
+                return el;
+            } else {
+                return html;
+            }
+
+        default:
+            return html;
+    }
+}
+
+function embedWith(
+    static_: boolean,
+    opts: OptionRecord,
+    styles: Style_[],
+    children: DOM.Node[]
+): DOM.Node[] {
+    const dinamicStyleSheet: DOM.Node = toStyleSheet(
+        opts,
+        styles.reduce(
+            (
+                acc: [Set<string>, Style_[]],
+                style: Style_
+            ): [Set<string>, Style_[]] => reduceStyles(style, acc),
+            [new Set(''), renderFocusStyle(opts.focus)]
+        )[1]
+    );
+    if (static_) return [staticRoot(opts), dinamicStyleSheet, ...children];
+    return [dinamicStyleSheet, ...children];
+}
+
+function embedKeyed(
+    static_: boolean,
+    opts: OptionRecord,
+    styles: Style_[],
+    children: [string, DOM.Node][]
+): [string, DOM.Node][] {
+    const dinamicStyleSheet: DOM.Node = toStyleSheet(
+        opts,
+        styles.reduce(
+            (
+                acc: [Set<string>, Style_[]],
+                style: Style_
+            ): [Set<string>, Style_[]] => reduceStyles(style, acc),
+            [new Set(''), renderFocusStyle(opts.focus)]
+        )[1]
+    );
+    if (static_)
+        return [
+            ['static-stylesheet', staticRoot(opts)],
+            ['dynamic-stylesheet', dinamicStyleSheet],
+            ...children,
+        ];
+    return [['dynamic-stylesheet', dinamicStyleSheet], ...children];
+}
 
 function reduceStylesRecursive(
     cache: Set<string>,
@@ -727,10 +922,7 @@ function gatherAttrRecursive(
                 case Nothing():
                     return Gathered(
                         node,
-                        [
-                            createAttribute('class', classes),
-                            ...createAttributes(attrs),
-                        ],
+                        [attribute('class', classes), ...attributes(attrs)],
                         styles,
                         children,
                         has
@@ -741,13 +933,10 @@ function gatherAttrRecursive(
                     return Gathered(
                         node,
                         [
-                            createAttribute('class', `${classes} ${class_}`),
-                            ...createAttributes(attrs),
+                            attribute('class', `${classes} ${class_}`),
+                            ...attributes(attrs),
                         ],
-                        [
-                            { type: Styles.Transform, transform: transform },
-                            ...styles,
-                        ],
+                        [Transform(transform), ...styles],
                         children,
                         has
                     );
@@ -896,7 +1085,7 @@ function gatherAttrRecursive(
                                     transform,
                                     styles,
                                     [
-                                        createAttribute(
+                                        attribute(
                                             'aria-label',
                                             attr.description.label
                                         ),
@@ -916,7 +1105,7 @@ function gatherAttrRecursive(
                                     transform,
                                     styles,
                                     [
-                                        createAttribute('aria-live', 'polite'),
+                                        attribute('aria-live', 'polite'),
                                         ...attrs,
                                     ],
                                     children,
@@ -933,10 +1122,7 @@ function gatherAttrRecursive(
                                     transform,
                                     styles,
                                     [
-                                        createAttribute(
-                                            'aria-live',
-                                            'assertive'
-                                        ),
+                                        attribute('aria-live', 'assertive'),
                                         ...attrs,
                                     ],
                                     children,
@@ -952,10 +1138,7 @@ function gatherAttrRecursive(
                                     has,
                                     transform,
                                     styles,
-                                    [
-                                        createAttribute('role', 'button'),
-                                        ...attrs,
-                                    ],
+                                    [attribute('role', 'button'), ...attrs],
                                     children,
                                     elementAttrs.filter(
                                         (attr_) => attr_.type !== attr.type
@@ -1442,26 +1625,11 @@ function gatherAttrRecursive(
     }
     return Gathered(
         node,
-        [createAttribute('class', classes), ...createAttributes(attrs)],
+        [attribute('class', classes), ...attributes(attrs)],
         styles,
         children,
         has
     );
-}
-
-function createAttribute(name: string, value: string): DOM.Attr {
-    return new DOMelement.Attr(null, name, value, CTOR_KEY.CTOR_KEY);
-}
-
-function createAttributes(attributes: DOM.Attr[]): DOM.Attr[] {
-    const attrs: DOM.Attr[] = [];
-
-    for (const { name, value } of attributes) {
-        const attr_ = createAttribute(name, value);
-        attrs.push(attr_);
-    }
-
-    return attrs;
 }
 
 function addNearbyElement(
@@ -1524,7 +1692,7 @@ function addNearbyElement(
     }
 }
 
-function nearbyElement(location: Location, element: Element): DOM.Element {
+function nearbyElement(location: Location, element_: Element): DOM.Element {
     const common = [cls.nearby, cls.single];
 
     function classes_(location: Location) {
@@ -1549,31 +1717,26 @@ function nearbyElement(location: Location, element: Element): DOM.Element {
         }
     }
 
-    function child(element: Element) {
-        switch (element.type) {
+    function child(element_: Element) {
+        switch (element_.type) {
             case Elements.Empty:
                 return new DOM.Text('');
 
             case Elements.Text:
-                return textElement(TextElement.Text, element.str);
+                return textElement(TextElement.Text, element_.str);
 
             case Elements.Unstyled:
-                return element.html(asEl);
+                return element_.html(asEl);
 
             case Elements.Styled:
-                return element.html(EmbedStyles.NoStyleSheet, asEl);
+                return element_.html(EmbedStyles.NoStyleSheet, asEl);
         }
     }
 
-    const element_ = new DOMelement.Element(
-        'div',
-        null,
-        [['class', classes_(location)]],
-        CTOR_KEY.CTOR_KEY
-    );
-    element_.append(child(element));
+    const el = element('div', [['class', classes_(location)]]);
+    el.append(child(element_));
 
-    return element_;
+    return el;
 }
 
 function renderWidth(w: Length): [Field, string, Style[]] {
@@ -1765,6 +1928,308 @@ function contextClasses(context: LayoutContext) {
     }
 }
 
+const untransformed = Untransformed();
+
+function createElement(
+    context: LayoutContext,
+    children: Children<Element>,
+    rendered: Gathered
+): Element {
+    function gather(
+        child: Element,
+        [htmls, existingStyles]: [Unkeyed<DOM.Node>, Style[]]
+    ): [DOM.Node[], Style[]] {
+        switch (child.type) {
+            case Elements.Unstyled:
+                if (context === asParagraph)
+                    return [
+                        [child.html(context), ...htmls.unkeyed],
+                        existingStyles,
+                    ];
+                return [
+                    [child.html(context), ...htmls.unkeyed],
+                    existingStyles,
+                ];
+
+            case Elements.Styled:
+                if (context === asParagraph)
+                    return [
+                        [
+                            child.html(EmbedStyles.NoStyleSheet, context),
+                            ...htmls.unkeyed,
+                        ],
+                        _.isEmpty(existingStyles)
+                            ? child.styles
+                            : child.styles.concat(existingStyles),
+                    ];
+                return [
+                    [
+                        child.html(EmbedStyles.NoStyleSheet, context),
+                        ...htmls.unkeyed,
+                    ],
+                    _.isEmpty(existingStyles)
+                        ? child.styles
+                        : child.styles.concat(existingStyles),
+                ];
+
+            case Elements.Text:
+                // TEXT OPTIMIZATION
+                // You can have raw text if the element is an el, and has `width-content` and `height-content`
+                // Same if it's a column or row with one child and width-content, height-content
+                // interferes with css grid
+                // Maybe we could unpack text elements in a paragraph as well,
+                // however, embedded elements that are larger than the line height will overlap with exisitng text.
+                // I don't think that's what we want.
+                // context === asEl || context === asParagraph
+                //   ?[ [new DOM.Text(context === asParagraph ? child.str : child.str), ...htmls.unkeyed], existingStyles]
+                //   :
+                return [
+                    [
+                        context === asEl
+                            ? textElement(TextElement.Fill, child.str)
+                            : textElement(TextElement.Text, child.str),
+                        ...htmls.unkeyed,
+                    ],
+                    existingStyles,
+                ];
+
+            case Elements.Empty:
+                return [htmls.unkeyed, existingStyles];
+        }
+    }
+
+    function gatherKeyed(
+        [key, child]: [string, Element],
+        [htmls, existingStyles]: [Keyed<DOM.Node>, Style[]]
+    ): [[string, DOM.Node][], Style[]] {
+        switch (child.type) {
+            case Elements.Unstyled:
+                if (context === asParagraph)
+                    return [
+                        [[key, child.html(context)], ...htmls.keyed],
+                        existingStyles,
+                    ];
+                return [
+                    [[key, child.html(context)], ...htmls.keyed],
+                    existingStyles,
+                ];
+
+            case Elements.Styled:
+                if (context === asParagraph)
+                    return [
+                        [
+                            [
+                                key,
+                                child.html(EmbedStyles.NoStyleSheet, context),
+                            ],
+                            ...htmls.keyed,
+                        ],
+                        _.isEmpty(existingStyles)
+                            ? child.styles
+                            : child.styles.concat(existingStyles),
+                    ];
+                return [
+                    [
+                        [key, child.html(EmbedStyles.NoStyleSheet, context)],
+                        ...htmls.keyed,
+                    ],
+                    _.isEmpty(existingStyles)
+                        ? child.styles
+                        : child.styles.concat(existingStyles),
+                ];
+
+            case Elements.Text:
+                // TEXT OPTIMIZATION
+                // You can have raw text if the element is an el, and has `width-content` and `height-content`
+                // Same if it's a column or row with one child and width-content, height-content
+                // interferes with css grid
+                // Maybe we could unpack text elements in a paragraph as well,
+                // however, embedded elements that are larger than the line height will overlap with exisitng text.
+                // I don't think that's what we want.
+                // context === asEl || context === asParagraph
+                //   ?[ [[key, new DOM.Text(context === asParagraph ? child.str : child.str)], ...htmls.unkeyed], existingStyles]
+                //   :
+                return [
+                    [
+                        [
+                            key,
+                            context === asEl
+                                ? textElement(TextElement.Fill, child.str)
+                                : textElement(TextElement.Text, child.str),
+                        ],
+                        ...htmls.keyed,
+                    ],
+                    existingStyles,
+                ];
+
+            case Elements.Empty:
+                return [htmls.keyed, existingStyles];
+        }
+    }
+
+    switch (children.type) {
+        case Childrens.Keyed: {
+            const gathered = children.keyed.reduceRight(
+                (
+                    [keyed, styles]: [[string, DOM.Node][], Style[]],
+                    keyed_: [string, Element]
+                ) => gatherKeyed(keyed_, [Keyed(keyed), styles]),
+                [[], []]
+            );
+
+            switch (gathered) {
+                default: {
+                    const newStyles: Style[] = _.isEmpty(gathered[1])
+                        ? rendered.styles
+                        : rendered.styles.concat(gathered[1]);
+                    switch (newStyles) {
+                        case []:
+                            return Unstyled(() =>
+                                finalizeNode(
+                                    rendered.has,
+                                    rendered.node,
+                                    rendered.attributes,
+                                    Keyed(
+                                        addKeyedChildren(
+                                            'nearby-element-pls',
+                                            gathered[0],
+                                            rendered.children
+                                        )
+                                    ),
+                                    NoStyleSheet(),
+                                    context
+                                )
+                            );
+
+                        default:
+                            return Styled(newStyles, () =>
+                                finalizeNode(
+                                    rendered.has,
+                                    rendered.node,
+                                    rendered.attributes,
+                                    Keyed(
+                                        addKeyedChildren(
+                                            'nearby-element-pls',
+                                            gathered[0],
+                                            rendered.children
+                                        )
+                                    ),
+                                    NoStyleSheet(),
+                                    context
+                                )
+                            );
+                    }
+                }
+            }
+        }
+
+        case Childrens.Unkeyed: {
+            const gathered = children.unkeyed.reduceRight(
+                ([unkeyed, styles]: [DOM.Node[], Style[]], unkeyed_: Element) =>
+                    gather(unkeyed_, [Unkeyed(unkeyed), styles]),
+                [[], []]
+            );
+
+            switch (gathered) {
+                default: {
+                    const newStyles: Style[] = _.isEmpty(gathered[1])
+                        ? rendered.styles
+                        : rendered.styles.concat(gathered[1]);
+                    switch (newStyles) {
+                        case []:
+                            return Unstyled(() =>
+                                finalizeNode(
+                                    rendered.has,
+                                    rendered.node,
+                                    rendered.attributes,
+                                    Unkeyed(
+                                        addChildren(
+                                            gathered[0],
+                                            rendered.children
+                                        )
+                                    ),
+                                    NoStyleSheet(),
+                                    context
+                                )
+                            );
+
+                        default:
+                            return Styled(newStyles, () =>
+                                finalizeNode(
+                                    rendered.has,
+                                    rendered.node,
+                                    rendered.attributes,
+                                    Unkeyed(
+                                        addChildren(
+                                            gathered[0],
+                                            rendered.children
+                                        )
+                                    ),
+                                    NoStyleSheet(),
+                                    context
+                                )
+                            );
+                    }
+                }
+            }
+        }
+    }
+}
+
+function addChildren(
+    existing: DOM.Node[],
+    nearbyChildren: NearbyChildren
+): DOM.Node[] {
+    switch (nearbyChildren.type) {
+        case NearbyChildrens.NoNearbyChildren:
+            return existing;
+
+        case NearbyChildrens.ChildrenBehind:
+            return nearbyChildren.existingBehind.concat(existing);
+
+        case NearbyChildrens.ChildrenInFront:
+            return existing.concat(nearbyChildren.existingInFront);
+
+        case NearbyChildrens.ChildrenBehindAndInFront:
+            return nearbyChildren.existingBehind
+                .concat(existing)
+                .concat(nearbyChildren.existingInFront);
+    }
+}
+
+function addKeyedChildren(
+    key: string,
+    existing: [string, DOM.Node][],
+    nearbyChildren: NearbyChildren
+): [string, DOM.Node][] {
+    switch (nearbyChildren.type) {
+        case NearbyChildrens.NoNearbyChildren:
+            return existing;
+
+        case NearbyChildrens.ChildrenBehind:
+            return nearbyChildren.existingBehind
+                .map((x: DOM.Node): [string, DOM.Node] => [key, x])
+                .concat(existing);
+
+        case NearbyChildrens.ChildrenInFront:
+            return existing.concat(
+                nearbyChildren.existingInFront.map(
+                    (x: DOM.Node): [string, DOM.Node] => [key, x]
+                )
+            );
+
+        case NearbyChildrens.ChildrenBehindAndInFront:
+            return nearbyChildren.existingBehind
+                .map((x: DOM.Node): [string, DOM.Node] => [key, x])
+                .concat(existing)
+                .concat(
+                    nearbyChildren.existingInFront.map(
+                        (x: DOM.Node): [string, DOM.Node] => [key, x]
+                    )
+                );
+    }
+}
+
 const unit = 0;
 
 const focusDefaultStyle = FocusStyle(
@@ -1779,65 +2244,113 @@ const defaultOptions = OptionRecord(
     RenderMode.Layout
 );
 
-// TODO:
-// function staticRoot(options: OptionRecord): DOM.Element {
-//     switch (options.mode) {
-//         case RenderMode.Layout: {
-//             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-//             const div = new DOMelement.Element(
-//                     'div',
-//                     null,
-//                     [],
-//                     CTOR_KEY.CTOR_KEY
-//                 ),
-//                 style = new DOMelement.Element(
-//                     'style',
-//                     div,
-//                     [],
-//                     CTOR_KEY.CTOR_KEY
-//                 );
-//             style.append(new DOM.Text());
-//             div.append(style);
-//             return div;
-//         }
+function staticRoot(options: OptionRecord): DOM.Node {
+    switch (options.mode) {
+        case RenderMode.Layout: {
+            // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
+            const div = element('div', []),
+                style = element('style', [], div);
+            style.append(new DOM.Text(rules()));
+            div.append(style);
+            return div;
+        }
 
-//         case RenderMode.NoStaticStyleSheet: {
-//             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-//             const div = new DOMelement.Element(
-//                     'div',
-//                     null,
-//                     [],
-//                     CTOR_KEY.CTOR_KEY
-//                 ),
-//                 style = new DOMelement.Element(
-//                     'style',
-//                     div,
-//                     [],
-//                     CTOR_KEY.CTOR_KEY
-//                 );
-//             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
-//             div.append(style);
-//             return div;
-//         }
+        case RenderMode.NoStaticStyleSheet: {
+            return new DOM.Text('');
+        }
 
-//         case RenderMode.WithVirtualCss: {
-//             const rules = new DOMelement.Element(
-//                     'espectro-rules',
-//                     null,
-//                     [],
-//                     CTOR_KEY.CTOR_KEY
-//                 ),
-//                 rules_ = new DOMelement.Attr(
-//                     null,
-//                     'rules',
-//                     encodeStyles(options, stylesheet),
-//                     CTOR_KEY.CTOR_KEY
-//                 );
-//             rules.append(rules_);
-//             return rules;
-//         }
-//     }
-// }
+        case RenderMode.WithVirtualCss: {
+            const staticRules = element('espectro-static-rules', []),
+                rules_ = attribute('rules', JSON.stringify(rules()));
+            staticRules.append(rules_);
+            return staticRules;
+        }
+    }
+}
+
+// deno-lint-ignore no-explicit-any
+function addWhen(ifThis: boolean, x: any, to: any[]): any[] {
+    if (ifThis) return [x, ...to];
+    return to;
+}
+
+// TODO: This doesn't reduce equivalent attributes completely.
+function filter(attrs: Attribute[]): Attribute[] {
+    return attrs.reduceRight(
+        (
+            [found, has]: [Attribute[], Set<string>],
+            x: Attribute
+        ): [Attribute[], Set<string>] => {
+            switch (x.type) {
+                case Attributes.NoAttribute:
+                    return [found, has];
+
+                case Attributes.Class:
+                    return [[x, ...found], has];
+
+                case Attributes.Attr:
+                    return [[x, ...found], has];
+
+                case Attributes.StyleClass:
+                    return [[x, ...found], has];
+
+                case Attributes.Width:
+                    if (has.has('width')) return [found, has];
+                    return [[x, ...found], has.add('width')];
+
+                case Attributes.Height:
+                    if (has.has('height')) return [found, has];
+                    return [[x, ...found], has.add('height')];
+
+                case Attributes.Describe:
+                    if (has.has('described')) return [found, has];
+                    return [[x, ...found], has.add('described')];
+
+                case Attributes.Nearby:
+                    return [[x, ...found], has];
+
+                case Attributes.AlignX:
+                    if (has.has('align-x')) return [found, has];
+                    return [[x, ...found], has.add('align-x')];
+
+                case Attributes.AlignY:
+                    if (has.has('align-y')) return [found, has];
+                    return [[x, ...found], has.add('align-y')];
+
+                case Attributes.TransformComponent:
+                    if (has.has('transform')) return [found, has];
+                    return [[x, ...found], has.add('transform')];
+            }
+        },
+        [[], new Set('')]
+    )[0];
+}
+
+function isContent(len: Length): boolean {
+    switch (len.type) {
+        case Lengths.Content:
+            return true;
+
+        case Lengths.Max:
+            return isContent(len.length);
+
+        case Lengths.Min:
+            return isContent(len.length);
+
+        default:
+            return false;
+    }
+}
+
+function get(
+    attrs: Attribute[],
+    isAttr: (x: Attribute) => boolean
+): Attribute[] {
+    return filter(attrs).reduceRight((acc: Attribute[], attr: Attribute) => {
+        if (isAttr(attr)) return [attr, ...acc];
+        return acc;
+    }, []);
+}
 
 function textElement(type: TextElement, str: string): DOM.Element {
     const textClasses = `${cls.any} ${cls.text} ${cls.widthContent} ${cls.heightContent}`,
@@ -1853,15 +2366,10 @@ function textElement(type: TextElement, str: string): DOM.Element {
         }
     }
 
-    const element = new DOMelement.Element(
-        'div',
-        null,
-        [['class', classes_(type)]],
-        CTOR_KEY.CTOR_KEY
-    );
-    element.append(new DOM.Text(str));
+    const element_ = element('div', [['class', classes_(type)]]);
+    element_.append(new DOM.Text(str));
 
-    return element;
+    return element_;
 }
 
 const families: Font[] = [
@@ -1997,25 +2505,12 @@ function renderFocusStyle(focus: FocusStyle): Style_[] {
     ];
 }
 
-function toStyleSheet(
-    options: OptionRecord,
-    stylesheet: Style_[]
-): DOM.Element {
+function toStyleSheet(options: OptionRecord, stylesheet: Style_[]): DOM.Node {
     switch (options.mode) {
         case RenderMode.Layout: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = new DOMelement.Element(
-                    'div',
-                    null,
-                    [],
-                    CTOR_KEY.CTOR_KEY
-                ),
-                style = new DOMelement.Element(
-                    'style',
-                    div,
-                    [],
-                    CTOR_KEY.CTOR_KEY
-                );
+            const div = element('div', []),
+                style = element('style', [], div);
             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
             div.append(style);
             return div;
@@ -2023,36 +2518,16 @@ function toStyleSheet(
 
         case RenderMode.NoStaticStyleSheet: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = new DOMelement.Element(
-                    'div',
-                    null,
-                    [],
-                    CTOR_KEY.CTOR_KEY
-                ),
-                style = new DOMelement.Element(
-                    'style',
-                    div,
-                    [],
-                    CTOR_KEY.CTOR_KEY
-                );
+            const div = element('div', []),
+                style = element('style', [], div);
             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
             div.append(style);
             return div;
         }
 
         case RenderMode.WithVirtualCss: {
-            const rules = new DOMelement.Element(
-                    'espectro-rules',
-                    null,
-                    [],
-                    CTOR_KEY.CTOR_KEY
-                ),
-                rules_ = new DOMelement.Attr(
-                    null,
-                    'rules',
-                    encodeStyles(options, stylesheet),
-                    CTOR_KEY.CTOR_KEY
-                );
+            const rules = element('espectro-rules', []),
+                rules_ = attribute('rules', encodeStyles(options, stylesheet));
             rules.append(rules_);
             return rules;
         }
@@ -2108,8 +2583,8 @@ function renderTopLevelValues(rules: [string, Font[]][]): string {
     }
 
     return (
-        rules.map((rule) => fontImports(rule)).join('\n') +
-        rules.map((rule) => fontAdjustments(rule)).join('\n')
+        rules.map(fontImports).join('\n') +
+        rules.map(fontAdjustments).join('\n')
     );
 }
 
@@ -2171,9 +2646,7 @@ function bracket(selector: string, rules: [string, string][]): string {
     function renderPair([name, value]: [string, string]) {
         return `${name}: ${value};`;
     }
-    return `${selector} {${rules
-        .map((rule: [string, string]): string => renderPair(rule))
-        .join('')}}`;
+    return `${selector} {${rules.map(renderPair).join('')}}`;
 }
 
 function fontAdjustmentRules(converted: {
@@ -2446,18 +2919,12 @@ function renderStyleRule(
             const families: Property[] = [
                 Property(
                     'font-family',
-                    rule.typefaces
-                        .map((value: Font) => {
-                            return fontName(value);
-                        })
-                        .join(', ')
+                    rule.typefaces.map(fontName).join(', ')
                 ),
                 Property('font-feature-settings', features),
                 Property(
                     'font-variant',
-                    _.some(rule.typefaces, hasSmallCaps)
-                        ? 'small-caps'
-                        : 'normal'
+                    rule.typefaces.some(hasSmallCaps) ? 'small-caps' : 'normal'
                 ),
             ];
             return renderStyle(options, pseudo, '.' + rule.name, families);
@@ -2603,9 +3070,9 @@ function renderStyleRule(
 
         case Styles.GridTemplateStyle: {
             const class_ = `.grid-rows-${rule.rows
-                .map((row: Length): string => lengthClassName(row))
+                .map(lengthClassName)
                 .join('-')}-cols-${rule.columns
-                .map((column: Length): string => lengthClassName(column))
+                .map(lengthClassName)
                 .join('-')}-space-x-${lengthClassName(
                 rule.spacing[0]
             )}-space-y-${lengthClassName(rule.spacing[1])}`;
@@ -2684,18 +3151,18 @@ function renderStyleRule(
             const xSpacing: string = toGridLength(rule.spacing[0]);
 
             const msColumns = `-ms-grid-columns: ${rule.columns
-                .map((column: Length): string => toGridLength(column))
+                .map(toGridLength)
                 .join(ySpacing)};`;
             const msRows = `-ms-grid-rows: ${rule.rows
-                .map((row: Length): string => toGridLength(row))
+                .map(toGridLength)
                 .join(xSpacing)};`;
             const base = `${class_}{${msColumns}${msRows}}`;
 
             const columns = `grid-template-columns: ${rule.columns
-                .map((column: Length): string => toGridLength(column))
+                .map(toGridLength)
                 .join(' ')};`;
             const rows = `grid-template-rows: ${rule.rows
-                .map((row: Length): string => toGridLength(row))
+                .map(toGridLength)
                 .join(' ')};`;
 
             const gapX = `grid-column-gap:${toGridLength(rule.spacing[0])}`;
@@ -2970,11 +3437,11 @@ function getStyleName(style: Style): string {
             return style.class_;
 
         case Styles.GridTemplateStyle:
-            return `grid-rows-${_.map(style.rows, lengthClassName).join(
-                '-'
-            )}-cols-${_.map(style.columns, lengthClassName).join(
-                '-'
-            )}-space-x-${lengthClassName(
+            return `grid-rows-${style.rows
+                .map(lengthClassName)
+                .join('-')}-cols-${style.columns
+                .map(lengthClassName)
+                .join('-')}-space-x-${lengthClassName(
                 style.spacing[0]
             )}-space-y-${lengthClassName(style.spacing[1])}`;
 
@@ -2986,15 +3453,17 @@ function getStyleName(style: Style): string {
         }
 
         case Styles.PseudoSelector: {
-            return _.map(style.styles, (sty: Style) => {
-                switch (getStyleName(sty)) {
-                    case '':
-                        return '';
+            return style.styles
+                .map((sty: Style) => {
+                    switch (getStyleName(sty)) {
+                        case '':
+                            return '';
 
-                    default:
-                        return `${getStyleName(sty)}-${name(style.class_)}`;
-                }
-            }).join(' ');
+                        default:
+                            return `${getStyleName(sty)}-${name(style.class_)}`;
+                    }
+                })
+                .join(' ');
         }
 
         case Styles.Transparency:
@@ -3103,8 +3572,6 @@ export {
     composeTransformation,
     skippable,
     gatherAttrRecursive,
-    createAttribute,
-    createAttributes,
     addNearbyElement,
     renderWidth,
     renderHeight,
