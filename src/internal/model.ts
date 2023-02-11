@@ -1,7 +1,7 @@
 import { classValidator } from '../deps.ts';
 import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
-import _, { pad } from 'lodash';
+import _ from 'lodash';
 
 import {
     Field,
@@ -29,7 +29,6 @@ import {
     heightBetween,
     merge,
     height,
-    value,
 } from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
 import {
@@ -40,12 +39,8 @@ import {
     Transformations,
     Transformation,
     FontFamilyType,
-    Serif,
     SansSerif,
-    Monospace,
     Typeface,
-    ImportFont,
-    FontWith,
     Font,
     Variants,
     Variant,
@@ -78,20 +73,13 @@ import {
     Children,
     Childrens,
     TextElement,
-    asRow,
-    asColumn,
     asEl,
-    asGrid,
     asParagraph,
-    asTextColumn,
     OptionObject,
     FocusStyle,
     Style_,
     Property,
     Option,
-    HoverOption,
-    FocusStyleOption,
-    RenderModeOption,
     HoverSetting,
     Adjustment,
     Maybe,
@@ -103,8 +91,6 @@ import {
     Attr,
     Unstyled,
     Styled,
-    Text,
-    Empty,
     Embedded,
     Untransformed,
     Moved,
@@ -561,35 +547,6 @@ function embedKeyed(
             ...children,
         ];
     return [['dynamic-stylesheet', dinamicStyleSheet], ...children];
-}
-
-function reduceStylesRecursive(
-    cache: Set<string>,
-    found: Style[],
-    styles: Style[]
-): Style[] {
-    const head = styles[0],
-        remaining = styles;
-    remaining.shift();
-
-    switch (styles) {
-        case []:
-            return found;
-
-        default: {
-            const styleName = getStyleName(head);
-
-            if (cache.has(styleName)) {
-                return reduceStylesRecursive(cache, found, remaining);
-            }
-
-            return reduceStylesRecursive(
-                cache.add(styleName),
-                [head, ...found],
-                remaining
-            );
-        }
-    }
 }
 
 function reduceStyles(
@@ -2252,18 +2209,10 @@ function addKeyedChildren(
     }
 }
 
-const unit = 0;
-
 const focusDefaultStyle = FocusStyle(
     Nothing(),
     Just(Shadow(Rgba(155 / 255, 203 / 255, 1, 1, Notation.Rgba), [0, 0], 0, 3)),
     Nothing()
-);
-
-const defaultOptions = OptionObject(
-    HoverSetting.AllowHover,
-    focusDefaultStyle,
-    RenderMode.Layout
 );
 
 function staticRoot(options: OptionObject): DOM.Node {
@@ -2288,90 +2237,6 @@ function staticRoot(options: OptionObject): DOM.Node {
             return staticRules;
         }
     }
-}
-
-// deno-lint-ignore no-explicit-any
-function addWhen(ifThis: boolean, x: any, to: any[]): any[] {
-    if (ifThis) return [x, ...to];
-    return to;
-}
-
-// TODO: This doesn't reduce equivalent attributes completely.
-function filter(attrs: Attribute[]): Attribute[] {
-    return attrs.reduceRight(
-        (
-            [found, has]: [Attribute[], Set<string>],
-            x: Attribute
-        ): [Attribute[], Set<string>] => {
-            switch (x.type) {
-                case Attributes.NoAttribute:
-                    return [found, has];
-
-                case Attributes.Class:
-                    return [[x, ...found], has];
-
-                case Attributes.Attr:
-                    return [[x, ...found], has];
-
-                case Attributes.StyleClass:
-                    return [[x, ...found], has];
-
-                case Attributes.Width:
-                    if (has.has('width')) return [found, has];
-                    return [[x, ...found], has.add('width')];
-
-                case Attributes.Height:
-                    if (has.has('height')) return [found, has];
-                    return [[x, ...found], has.add('height')];
-
-                case Attributes.Describe:
-                    if (has.has('described')) return [found, has];
-                    return [[x, ...found], has.add('described')];
-
-                case Attributes.Nearby:
-                    return [[x, ...found], has];
-
-                case Attributes.AlignX:
-                    if (has.has('align-x')) return [found, has];
-                    return [[x, ...found], has.add('align-x')];
-
-                case Attributes.AlignY:
-                    if (has.has('align-y')) return [found, has];
-                    return [[x, ...found], has.add('align-y')];
-
-                case Attributes.TransformComponent:
-                    if (has.has('transform')) return [found, has];
-                    return [[x, ...found], has.add('transform')];
-            }
-        },
-        [[], new Set('')]
-    )[0];
-}
-
-function isContent(len: Length): boolean {
-    switch (len.type) {
-        case Lengths.Content:
-            return true;
-
-        case Lengths.Max:
-            return isContent(len.length);
-
-        case Lengths.Min:
-            return isContent(len.length);
-
-        default:
-            return false;
-    }
-}
-
-function get(
-    attrs: Attribute[],
-    isAttr: (x: Attribute) => boolean
-): Attribute[] {
-    return filter(attrs).reduceRight((found: Attribute[], x: Attribute) => {
-        if (isAttr(x)) return [x, ...found];
-        return found;
-    }, []);
 }
 
 function extractSpacingAndPadding(
@@ -3868,40 +3733,56 @@ export {
     HslaColor,
     RgbaColor,
     Rgba255Color,
-    noStyleSheet,
-    variantName,
-    renderVariants,
-    isSmallCaps,
-    hasSmallCaps,
-    div,
-    htmlClass,
-    unstyled,
     addNodeName,
     alignXName,
     alignYName,
-    transformClass,
-    transformValue,
-    composeTransformation,
-    skippable,
-    gatherAttrRecursive,
-    addNearbyElement,
-    renderWidth,
-    renderHeight,
-    contextClasses,
-    families,
-    rootStyle,
-    renderFontClassName,
-    lengthClassName,
-    formatDropShadow,
-    formatTextShadow,
-    textShadowClass,
-    formatBoxShadow,
     boxShadowClass,
+    columnClass,
+    composeTransformation,
+    contextClasses,
+    createElement,
+    div,
+    element,
+    embedKeyed,
+    embedWith,
+    extractSpacingAndPadding,
+    finalizeNode,
     floatClass,
+    focusDefaultStyle,
+    formatBoxShadow,
     formatColor,
     formatColorClass,
-    spacingName,
+    formatDropShadow,
+    formatTextShadow,
+    gatherAttrRecursive,
+    getHeight,
+    getSpacing,
+    getStyleName,
+    getWidth,
+    gridClass,
+    htmlClass,
+    lengthClassName,
+    map,
+    noStyleSheet,
+    optionsToObject,
     paddingName,
     paddingNameFloat,
-    getStyleName,
+    pageClass,
+    paragraphClass,
+    reduceStyles,
+    renderFontClassName,
+    renderHeight,
+    renderRoot,
+    renderVariant,
+    renderWidth,
+    rootStyle,
+    rowClass,
+    singleClass,
+    spacingName,
+    textShadowClass,
+    toHtml,
+    toStyleSheet,
+    transformClass,
+    unstyled,
+    variantName,
 };
