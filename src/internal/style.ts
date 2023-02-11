@@ -78,7 +78,7 @@ interface Adjacent {
     rules: Rule[];
 }
 
-function Adjacent(selector: string, rules: Rule[]): Adjacent {
+function _Adjacent(selector: string, rules: Rule[]): Adjacent {
     return { type: Rules.Adjacent, selector, rules };
 }
 
@@ -132,7 +132,7 @@ interface ContentDescriptor {
     align: Alignment;
 }
 
-function Content(align: Alignment): ContentDescriptor {
+function _Content(align: Alignment): ContentDescriptor {
     return { align };
 }
 
@@ -305,7 +305,7 @@ const classes = {
 };
 
 // The indulgent unicode character version.
-const unicode = {
+const _unicode = {
     root: 'style-elements',
     any: 's',
     single: 'e',
@@ -400,7 +400,7 @@ const unicode = {
     textLeft: 'text-left',
 };
 
-const single = {
+const _single = {
     root: 'z',
     any: 's',
     single: 'e',
@@ -675,7 +675,7 @@ function renderRules(
     );
 }
 
-function render(classNames: Class[]): string {
+function _render(classNames: Class[]): string {
     function renderValues(values: [string, string][]): string {
         return values.map(([x, y]) => ` ${x}: ${y};`).join('\n');
     }
@@ -751,12 +751,12 @@ function renderCompact(classNames: Class[]): string {
         .join('');
 }
 
-const viewportRules = `html, body {\n
+const _viewportRules = `html, body {\n
     height: 100%;\n
     width: 100%;\n
 }\n${rules()}`;
 
-function describeText(cls: string, props: Rule[]): Rule {
+function _describeText(cls: string, props: Rule[]): Rule {
     return Descriptor(
         cls,
         props
@@ -779,7 +779,7 @@ function makeImportant(rule: Rule): Rule {
     }
 }
 
-function dot(c: string) {
+function dot(c: string): string {
     return `.${c}`;
 }
 

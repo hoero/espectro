@@ -1,5 +1,9 @@
 export type Field = [number, number];
 
+function Field(a: number, b: number): Field {
+    return [a, b];
+}
+
 export enum Flags {
     Flag,
     Second,
@@ -10,16 +14,30 @@ export interface Flag_ {
     first: number;
 }
 
+function Flag(first: number): Flag_ {
+    return {
+        type: Flags.Flag,
+        first,
+    };
+}
+
 export interface Second {
     type: Flags.Second;
     second: number;
 }
 
+function Second(second: number): Second {
+    return {
+        type: Flags.Second,
+        second,
+    };
+}
+
 export type Flag = Flag_ | Second;
 
-const none: Field = [0, 0];
+const none = Field(0, 0);
 
-function value(myFlag: Flag) {
+function value(myFlag: Flag): number {
     switch (myFlag.type) {
         case Flags.Flag:
             return Math.round(Math.log2(myFlag.first));
@@ -30,7 +48,7 @@ function value(myFlag: Flag) {
 }
 
 // If the query is in the truth, return true
-function present(myFlag: Flag, field: Field) {
+function present(myFlag: Flag, field: Field): boolean {
     switch (myFlag.type) {
         case Flags.Flag:
             return (myFlag.first & field[0]) === myFlag.first;
@@ -44,10 +62,10 @@ function present(myFlag: Flag, field: Field) {
 function add(myFlag: Flag, field: Field): Field {
     switch (myFlag.type) {
         case Flags.Flag:
-            return [myFlag.first | field[0], field[1]];
+            return Field(myFlag.first | field[0], field[1]);
 
         case Flags.Second:
-            return [field[0], myFlag.second | field[1]];
+            return Field(field[0], myFlag.second | field[1]);
     }
 }
 
@@ -56,15 +74,14 @@ function add(myFlag: Flag, field: Field): Field {
 Merging will combine two fields
 */
 function merge(a: Field, b: Field): Field {
-    return [a[0] | b[0], a[1] | b[1]];
+    return Field(a[0] | b[0], a[1] | b[1]);
 }
 
 function flag(i: number): Second | Flag {
     if (i > 31) {
-        return { type: Flags.Second, second: (i - 32) << 1 };
+        return Second((i - 32) << 1);
     }
-
-    return { type: Flags.Flag, first: i << 1 };
+    return Flag(i << 1);
 }
 
 // Used for Style invalidation
