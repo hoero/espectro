@@ -1,7 +1,7 @@
 import { classValidator } from '../deps.ts';
 import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
-import _ from 'lodash';
+import _, { pad } from 'lodash';
 
 import {
     Field,
@@ -84,11 +84,14 @@ import {
     asGrid,
     asParagraph,
     asTextColumn,
-    OptionRecord,
+    OptionObject,
     FocusStyle,
     Style_,
     Property,
     Option,
+    HoverOption,
+    FocusStyleOption,
+    RenderModeOption,
     HoverSetting,
     Adjustment,
     Maybe,
@@ -115,9 +118,15 @@ import {
     FontFamily,
     Options,
     Transform,
+    Spacing,
+    Padding,
+    PaddingStyle,
+    SpacingStyle,
+    OnlyDynamic,
+    StaticRootAndDynamic,
 } from './data.ts';
 import { attribute, attributes } from '../dom/attribute.ts';
-import { element } from '../dom/element.ts';
+import domElement from '../dom/element.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -315,8 +324,8 @@ function htmlClass(cls: string): Attribute {
     return Attr(attribute('class', cls));
 }
 
-function unstyled(node: (a: LayoutContext) => DOM.Node): Element {
-    return Unstyled(node);
+function unstyled(node: DOM.Node): Element {
+    return Unstyled(() => node);
 }
 
 function finalizeNode(
@@ -340,8 +349,8 @@ function finalizeNode(
                 return createNode(node.nodeName, attributes_);
 
             case NodeNames.Embedded: {
-                const el = element(node.nodeName, attributes_);
-                const child = element(
+                const el = domElement(node.nodeName, attributes_);
+                const child = domElement(
                     node.internal,
                     [['class', cls.any + ' ' + cls.single]],
                     el
@@ -355,7 +364,7 @@ function finalizeNode(
     function createNode(nodeName: string, attrs: [string, string][]): DOM.Node {
         switch (children.type) {
             case Childrens.Keyed: {
-                const keyedNode = element(nodeName, attrs);
+                const keyedNode = domElement(nodeName, attrs);
                 const child = (embedMode: EmbedStyle): [string, DOM.Node][] => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
@@ -380,7 +389,7 @@ function finalizeNode(
                 };
 
                 child(embedMode).map((value: [string, DOM.Node]) => {
-                    const html = element(value[0], [], keyedNode);
+                    const html = domElement(value[0], [], keyedNode);
                     html.append(value[1]);
                     keyedNode.append(html);
                 });
@@ -391,13 +400,13 @@ function finalizeNode(
                 const unkeyedNode: DOM.Element = (() => {
                     switch (nodeName) {
                         case 'div':
-                            return element('div', attrs);
+                            return domElement('div', attrs);
 
                         case 'p':
-                            return element('p', attrs);
+                            return domElement('p', attrs);
 
                         default:
-                            return element(nodeName, attrs);
+                            return domElement(nodeName, attrs);
                     }
                 })();
                 const child = (embedMode: EmbedStyle): DOM.Node[] => {
@@ -436,7 +445,7 @@ function finalizeNode(
             if (present(widthFill, has) && !present(widthBetween, has)) {
                 return html;
             } else if (present(alignRight, has)) {
-                const el = element('u', [
+                const el = domElement('u', [
                     [
                         'class',
                         [
@@ -451,7 +460,7 @@ function finalizeNode(
                 el.append(html);
                 return el;
             } else if (present(centerX, has)) {
-                const el = element('s', [
+                const el = domElement('s', [
                     [
                         'class',
                         [
@@ -473,7 +482,7 @@ function finalizeNode(
             if (present(heightFill, has) && !present(heightBetween, has)) {
                 return html;
             } else if (present(centerY, has)) {
-                const el = element('s', [
+                const el = domElement('s', [
                     [
                         'class',
                         [
@@ -487,7 +496,7 @@ function finalizeNode(
                 el.append(html);
                 return el;
             } else if (present(alignBottom, has)) {
-                const el = element('u', [
+                const el = domElement('u', [
                     [
                         'class',
                         [
@@ -511,17 +520,17 @@ function finalizeNode(
 
 function embedWith(
     static_: boolean,
-    opts: OptionRecord,
-    styles: Style_[],
+    opts: OptionObject,
+    styles: Style[],
     children: DOM.Node[]
 ): DOM.Node[] {
     const dinamicStyleSheet: DOM.Node = toStyleSheet(
         opts,
         styles.reduce(
             (
-                acc: [Set<string>, Style_[]],
-                style: Style_
-            ): [Set<string>, Style_[]] => reduceStyles(style, acc),
+                acc: [Set<string>, Style[]],
+                style: Style
+            ): [Set<string>, Style[]] => reduceStyles(style, acc),
             [new Set(''), renderFocusStyle(opts.focus)]
         )[1]
     );
@@ -531,17 +540,17 @@ function embedWith(
 
 function embedKeyed(
     static_: boolean,
-    opts: OptionRecord,
-    styles: Style_[],
+    opts: OptionObject,
+    styles: Style[],
     children: [string, DOM.Node][]
 ): [string, DOM.Node][] {
     const dinamicStyleSheet: DOM.Node = toStyleSheet(
         opts,
         styles.reduce(
             (
-                acc: [Set<string>, Style_[]],
-                style: Style_
-            ): [Set<string>, Style_[]] => reduceStyles(style, acc),
+                acc: [Set<string>, Style[]],
+                style: Style
+            ): [Set<string>, Style[]] => reduceStyles(style, acc),
             [new Set(''), renderFocusStyle(opts.focus)]
         )[1]
     );
@@ -584,9 +593,9 @@ function reduceStylesRecursive(
 }
 
 function reduceStyles(
-    style: Style_,
-    [cache, existing]: [Set<string>, Style_[]]
-): [Set<string>, Style_[]] {
+    style: Style,
+    [cache, existing]: [Set<string>, Style[]]
+): [Set<string>, Style[]] {
     const styleName = getStyleName(style);
 
     if (cache.has(styleName)) {
@@ -1729,11 +1738,11 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
                 return element_.html(asEl);
 
             case Elements.Styled:
-                return element_.html(EmbedStyles.NoStyleSheet, asEl);
+                return element_.html(NoStyleSheet(), asEl);
         }
     }
 
-    const el = element('div', [['class', classes_(location)]]);
+    const el = domElement('div', [['class', classes_(location)]]);
     el.append(child(element_));
 
     return el;
@@ -1930,6 +1939,28 @@ function contextClasses(context: LayoutContext) {
 
 const untransformed = Untransformed();
 
+function element(
+    context: LayoutContext,
+    node: NodeName,
+    attributes: Attribute[],
+    children: Children<Element>
+): Element {
+    return createElement(
+        context,
+        children,
+        gatherAttrRecursive(
+            contextClasses(context),
+            node,
+            none,
+            untransformed,
+            [],
+            [],
+            NoNearbyChildren(),
+            attributes.reverse()
+        )
+    );
+}
+
 function createElement(
     context: LayoutContext,
     children: Children<Element>,
@@ -1954,19 +1985,13 @@ function createElement(
             case Elements.Styled:
                 if (context === asParagraph)
                     return [
-                        [
-                            child.html(EmbedStyles.NoStyleSheet, context),
-                            ...htmls.unkeyed,
-                        ],
+                        [child.html(NoStyleSheet(), context), ...htmls.unkeyed],
                         _.isEmpty(existingStyles)
                             ? child.styles
                             : child.styles.concat(existingStyles),
                     ];
                 return [
-                    [
-                        child.html(EmbedStyles.NoStyleSheet, context),
-                        ...htmls.unkeyed,
-                    ],
+                    [child.html(NoStyleSheet(), context), ...htmls.unkeyed],
                     _.isEmpty(existingStyles)
                         ? child.styles
                         : child.styles.concat(existingStyles),
@@ -2018,10 +2043,7 @@ function createElement(
                 if (context === asParagraph)
                     return [
                         [
-                            [
-                                key,
-                                child.html(EmbedStyles.NoStyleSheet, context),
-                            ],
+                            [key, child.html(NoStyleSheet(), context)],
                             ...htmls.keyed,
                         ],
                         _.isEmpty(existingStyles)
@@ -2030,7 +2052,7 @@ function createElement(
                     ];
                 return [
                     [
-                        [key, child.html(EmbedStyles.NoStyleSheet, context)],
+                        [key, child.html(NoStyleSheet(), context)],
                         ...htmls.keyed,
                     ],
                     _.isEmpty(existingStyles)
@@ -2238,18 +2260,18 @@ const focusDefaultStyle = FocusStyle(
     Nothing()
 );
 
-const defaultOptions = OptionRecord(
+const defaultOptions = OptionObject(
     HoverSetting.AllowHover,
     focusDefaultStyle,
     RenderMode.Layout
 );
 
-function staticRoot(options: OptionRecord): DOM.Node {
+function staticRoot(options: OptionObject): DOM.Node {
     switch (options.mode) {
         case RenderMode.Layout: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = element('div', []),
-                style = element('style', [], div);
+            const div = domElement('div', []),
+                style = domElement('style', [], div);
             style.append(new DOM.Text(rules()));
             div.append(style);
             return div;
@@ -2260,7 +2282,7 @@ function staticRoot(options: OptionRecord): DOM.Node {
         }
 
         case RenderMode.WithVirtualCss: {
-            const staticRules = element('espectro-static-rules', []),
+            const staticRules = domElement('espectro-static-rules', []),
                 rules_ = attribute('rules', JSON.stringify(rules()));
             staticRules.append(rules_);
             return staticRules;
@@ -2346,10 +2368,144 @@ function get(
     attrs: Attribute[],
     isAttr: (x: Attribute) => boolean
 ): Attribute[] {
-    return filter(attrs).reduceRight((acc: Attribute[], attr: Attribute) => {
-        if (isAttr(attr)) return [attr, ...acc];
-        return acc;
+    return filter(attrs).reduceRight((found: Attribute[], x: Attribute) => {
+        if (isAttr(x)) return [x, ...found];
+        return found;
     }, []);
+}
+
+function extractSpacingAndPadding(
+    attrs: Attribute[]
+): [Maybe<Padding>, Maybe<Spacing>] {
+    return attrs.reduceRight(
+        (
+            [padding, spacing]: [Maybe<Padding>, Maybe<Spacing>],
+            attr: Attribute
+        ): [Maybe<Padding>, Maybe<Spacing>] => {
+            return [
+                (() => {
+                    switch (padding) {
+                        case Nothing():
+                            switch (attr.type) {
+                                case Attributes.StyleClass: {
+                                    const { class_, top, right, bottom, left } =
+                                        attr.style.type === Styles.PaddingStyle
+                                            ? attr.style
+                                            : PaddingStyle('', 0, 0, 0, 0);
+                                    return Just(
+                                        Padding(
+                                            class_,
+                                            top,
+                                            right,
+                                            bottom,
+                                            left
+                                        )
+                                    );
+                                }
+
+                                default:
+                                    return Nothing();
+                            }
+
+                        default:
+                            return padding;
+                    }
+                })(),
+                (() => {
+                    switch (spacing) {
+                        case Nothing():
+                            switch (attr.type) {
+                                case Attributes.StyleClass: {
+                                    const { class_, x, y } =
+                                        attr.style.type === Styles.SpacingStyle
+                                            ? attr.style
+                                            : SpacingStyle('', 0, 0);
+                                    return Just(Spacing(class_, x, y));
+                                }
+
+                                default:
+                                    return Nothing();
+                            }
+
+                        default:
+                            return spacing;
+                    }
+                })(),
+            ];
+        },
+        [Nothing(), Nothing()]
+    );
+}
+
+function getSpacing(
+    attrs: Attribute[],
+    default_: [number, number]
+): [number, number] {
+    return withDefault(
+        default_,
+        attrs.reduceRight(
+            (
+                acc: Maybe<[number, number]>,
+                attr: Attribute
+            ): Maybe<[number, number]> => {
+                switch (acc) {
+                    case Nothing():
+                        switch (attr.type) {
+                            case Attributes.StyleClass: {
+                                const { x, y } =
+                                    attr.style.type === Styles.SpacingStyle
+                                        ? attr.style
+                                        : SpacingStyle('', 0, 0);
+                                return Just([x, y]);
+                            }
+
+                            default:
+                                return Nothing();
+                        }
+
+                    default:
+                        return acc;
+                }
+            },
+            Nothing()
+        )
+    );
+}
+
+function getWidth(attrs: Attribute[]): Maybe<Length> {
+    return attrs.reduceRight((acc: Maybe<Length>, attr: Attribute) => {
+        switch (acc) {
+            case Nothing():
+                switch (attr.type) {
+                    case Attributes.Width:
+                        return Just(attr.width);
+
+                    default:
+                        return Nothing();
+                }
+
+            default:
+                return acc;
+        }
+    }, Nothing());
+}
+
+function getHeight(attrs: Attribute[]): Maybe<Length> {
+    return attrs.reduceRight((acc: Maybe<Length>, attr: Attribute) => {
+        switch (acc) {
+            case Nothing():
+                switch (attr.type) {
+                    case Attributes.Height:
+                        return Just(attr.height);
+
+                    default:
+                        return Nothing();
+                }
+
+            default:
+                return acc;
+        }
+    }, Nothing());
 }
 
 function textElement(type: TextElement, str: string): DOM.Element {
@@ -2366,10 +2522,49 @@ function textElement(type: TextElement, str: string): DOM.Element {
         }
     }
 
-    const element_ = element('div', [['class', classes_(type)]]);
+    const element_ = domElement('div', [['class', classes_(type)]]);
     element_.append(new DOM.Text(str));
 
     return element_;
+}
+
+function toHtml(mode: (a: Style[]) => EmbedStyle, element: Element): DOM.Node {
+    switch (element.type) {
+        case Elements.Unstyled:
+            return element.html(asEl);
+
+        case Elements.Styled:
+            return element.html(mode(element.styles), asEl);
+
+        case Elements.Text:
+            return textElement(TextElement.Text, element.str);
+
+        case Elements.Empty:
+            return textElement(TextElement.Text, '');
+    }
+}
+
+function renderRoot(
+    optionList: Option[],
+    attributes: Attribute[],
+    child: Element
+): DOM.Node {
+    const options: OptionObject = optionsToObject(optionList);
+
+    function embedStyle(styles: Style[]): EmbedStyle {
+        switch (options.mode) {
+            case RenderMode.NoStaticStyleSheet:
+                return OnlyDynamic(options, styles);
+
+            default:
+                return StaticRootAndDynamic(options, styles);
+        }
+    }
+
+    return toHtml(
+        (a: Style[]) => embedStyle(a),
+        element(asEl, div, attributes, Unkeyed([child]))
+    );
 }
 
 const families: Font[] = [
@@ -2437,7 +2632,7 @@ function renderFontClassName(font: Font, current: string): string {
     }
 }
 
-function renderFocusStyle(focus: FocusStyle): Style_[] {
+function renderFocusStyle(focus: FocusStyle): Style[] {
     function withDefault_(prop: Maybe<Property>) {
         return withDefault(Property('', ''), prop);
     }
@@ -2505,12 +2700,121 @@ function renderFocusStyle(focus: FocusStyle): Style_[] {
     ];
 }
 
-function toStyleSheet(options: OptionRecord, stylesheet: Style_[]): DOM.Node {
+function optionsToObject(options: Option[]): OptionObject {
+    function combine(
+        opt: Option,
+        object: {
+            hover: Maybe<HoverSetting>;
+            focus: Maybe<FocusStyle>;
+            mode: Maybe<RenderMode>;
+        }
+    ): {
+        hover: Maybe<HoverSetting>;
+        focus: Maybe<FocusStyle>;
+        mode: Maybe<RenderMode>;
+    } {
+        switch (opt.type) {
+            case Options.HoverOption:
+                switch (object.hover) {
+                    case Nothing(): {
+                        object.hover = Just(opt.hover);
+                        return object;
+                    }
+
+                    default:
+                        return object;
+                }
+
+            case Options.FocusStyleOption:
+                switch (object.focus) {
+                    case Nothing(): {
+                        object.focus = Just(opt.focus);
+                        return object;
+                    }
+
+                    default:
+                        return object;
+                }
+
+            case Options.RenderModeOption:
+                switch (object.mode) {
+                    case Nothing(): {
+                        object.mode = Just(opt.mode);
+                        return object;
+                    }
+
+                    default:
+                        return object;
+                }
+        }
+    }
+
+    function andFinally(object: {
+        hover: Maybe<HoverSetting>;
+        focus: Maybe<FocusStyle>;
+        mode: Maybe<RenderMode>;
+    }): OptionObject {
+        return OptionObject(
+            (() => {
+                switch (object.hover) {
+                    case Nothing():
+                        return HoverSetting.AllowHover;
+
+                    default:
+                        return withDefault(
+                            HoverSetting.AllowHover,
+                            object.hover
+                        );
+                }
+            })(),
+            (() => {
+                switch (object.focus) {
+                    case Nothing():
+                        return focusDefaultStyle;
+
+                    default:
+                        return withDefault(focusDefaultStyle, object.focus);
+                }
+            })(),
+            (() => {
+                switch (object.mode) {
+                    case Nothing():
+                        return RenderMode.Layout;
+
+                    default:
+                        return withDefault(RenderMode.Layout, object.mode);
+                }
+            })()
+        );
+    }
+
+    return andFinally(
+        options.reduceRight(
+            (
+                acc: {
+                    hover: Maybe<HoverSetting>;
+                    focus: Maybe<FocusStyle>;
+                    mode: Maybe<RenderMode>;
+                },
+                opt: Option
+            ): {
+                hover: Maybe<HoverSetting>;
+                focus: Maybe<FocusStyle>;
+                mode: Maybe<RenderMode>;
+            } => {
+                return combine(opt, acc);
+            },
+            { hover: Nothing(), focus: Nothing(), mode: Nothing() }
+        )
+    );
+}
+
+function toStyleSheet(options: OptionObject, stylesheet: Style[]): DOM.Node {
     switch (options.mode) {
         case RenderMode.Layout: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = element('div', []),
-                style = element('style', [], div);
+            const div = domElement('div', []),
+                style = domElement('style', [], div);
             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
             div.append(style);
             return div;
@@ -2518,15 +2822,15 @@ function toStyleSheet(options: OptionRecord, stylesheet: Style_[]): DOM.Node {
 
         case RenderMode.NoStaticStyleSheet: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = element('div', []),
-                style = element('style', [], div);
+            const div = domElement('div', []),
+                style = domElement('style', [], div);
             style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
             div.append(style);
             return div;
         }
 
         case RenderMode.WithVirtualCss: {
-            const rules = element('espectro-rules', []),
+            const rules = domElement('espectro-rules', []),
                 rules_ = attribute('rules', encodeStyles(options, stylesheet));
             rules.append(rules_);
             return rules;
@@ -2670,38 +2974,44 @@ function typefaceAdjustment(
 ): Maybe<[[string, string][], [string, string][]][]> {
     return typefaces.reduce(
         (
-            _acc: Maybe<[[string, string][], [string, string][]][]>,
-            typeface: Font
-        ) => {
-            switch (typeface.type) {
-                case FontFamilyType.FontWith:
-                    switch (typeface.adjustment) {
-                        case Nothing():
-                            return Nothing();
+            found: Maybe<[[string, string][], [string, string][]][]>,
+            face: Font
+        ): Maybe<[[string, string][], [string, string][]][]> => {
+            switch (found) {
+                case Nothing():
+                    switch (face.type) {
+                        case FontFamilyType.FontWith:
+                            switch (face.adjustment) {
+                                case Nothing():
+                                    return found;
+
+                                default:
+                                    return Just([
+                                        fontAdjustmentRules(
+                                            convertAdjustment(
+                                                withDefault(
+                                                    Adjustment(0, 0, 0, 0),
+                                                    face.adjustment
+                                                )
+                                            ).full
+                                        ),
+                                        fontAdjustmentRules(
+                                            convertAdjustment(
+                                                withDefault(
+                                                    Adjustment(0, 0, 0, 0),
+                                                    face.adjustment
+                                                )
+                                            ).capital
+                                        ),
+                                    ]);
+                            }
 
                         default:
-                            return Just([
-                                fontAdjustmentRules(
-                                    convertAdjustment(
-                                        withDefault(
-                                            Adjustment(0, 0, 0, 0),
-                                            typeface.adjustment
-                                        )
-                                    ).full
-                                ),
-                                fontAdjustmentRules(
-                                    convertAdjustment(
-                                        withDefault(
-                                            Adjustment(0, 0, 0, 0),
-                                            typeface.adjustment
-                                        )
-                                    ).capital
-                                ),
-                            ]);
+                            return found;
                     }
 
                 default:
-                    return Nothing();
+                    return found;
             }
         },
         Nothing()
@@ -2750,9 +3060,9 @@ function renderProps(
     return `${existing} \n ${property.key}: ${property.value};`;
 }
 
-function encodeStyles(options: OptionRecord, stylesheet: Style_[]): string {
+function encodeStyles(options: OptionObject, stylesheet: Style[]): string {
     const stylesheet_: [string, string][] = stylesheet.map(
-        (style: Style_): [string, string] => {
+        (style: Style): [string, string] => {
             const styled: string[] = renderStyleRule(options, style, Nothing());
             return [getStyleName(style), JSON.stringify(styled)];
         }
@@ -2761,11 +3071,11 @@ function encodeStyles(options: OptionRecord, stylesheet: Style_[]): string {
 }
 
 function toStyleSheetString(
-    options: OptionRecord,
-    stylesheet: Style_[]
+    options: OptionObject,
+    stylesheet: Style[]
 ): string {
     function combine(
-        style: Style_,
+        style: Style,
         rendered: { rules: string[]; topLevel: [string, Font[]][] }
     ): { rules: string[]; topLevel: [string, Font[]][] } {
         const topLevel: Maybe<[string, Font[]]> = topLevelValue(style);
@@ -2793,7 +3103,7 @@ function toStyleSheetString(
         stylesheet.reduce(
             (
                 acc: { rules: string[]; topLevel: [string, Font[]][] },
-                style: Style_
+                style: Style
             ) => combine(style, acc),
             { rules: [], topLevel: [] }
         );
@@ -2807,7 +3117,7 @@ function toStyleSheetString(
 }
 
 function renderStyle(
-    options: OptionRecord,
+    options: OptionObject,
     pseudo: Maybe<PseudoClass>,
     selector: string,
     props: Property[]
@@ -2876,7 +3186,7 @@ function renderStyle(
 }
 
 function renderStyleRule(
-    options: OptionRecord,
+    options: OptionObject,
     rule: Style,
     pseudo: Maybe<PseudoClass>
 ): string[] {
@@ -3203,9 +3513,9 @@ function renderStyleRule(
         }
 
         case Styles.PseudoSelector: {
-            const renderPseudoRule = (style: Style_): string[] =>
+            const renderPseudoRule = (style: Style): string[] =>
                 renderStyleRule(options, style, Just(rule.class_));
-            return rule.styles.flatMap((style: Style_): string[] => {
+            return rule.styles.flatMap((style: Style): string[] => {
                 const render = renderPseudoRule(style);
                 if (typeof render !== 'undefined') {
                     return render;
@@ -3473,6 +3783,8 @@ function getStyleName(style: Style): string {
             return style.name;
     }
 }
+
+// TODO: Review Mapping functions of elm-ui
 
 // Font Adjustments
 function convertAdjustment(adjustment: Adjustment): {

@@ -24,12 +24,12 @@ export function Unstyled(html: (a: LayoutContext) => DOM.Node): Unstyled {
 export interface Styled {
     type: Elements.Styled;
     styles: Style[];
-    html: (a: EmbedStyles, b: LayoutContext) => DOM.Node;
+    html: (a: EmbedStyle, b: LayoutContext) => DOM.Node;
 }
 
 export function Styled(
     styles: Style[],
-    html: (a: EmbedStyles, b: LayoutContext) => DOM.Node
+    html: (a: EmbedStyle, b: LayoutContext) => DOM.Node
 ): Styled {
     return { type: Elements.Styled, styles, html };
 }
@@ -69,26 +69,26 @@ export function NoStyleSheet(): NoStyleSheet {
 
 export interface StaticRootAndDynamic {
     type: EmbedStyles.StaticRootAndDynamic;
-    options: OptionRecord;
-    styles: Style_[];
+    options: OptionObject;
+    styles: Style[];
 }
 
 export function StaticRootAndDynamic(
-    options: OptionRecord,
-    styles: Style_[]
+    options: OptionObject,
+    styles: Style[]
 ): StaticRootAndDynamic {
     return { type: EmbedStyles.StaticRootAndDynamic, options, styles };
 }
 
 export interface OnlyDynamic {
     type: EmbedStyles.OnlyDynamic;
-    options: OptionRecord;
-    styles: Style_[];
+    options: OptionObject;
+    styles: Style[];
 }
 
 export function OnlyDynamic(
-    options: OptionRecord,
-    styles: Style_[]
+    options: OptionObject,
+    styles: Style[]
 ): OnlyDynamic {
     return { type: EmbedStyles.OnlyDynamic, options, styles };
 }
@@ -340,12 +340,12 @@ export function Transform(transform: Transformation): Transform {
 export interface PseudoSelector {
     type: Styles.PseudoSelector;
     class_: PseudoClass;
-    styles: Style_[];
+    styles: Style[];
 }
 
 export function PseudoSelector(
     class_: PseudoClass,
-    styles: Style_[]
+    styles: Style[]
 ): PseudoSelector {
     return {
         type: Styles.PseudoSelector,
@@ -1291,6 +1291,10 @@ export interface Spaced {
 
 export type Spacing = Spaced;
 
+export function Spacing(name: string, x: number, y: number): Spacing {
+    return { name, x, y };
+}
+
 export interface Padding_ {
     name: string;
     top: number;
@@ -1301,23 +1305,33 @@ export interface Padding_ {
 
 export type Padding = Padding_;
 
+export function Padding(
+    name: string,
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+): Padding {
+    return { name, top, right, bottom, left };
+}
+
 export enum RenderMode {
     Layout,
     NoStaticStyleSheet,
     WithVirtualCss,
 }
 
-export interface OptionRecord {
+export interface OptionObject {
     hover: HoverSetting;
     focus: FocusStyle;
     mode: RenderMode;
 }
 
-export function OptionRecord(
+export function OptionObject(
     hover: HoverSetting,
     focus: FocusStyle,
     mode: RenderMode
-): OptionRecord {
+): OptionObject {
     return { hover, focus, mode };
 }
 
@@ -1327,11 +1341,41 @@ export enum HoverSetting {
     ForceHover,
 }
 
-export type HoverOption = HoverSetting;
+export interface HoverOption {
+    type: Options.HoverOption;
+    hover: HoverSetting;
+}
 
-export type FocusStyleOption = FocusStyle;
+export function HoverOption(hover: HoverSetting): HoverOption {
+    return {
+        type: Options.HoverOption,
+        hover,
+    };
+}
 
-export type RenderModeOption = RenderMode;
+export interface FocusStyleOption {
+    type: Options.FocusStyleOption;
+    focus: FocusStyle;
+}
+
+export function FocusStyleOption(focus: FocusStyle): FocusStyleOption {
+    return {
+        type: Options.FocusStyleOption,
+        focus,
+    };
+}
+
+export interface RenderModeOption {
+    type: Options.RenderModeOption;
+    mode: RenderMode;
+}
+
+export function RenderModeOption(mode: RenderMode): RenderModeOption {
+    return {
+        type: Options.RenderModeOption,
+        mode,
+    };
+}
 
 export type Option = HoverOption | FocusStyleOption | RenderModeOption;
 
