@@ -1,5 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-import { _ } from './deps.ts';
 
 /** MEDIA QUERY MANAGER
     -------------------------
@@ -224,8 +223,8 @@ function deviceData(vw: number, vh: number) {
 If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
 */
 function classifyDevice(window: { width: number; height: number }): Device {
-    const longSide = _.max([window.width, window.height]);
-    const shortSide = _.min([window.width, window.height]);
+    const longSide = Math.max(window.width, window.height);
+    const shortSide = Math.min(window.width, window.height);
 
     return {
         class: (function () {

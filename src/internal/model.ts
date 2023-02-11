@@ -1,4 +1,3 @@
-import { classValidator } from '../deps.ts';
 import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
 import _ from 'lodash';
@@ -84,7 +83,6 @@ import {
     Adjustment,
     Maybe,
     RenderMode,
-    Hsla,
     Rgba,
     NoStyleSheet,
     Generic,
@@ -115,108 +113,6 @@ import { attribute, attributes } from '../dom/attribute.ts';
 import domElement from '../dom/element.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
-
-const min = {
-    message:
-        'Invalid value. Channel should be more or equal to $constraint1, but actual value is $value.',
-};
-const max = {
-    message:
-        'Invalid value. Channel should be less or equal to $constraint1, but actual value is $value.',
-};
-
-class ChannelsColor {
-    @classValidator.Min(0, min)
-    private a: number;
-    @classValidator.Min(0, min)
-    private b: number;
-    @classValidator.Min(0, min)
-    private c: number;
-    @classValidator.Min(0, min)
-    private d: number;
-
-    constructor(
-        private notation: Notation,
-        a: number,
-        b: number,
-        c: number,
-        d: number
-    ) {
-        this.a = a;
-        this.b = b;
-        this.c = c;
-        this.d = d;
-    }
-
-    get color(): Color {
-        switch (this.notation) {
-            case Notation.Hsla:
-                return Hsla(this.a, this.b, this.c, this.d);
-            case Notation.Rgba:
-                return Rgba(this.a, this.b, this.c, this.d);
-
-            default:
-                throw new Error('Use Hsla or Rgba notation.');
-        }
-    }
-}
-
-class HslaColor extends ChannelsColor {
-    @classValidator.Max(360, max)
-    hue: number;
-    @classValidator.Max(1, max)
-    saturation: number;
-    @classValidator.Max(1, max)
-    lightness: number;
-    @classValidator.Max(1, max)
-    alpha: number;
-
-    constructor(h: number, s: number, l: number, a: number) {
-        super(Notation.Hsla, h, s, l, a);
-        this.hue = h;
-        this.saturation = s;
-        this.lightness = l;
-        this.alpha = a;
-    }
-}
-
-class RgbaColor extends ChannelsColor {
-    @classValidator.Max(1, max)
-    red: number;
-    @classValidator.Max(1, max)
-    green: number;
-    @classValidator.Max(1, max)
-    blue: number;
-    @classValidator.Max(1, max)
-    alpha: number;
-
-    constructor(red: number, green: number, blue: number, alpha: number) {
-        super(Notation.Rgba, red, green, blue, alpha);
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        this.alpha = alpha;
-    }
-}
-
-class Rgba255Color extends ChannelsColor {
-    @classValidator.Max(255)
-    red: number;
-    @classValidator.Max(255)
-    green: number;
-    @classValidator.Max(255)
-    blue: number;
-    @classValidator.Max(1, max)
-    alpha: number;
-
-    constructor(red: number, green: number, blue: number, alpha: number) {
-        super(Notation.Rgba, red, green, blue, alpha);
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        this.alpha = alpha;
-    }
-}
 
 const noStyleSheet = NoStyleSheet();
 
@@ -2439,7 +2335,7 @@ const families: Font[] = [
     SansSerif(),
 ];
 
-const rootStyle: StyleClass[] = [
+const rootStyle: Attribute[] = [
     StyleClass(
         bgColor,
         Colored(
@@ -2482,13 +2378,13 @@ function renderFontClassName(font: Font, current: string): string {
 
         case FontFamilyType.Typeface:
             if (_.isString(font)) {
-                return current + _.words(font.name.toLowerCase()).join('-');
+                return current + font.name.toLowerCase().split(' ').join('-');
             }
             return '';
 
         case FontFamilyType.ImportFont || FontFamilyType.FontWith:
             if (_.isObject(font)) {
-                return current + _.words(font.name.toLowerCase()).join('-');
+                return current + font.name.toLowerCase().split(' ').join('-');
             }
             return '';
 
@@ -3065,10 +2961,10 @@ function renderStyleRule(
             ]);
 
         case Styles.Transparency: {
-            const opacity: number | undefined = _.max([
+            const opacity: number = Math.max(
                 0,
-                _.min([1, 1 - rule.transparency]),
-            ]);
+                Math.min(1, 1 - rule.transparency)
+            );
             return renderStyle(options, pseudo, '.' + rule.name, [
                 Property(
                     'opacity',
@@ -3211,7 +3107,7 @@ function renderStyleRule(
                     Property('width', `0`),
                     Property(
                         'margin-top',
-                        _.floor(-1 * (rule.y / 2)).toString() + 'px'
+                        Math.floor(-1 * (rule.y / 2)).toString() + 'px'
                     ),
                 ]),
                 renderStyle(options, pseudo, `${class_}${paragraph}::before`, [
@@ -3221,7 +3117,7 @@ function renderStyleRule(
                     Property('width', `0`),
                     Property(
                         'margin-top',
-                        _.floor(-1 * (rule.y / 2)).toString() + 'px'
+                        Math.floor(-1 * (rule.y / 2)).toString() + 'px'
                     ),
                 ])
             );
@@ -3675,11 +3571,15 @@ function convertAdjustment(adjustment: Adjustment): {
         // normalDescender: number = (lineHeight - 1) / 2,
         // oldMiddle: number = lineHeight / 2,
         ascender: number | undefined =
-            _.max(lines) === undefined ? adjustment.capital : _.max(lines),
+            Math.max(...lines) === undefined
+                ? adjustment.capital
+                : Math.max(...lines),
         descender: number | undefined =
-            _.min(lines) === undefined ? adjustment.descender : _.min(lines),
-        baseLine: number | undefined = _.min(
-            lines.filter((value: number) => value !== descender)
+            Math.min(...lines) === undefined
+                ? adjustment.descender
+                : Math.min(...lines),
+        baseLine: number | undefined = Math.min(
+            ...lines.filter((value: number) => value !== descender)
         ),
         newBaseLine: number =
             baseLine === undefined ? adjustment.baseline : baseLine,
@@ -3729,10 +3629,6 @@ function adjust(
 }
 
 export {
-    ChannelsColor,
-    HslaColor,
-    RgbaColor,
-    Rgba255Color,
     addNodeName,
     alignXName,
     alignYName,

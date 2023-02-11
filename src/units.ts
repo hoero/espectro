@@ -1,5 +1,5 @@
-import { Device, DeviceClass } from './responsive';
-import { Breakpoints, respond } from './responsive';
+import { Device, DeviceClass } from './responsive.ts';
+import { Breakpoints, respond } from './responsive.ts';
 
 //Default browser font size
 const baseFontSize = 16;
