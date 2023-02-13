@@ -221,8 +221,23 @@ import {
     PaddingStyle,
     StyleClass,
     SpacingStyle,
+    InternalTable,
+    InternalTableColumns,
+    InternalTableColumn,
+    GridPosition,
+    GridTemplateStyle,
+    asGrid,
+    InternalIndexedColumn,
+    IndexedColumn,
+    Column,
+    InternalColumn,
 } from './internal/data.ts';
-import { padding, spacing } from './internal/flag.ts';
+import {
+    padding,
+    spacing,
+    gridPosition,
+    gridTemplate,
+} from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { attribute } from './dom/attribute.ts';
 import {
@@ -235,6 +250,7 @@ import {
     div,
     extractSpacingAndPadding,
     paddingNameFloat,
+    getSpacing,
 } from './internal/model.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
@@ -574,6 +590,240 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
 function explain(): Attribute {
     console.error(`An element is being debugged!`);
     return htmlClass('explain');
+}
+
+/** TODO:
+ * Show some tabular data.
+
+Start with a list of records and specify how each column should be rendered.
+
+So, if we have a list of `persons`:
+
+    type alias Person =
+        { firstName : String
+        , lastName : String
+        }
+
+    persons : List Person
+    persons =
+        [ { firstName = "David"
+          , lastName = "Bowie"
+          }
+        , { firstName = "Florence"
+          , lastName = "Welch"
+          }
+        ]
+
+We could render it using
+
+    Element.table []
+        { data = persons
+        , columns =
+            [ { header = Element.text "First Name"
+              , width = fill
+              , view =
+                    \person ->
+                        Element.text person.firstName
+              }
+            , { header = Element.text "Last Name"
+              , width = fill
+              , view =
+                    \person ->
+                        Element.text person.lastName
+              }
+            ]
+        }
+
+**Note:** Sometimes you might not have a list of records directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of records before feeding it into `Element.table`.
+ */
+function table(
+    attributes: Attribute[],
+    config: {
+        data: Record<string, unknown>[];
+        columns: Column<Record<string, unknown>>[];
+    }
+): Element {
+    return tableHelper(attributes, {
+        data: config.data,
+        columns: config.columns.map(InternalColumn),
+    });
+}
+
+/** TODO:
+ * Same as `Element.table` except the `view` for each column will also receive the row index as well as the record.
+ */
+function indexedTable(
+    attributes: Attribute[],
+    config: {
+        data: Record<string, unknown>[];
+        columns: IndexedColumn<Record<string, unknown>>[];
+    }
+): Element {
+    return tableHelper(attributes, {
+        data: config.data,
+        columns: config.columns.map(InternalIndexedColumn),
+    });
+}
+
+function tableHelper(
+    attributes: Attribute[],
+    config: InternalTable<Record<string, unknown>>
+): Element {
+    const [sX, sY] = getSpacing(attributes, [0, 0]);
+
+    const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
+        return headers.every((value: Element) => value === Empty())
+            ? Nothing()
+            : Just(
+                  headers.map((header: Element, col: number) =>
+                      onGrid(1, col + 1, header)
+                  )
+              );
+    })(config.columns.map(columnHeader));
+
+    const template: Attribute = StyleClass(
+        gridTemplate,
+        GridTemplateStyle(
+            [Px(sX), Px(sY)],
+            config.columns.map(columnWidth),
+            config.data.map(() => Content())
+        )
+    );
+
+    const children: { elements: Element[]; column: number; row: number } =
+        config.data.reduce(
+            (
+                acc: { elements: Element[]; column: number; row: number },
+                data: Record<string, unknown>
+            ) => build(config.columns, data, acc),
+            {
+                elements: [],
+                row: maybeHeaders === Nothing() ? 1 : 2,
+                column: 1,
+            }
+        );
+
+    function columnHeader(col: InternalTableColumn): Element {
+        switch (col.type) {
+            case InternalTableColumns.InternalIndexedColumn:
+                return col.column.header;
+
+            case InternalTableColumns.InternalColumn:
+                return col.column.header;
+        }
+    }
+
+    function columnWidth(col: InternalTableColumn): Length {
+        switch (col.type) {
+            case InternalTableColumns.InternalIndexedColumn:
+                return col.column.width;
+
+            case InternalTableColumns.InternalColumn:
+                return col.column.width;
+        }
+    }
+
+    function onGrid(
+        rowLevel: number,
+        columnLevel: number,
+        elem: Element
+    ): Element {
+        return element(
+            asEl,
+            div,
+            [
+                StyleClass(
+                    gridPosition,
+                    GridPosition(rowLevel, columnLevel, 1, 1)
+                ),
+            ],
+            Unkeyed([elem])
+        );
+    }
+
+    function add(
+        cell: Record<string, unknown>,
+        columnConfig: InternalTableColumn,
+        cursor: { elements: Element[]; row: number; column: number }
+    ): { elements: Element[]; row: number; column: number } {
+        switch (columnConfig.type) {
+            case InternalTableColumns.InternalIndexedColumn: {
+                cursor.elements = [
+                    onGrid(
+                        cursor.row,
+                        cursor.column,
+                        columnConfig.column.view(
+                            maybeHeaders === Nothing()
+                                ? cursor.row - 1
+                                : cursor.row - 2,
+                            cell
+                        )
+                    ),
+                    ...cursor.elements,
+                ];
+                cursor.column = cursor.column + 1;
+                return cursor;
+            }
+
+            case InternalTableColumns.InternalColumn:
+                return {
+                    elements: [
+                        onGrid(
+                            cursor.row,
+                            cursor.column,
+                            columnConfig.column.view(cell)
+                        ),
+                        ...cursor.elements,
+                    ],
+                    row: cursor.row,
+                    column: cursor.column + 1,
+                };
+        }
+    }
+
+    function build(
+        columns: InternalTableColumn[],
+        rowData: Record<string, unknown>,
+        cursor: { elements: Element[]; row: number; column: number }
+    ): { elements: Element[]; column: number; row: number } {
+        const newCursor: { elements: Element[]; column: number; row: number } =
+            columns.reduce(
+                (
+                    acc: { elements: Element[]; column: number; row: number },
+                    column: InternalTableColumn
+                ) => add(rowData, column, acc),
+                cursor
+            );
+        return {
+            elements: newCursor.elements,
+            row: cursor.row + 1,
+            column: 1,
+        };
+    }
+
+    return element(
+        asGrid,
+        div,
+        [width(fill), template, ...attributes],
+        Unkeyed(
+            (() => {
+                switch (maybeHeaders) {
+                    case Nothing():
+                        return children.elements;
+
+                    default: {
+                        const renderedHeaders: Element[] = withDefault(
+                            [],
+                            maybeHeaders
+                        );
+                        return renderedHeaders.concat(
+                            children.elements.reverse()
+                        );
+                    }
+                }
+            })()
+        )
+    );
 }
 
 /**

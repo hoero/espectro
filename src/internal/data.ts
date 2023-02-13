@@ -1430,3 +1430,79 @@ export const asRow = LayoutContext.AsRow,
     asGrid = LayoutContext.AsGrid,
     asParagraph = LayoutContext.AsParagraph,
     asTextColumn = LayoutContext.AsTextColumn;
+
+// Element
+export interface Column<T extends Record<string, unknown>> {
+    header: Element;
+    width: Length;
+    view: (record: T) => Element;
+}
+
+export function Column(
+    header: Element,
+    width: Length,
+    view: (record: Record<string, unknown>) => Element
+): Column<Record<string, unknown>> {
+    return { header, width, view };
+}
+
+export interface IndexedColumn<T extends Record<string, unknown>> {
+    header: Element;
+    width: Length;
+    view: (a: number, record: T) => Element;
+}
+
+export function IndexedColumn(
+    header: Element,
+    width: Length,
+    view: (a: number, record: Record<string, unknown>) => Element
+): IndexedColumn<Record<string, unknown>> {
+    return { header, width, view };
+}
+
+export interface InternalTable<T extends Record<string, unknown>> {
+    data: T[];
+    columns: InternalTableColumn[];
+}
+
+export function InternalTable(
+    data: Record<string, unknown>[],
+    columns: InternalTableColumn[]
+): InternalTable<Record<string, unknown>> {
+    return { data, columns };
+}
+
+export enum InternalTableColumns {
+    InternalIndexedColumn,
+    InternalColumn,
+}
+
+export interface InternalIndexedColumn {
+    type: InternalTableColumns.InternalIndexedColumn;
+    column: IndexedColumn<Record<string, unknown>>;
+}
+
+export function InternalIndexedColumn(
+    column: IndexedColumn<Record<string, unknown>>
+): InternalIndexedColumn {
+    return {
+        type: InternalTableColumns.InternalIndexedColumn,
+        column,
+    };
+}
+
+export interface InternalColumn {
+    type: InternalTableColumns.InternalColumn;
+    column: Column<Record<string, unknown>>;
+}
+
+export function InternalColumn(
+    column: Column<Record<string, unknown>>
+): InternalColumn {
+    return {
+        type: InternalTableColumns.InternalColumn,
+        column,
+    };
+}
+
+export type InternalTableColumn = InternalIndexedColumn | InternalColumn;

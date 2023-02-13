@@ -3570,15 +3570,15 @@ function convertAdjustment(adjustment: Adjustment): {
         // base: number = lineHeight,
         // normalDescender: number = (lineHeight - 1) / 2,
         // oldMiddle: number = lineHeight / 2,
-        ascender: number | undefined =
+        ascender: number =
             Math.max(...lines) === undefined
                 ? adjustment.capital
                 : Math.max(...lines),
-        descender: number | undefined =
+        descender: number =
             Math.min(...lines) === undefined
                 ? adjustment.descender
                 : Math.min(...lines),
-        baseLine: number | undefined = Math.min(
+        baseLine: number = Math.min(
             ...lines.filter((value: number) => value !== descender)
         ),
         newBaseLine: number =
