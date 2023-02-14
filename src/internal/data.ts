@@ -1432,6 +1432,7 @@ export const asRow = LayoutContext.AsRow,
     asTextColumn = LayoutContext.AsTextColumn;
 
 // Element
+
 export interface Column<T extends Record<string, unknown>> {
     header: Element;
     width: Length;
@@ -1506,3 +1507,24 @@ export function InternalColumn(
 }
 
 export type InternalTableColumn = InternalIndexedColumn | InternalColumn;
+
+export enum DeviceClass {
+    Phone,
+    Tablet,
+    Desktop,
+    BigDesktop,
+}
+
+export enum Orientation {
+    Portrait,
+    Landscape,
+}
+
+export interface Device {
+    class_: DeviceClass;
+    orientation: Orientation;
+}
+
+export function Device(class_: DeviceClass, orientation: Orientation): Device {
+    return { class_, orientation };
+}

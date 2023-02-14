@@ -231,12 +231,47 @@ import {
     IndexedColumn,
     Column,
     InternalColumn,
+    asParagraph,
+    Paragraph,
+    Describe,
+    asTextColumn,
+    Attributes,
+    NodeName,
+    Location,
+    Elements,
+    NoAttribute,
+    Nearby,
+    TransformComponent_,
+    Scale,
+    Rotate,
+    MoveY,
+    MoveX,
+    AlignX,
+    HAlign,
+    AlignY,
+    VAlign,
+    Class,
+    Style_,
+    Transparency,
+    Device,
+    DeviceClass,
+    Orientation,
+    PseudoSelector,
+    PseudoClass,
 } from './internal/data.ts';
 import {
-    padding,
-    spacing,
+    padding as padding_,
+    spacing as spacing_,
     gridPosition,
     gridTemplate,
+    scale as scale_,
+    rotate as rotate_,
+    moveY,
+    moveX,
+    transparency,
+    overflow,
+    cursor,
+    hover,
 } from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { attribute } from './dom/attribute.ts';
@@ -251,6 +286,9 @@ import {
     extractSpacingAndPadding,
     paddingNameFloat,
     getSpacing,
+    spacingName,
+    paddingName,
+    floatClass,
 } from './internal/model.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
@@ -272,10 +310,10 @@ function rem(value: number): Length {
 }
 
 // Shrink an element to fit its contents.
-let shrink: Length = Content();
+const shrink: Length = Content();
 
 // Fill the available space. The available space will be split evenly between elements that have `width fill`.
-let fill: Length = Fill(1);
+const fill: Length = Fill(1);
 
 /** TODO: Similarly you can set a minimum boundary.
 
@@ -289,7 +327,7 @@ let fill: Length = Fill(1);
         ]
         (text "I will stop at 300px")
 */
-function minimum(value: number, length: Content | Fill): Length {
+function minimum(value: number, length: Length): Length {
     return Min(value, length);
 }
 
@@ -303,15 +341,15 @@ function minimum(value: number, length: Content | Fill): Length {
         ]
         (text "I will stop at 300px")
 */
-function maximum(value: number, length: Content | Fill): Length {
+function maximum(value: number, length: Length): Length {
     return Max(value, length);
 }
 
 // Set supported CSS property to min-content
-let minContent: Length = MinContent();
+const minContent: Length = MinContent();
 
 // Set supported CSS property to max-content
-let maxContent: Length = MaxContent();
+const maxContent: Length = MaxContent();
 
 /** TODO: Sometimes you may not want to split available space evenly. In this case you can use `fillPortion` to define which elements should have what portion of the available space.
 
@@ -484,7 +522,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                     newLeft = left - x / 2;
                                 return Just(
                                     StyleClass(
-                                        padding,
+                                        padding_,
                                         PaddingStyle(
                                             paddingNameFloat(
                                                 newTop,
@@ -545,7 +583,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                         )
                                     ),
                                     StyleClass(
-                                        spacing,
+                                        spacing_,
                                         SpacingStyle(name, x, y)
                                     ),
                                 ],
@@ -557,7 +595,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
 
                 default: {
                     const pad = withDefault(
-                        StyleClass(padding, PaddingStyle('', 0, 0, 0, 0)),
+                        StyleClass(padding_, PaddingStyle('', 0, 0, 0, 0)),
                         newPadding
                     );
                     return element(
@@ -826,9 +864,272 @@ function tableHelper(
     );
 }
 
+/**TODO:
+ * A paragraph will layout all children as wrapped, inline elements.
+
+    import Element exposing (el, paragraph, text)
+    import Element.Font as Font
+
+    view =
+        paragraph []
+            [ text "lots of text ...."
+            , el [ Font.bold ] (text "this is bold")
+            , text "lots of text ...."
+            ]
+
+This is really useful when you want to markup text by having some parts be bold, or some be links, or whatever you so desire.
+
+Also, if a child element has `alignLeft` or `alignRight`, then it will be moved to that side and the text will flow around it, (ah yes, `float` behavior).
+
+This makes it particularly easy to do something like a [dropped capital](https://en.wikipedia.org/wiki/Initial).
+
+    import Element exposing (alignLeft, el, padding, paragraph, text)
+    import Element.Font as Font
+
+    view =
+        paragraph []
+            [ el
+                [ alignLeft
+                , padding 5
+                ]
+                (text "S")
+            , text "o much text ...."
+            ]
+
+Which will look something like
+
+![A paragraph where the first letter is twice the height of the others](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%209.41.52%20PM.png)
+
+**Note** `spacing` on a paragraph will set the pixel spacing between lines.
+
+ */
+function paragraph(attributes: Attribute[], children: Element[]): Element {
+    return element(
+        asParagraph,
+        div,
+        [Describe(Paragraph()), width(fill), spacing(5), ...attributes],
+        Unkeyed(children)
+    );
+}
+
+/**TODO:
+ * Now that we have a paragraph, we need some way to attach a bunch of paragraph's together.
+
+To do that we can use a `textColumn`.
+
+The main difference between a `column` and a `textColumn` is that `textColumn` will flow the text around elements that have `alignRight` or `alignLeft`, just like we just saw with paragraph.
+
+In the following example, we have a `textColumn` where one child has `alignLeft`.
+
+    Element.textColumn [ spacing 10, padding 10 ]
+        [ paragraph [] [ text "lots of text ...." ]
+        , el [ alignLeft ] none
+        , paragraph [] [ text "lots of text ...." ]
+        ]
+
+Which will result in something like:
+
+![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
+ */
+function textColumn(attributes: Attribute[], children: Element[]): Element {
+    return element(
+        asTextColumn,
+        div,
+        [width(maximum(750, minimum(500, fill))), ...attributes],
+        Unkeyed(children)
+    );
+}
+
+/**TODO:
+ * Both a source and a description are required for images.
+
+The description is used for people using screen readers.
+
+Leaving the description blank will cause the image to be ignored by assistive technology. This can make sense for images that are purely decorative and add no additional information.
+
+So, take a moment to describe your image as you would to someone who has a harder time seeing.
+ */
+function image(
+    attributes: Attribute[],
+    { src, description }: { src: string; description: string }
+): Element {
+    const imageAttributes: Attribute[] = attributes.filter((a: Attribute) => {
+        switch (a.type) {
+            case Attributes.Width:
+                return true;
+
+            case Attributes.Height:
+                return true;
+
+            default:
+                return false;
+        }
+    });
+    return element(
+        asEl,
+        div,
+        [htmlClass(classes.imageContainer), ...attributes],
+        Unkeyed([
+            element(
+                asEl,
+                NodeName('img'),
+                [
+                    Attr(attribute('src', src)),
+                    Attr(attribute('alt', description)),
+                    ...imageAttributes,
+                ],
+                Unkeyed([])
+            ),
+        ])
+    );
+}
+
+/**TODO:
+ * link []
+        { url = "http://fruits.com"
+        , label = text "A link to my favorite fruit provider."
+        }
+ */
+function link(
+    attributes: Attribute[],
+    { url, label }: { url: string; label: Element }
+): Element {
+    return linkCore(attributes, { url, label });
+}
+
+/**TODO:
+ *
+ * @param attributes
+ * @param param1
+ * @returns
+ */
+function newTabLink(
+    attributes: Attribute[],
+    { url, label }: { url: string; label: Element }
+): Element {
+    return linkCore([Attr(attribute('target', '_blank')), ...attributes], {
+        url,
+        label,
+    });
+}
+
+function linkCore(
+    attributes: Attribute[],
+    { url, label }: { url: string; label: Element }
+): Element {
+    return element(
+        asEl,
+        NodeName('a'),
+        [
+            Attr(attribute('href', url)),
+            Attr(attribute('rel', 'noopener noreferrer')),
+            width(shrink),
+            height(shrink),
+            htmlClass(
+                `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`
+            ),
+            ...attributes,
+        ],
+        Unkeyed([label])
+    );
+}
+
+/**TODO:
+ * A link to download a file.
+ * @param attributes
+ * @param param1
+ * @returns
+ */
+function download(
+    attributes: Attribute[],
+    { url, label }: { url: string; label: Element }
+): Element {
+    return downloadCore(attributes, { url, filename: '', label });
+}
+
+/**TODO:
+ * A link to download a file, but you can specify the filename.
+ * @param attributes
+ * @param param1
+ * @returns
+ */
+function downloadAs(
+    attributes: Attribute[],
+    { label, filename, url }: { label: Element; filename: string; url: string }
+): Element {
+    return downloadCore(attributes, { url, filename, label });
+}
+
+function downloadCore(
+    attributes: Attribute[],
+    { url, filename, label }: { url: string; filename: string; label: Element }
+): Element {
+    return element(
+        asEl,
+        NodeName('a'),
+        [
+            Attr(attribute('href', url)),
+            Attr(attribute('download', filename)),
+            width(shrink),
+            height(shrink),
+            htmlClass(classes.contentCenterX),
+            htmlClass(classes.contentCenterY),
+            ...attributes,
+        ],
+        Unkeyed([label])
+    );
+}
+
+// NEARBYS
+function below(element: Element): Attribute {
+    return createNearby(Location.Below, element);
+}
+
+function above(element: Element): Attribute {
+    return createNearby(Location.Above, element);
+}
+
+function onRight(element: Element): Attribute {
+    return createNearby(Location.OnRight, element);
+}
+
+function onLeft(element: Element): Attribute {
+    return createNearby(Location.OnLeft, element);
+}
+
+/**TODO:
+ * This will place an element in front of another.
+
+**Note:** If you use this on a `layout` element, it will place the element as fixed to the viewport which can be useful for modals and overlays.
+ * @param element 
+ * @returns 
+ */
+function inFront(element: Element): Attribute {
+    return createNearby(Location.InFront, element);
+}
+
+/**TODO:
+ * This will place an element between the background and the content of an element.
+ * @param element
+ * @returns
+ */
+function behindContent(element: Element): Attribute {
+    return createNearby(Location.Behind, element);
+}
+
+function createNearby(location: Location, element: Element): Attribute {
+    switch (element.type) {
+        case Elements.Empty:
+            return NoAttribute();
+
+        default:
+            return Nearby(location, element);
+    }
+}
+
 /**
  * TODO:
- * @param width
+ * @param attributes
  * @returns
  */
 function width(width: Length): Attribute {
@@ -837,11 +1138,233 @@ function width(width: Length): Attribute {
 
 /**
  * TODO:
- * @param height
+ * @param attributes
  * @returns
  */
 function height(width: Length): Attribute {
     return Height(width);
+}
+
+function scale(n: number): Attribute {
+    return TransformComponent_(scale_, Scale([n, n, 1]));
+}
+
+/**TODO:
+ * Angle is given in radians.
+ * @param angle
+ * @returns
+ */
+function rotate(angle: number): Attribute {
+    return TransformComponent_(rotate_, Rotate([0, 0, 1], angle));
+}
+
+function moveUp(y: number): Attribute {
+    return TransformComponent_(moveY, MoveY(y * -1));
+}
+
+function moveDown(y: number): Attribute {
+    return TransformComponent_(moveY, MoveY(y));
+}
+
+function moveRight(x: number): Attribute {
+    return TransformComponent_(moveX, MoveX(x));
+}
+
+function moveLeft(x: number): Attribute {
+    return TransformComponent_(moveX, MoveX(x * -1));
+}
+
+function padding(x: number): Attribute {
+    return StyleClass(padding_, PaddingStyle('p-' + x, x, x, x, x));
+}
+
+/**
+ * Set horizontal and vertical padding.
+ * @param x
+ * @param y
+ * @returns
+ */
+function paddingXY(x: number, y: number): Attribute {
+    return x === y
+        ? padding(x)
+        : StyleClass(padding_, PaddingStyle(`p-${x}-${y}`, y, x, y, x));
+}
+
+/** TODO:
+ *If you find yourself defining unique paddings all the time, you might consider defining
+
+    edges =
+        { top = 0
+        , right = 0
+        , bottom = 0
+        , left = 0
+        }
+
+And then just do
+
+    paddingEach { edges | right = 5 }
+ * @param param0
+ * @returns
+ */
+function paddingEach({
+    top,
+    right,
+    bottom,
+    left,
+}: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+}): Attribute {
+    return top === right && top === bottom && top === left
+        ? padding(top)
+        : StyleClass(
+              padding_,
+              PaddingStyle(
+                  paddingName(top, right, bottom, left),
+                  top,
+                  right,
+                  bottom,
+                  left
+              )
+          );
+}
+
+const centerX: Attribute = AlignX(HAlign.CenterX);
+
+const centerY: Attribute = AlignY(VAlign.CenterY);
+
+const alignTop: Attribute = AlignY(VAlign.Top);
+
+const alignBottom: Attribute = AlignY(VAlign.Bottom);
+
+const alignLeft: Attribute = AlignX(HAlign.Left);
+
+const alignRight: Attribute = AlignX(HAlign.Right);
+
+const spaceEvenly: Attribute = Class(spacing_, classes.spaceEvenly);
+
+function spacing(x: number): Attribute {
+    return StyleClass(spacing_, SpacingStyle(spacingName(x, x), x, x));
+}
+
+/**TODO:
+ * In the majority of cases you'll just need to use `spacing`, which will work as intended.
+
+However for some layouts, like `textColumn`, you may want to set a different spacing for the x axis compared to the y axis.
+ * @param x 
+ * @param y 
+ * @returns 
+ */
+function spacingXY(x: number, y: number): Attribute {
+    return StyleClass(spacing_, SpacingStyle(spacingName(x, y), x, y));
+}
+
+/**TODO:
+ * Make an element transparent and have it ignore any mouse or touch events, though it will stil take up space.
+ * @param on
+ * @returns
+ */
+function transparent(on: boolean): Attribute {
+    return on
+        ? StyleClass(transparency, Transparency('transparent', 1.0))
+        : StyleClass(transparency, Transparency('visible', 0.0));
+}
+
+/**TODO:
+ * A capped value between 0.0 and 1.0, where 0.0 is transparent and 1.0 is fully opaque.
+
+Semantically equivalent to html opacity.
+ * @param o 
+ * @returns 
+ */
+function alpha(o: number): Attribute {
+    const transparency_: number = ((x: number) => 1 - x)(
+        Math.min(1.0, Math.max(0.0, o))
+    );
+    return StyleClass(
+        transparency,
+        Transparency('transparency-' + floatClass(transparency_), transparency_)
+    );
+}
+
+const scrollbars: Attribute = Class(overflow, classes.scrollbars);
+
+const scrollbarsY: Attribute = Class(overflow, classes.scrollbarsY);
+
+const scrollbarsX: Attribute = Class(overflow, classes.scrollbarsX);
+
+const clip: Attribute = Class(overflow, classes.clip);
+
+const clipY: Attribute = Class(overflow, classes.clipY);
+
+const clipX: Attribute = Class(overflow, classes.clipX);
+
+/**
+ * Set the cursor to be a pointing hand when it's hovering over this element.
+ */
+const pointer: Attribute = Class(cursor, classes.cursorPointer);
+
+/** TODO:
+ * Takes in a Window.Size and returns a device profile which can be used for responsiveness.
+
+If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
+ * @param window 
+ * @returns 
+ */
+function classifyDevice(window: { width: number; height: number }): Device {
+    const longSide: number = Math.max(window.width, window.height),
+        shortSide: number = Math.min(window.width, window.height);
+    return Device(
+        (() => {
+            if (shortSide < 600) {
+                return DeviceClass.Phone;
+            } else if (longSide <= 1200) {
+                return DeviceClass.Tablet;
+            } else if (longSide > 1200 && longSide <= 1920) {
+                return DeviceClass.Desktop;
+            } else {
+                return DeviceClass.BigDesktop;
+            }
+        })(),
+        window.width < window.height
+            ? Orientation.Portrait
+            : Orientation.Landscape
+    );
+}
+
+/**TODO:
+ * When designing it's nice to use a modular scale to set spacial rythms.
+
+    scaled =
+        Element.modular 16 1.25
+
+A modular scale starts with a number, and multiplies it by a ratio a number of times.
+Then, when setting font sizes you can use:
+
+    Font.size (scaled 1) -- results in 16
+
+    Font.size (scaled 2) -- 16 * 1.25 results in 20
+
+    Font.size (scaled 4) -- 16 * 1.25 ^ (4 - 1) results in 31.25
+
+We can also provide negative numbers to scale below 16px.
+
+    Font.size (scaled -1) -- 16 * 1.25 ^ (-1) results in 12.8
+ * @param normal 
+ * @param ratio 
+ * @param rescale 
+ * @returns 
+ */
+function modular(normal: number, ratio: number, rescale: number): number {
+    if (rescale === 0) {
+        return normal;
+    } else if (rescale < 0) {
+        return normal * ratio ** rescale;
+    } else {
+        return normal * ratio ** (rescale - 1);
+    }
 }
 
 export {
