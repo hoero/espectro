@@ -3545,9 +3545,35 @@ function getStyleName(style: Style): string {
     }
 }
 
-// TODO: Review Mapping functions of elm-ui
+// Mapping
+
+function unwrapDecorations(attrs: Attribute[]): Style[] {
+    const [styles, transform]: [Style[], Transformation] = attrs.reduce(
+        ([styles_, trans]: [Style[], Transformation], attr: Attribute) =>
+            unwrapDecsHelper(attr, [styles_, trans]),
+        [[], Untransformed()]
+    );
+    return [Transform(transform), ...styles];
+}
+
+function unwrapDecsHelper(
+    attr: Attribute,
+    [styles, trans]: [Style[], Transformation]
+): [Style[], Transformation] {
+    switch (attr.type) {
+        case Attributes.StyleClass:
+            return [[attr.style, ...styles], trans];
+
+        case Attributes.TransformComponent:
+            return [styles, composeTransformation(trans, attr.component)];
+
+        default:
+            return [styles, trans];
+    }
+}
 
 // Font Adjustments
+
 function convertAdjustment(adjustment: Adjustment): {
     full: {
         vertical: number;
@@ -3680,5 +3706,6 @@ export {
     toStyleSheet,
     transformClass,
     unstyled,
+    unwrapDecorations,
     variantName,
 };

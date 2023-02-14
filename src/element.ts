@@ -251,7 +251,6 @@ import {
     AlignY,
     VAlign,
     Class,
-    Style_,
     Transparency,
     Device,
     DeviceClass,
@@ -272,6 +271,8 @@ import {
     overflow,
     cursor,
     hover,
+    active,
+    onFocus,
 } from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { attribute } from './dom/attribute.ts';
@@ -289,9 +290,79 @@ import {
     spacingName,
     paddingName,
     floatClass,
+    unwrapDecorations,
 } from './internal/model.ts';
 
-const { Just, Nothing, map, withDefault } = elmish.Maybe;
+const { Just, Nothing, withDefault } = elmish.Maybe;
+
+// Shrink an element to fit its contents.
+const shrink: Length = Content();
+
+// Fill the available space. The available space will be split evenly between elements that have `width fill`.
+const fill: Length = Fill(1);
+
+// Set supported CSS property to min-content
+const minContent: Length = MinContent();
+
+// Set supported CSS property to max-content
+const maxContent: Length = MaxContent();
+
+/**TODO:
+ * Elm UI embeds two StyleSheets, one that is constant, and one that changes dynamically based on styles collected from the elements being rendered.
+
+This option will stop the static/constant stylesheet from rendering.
+
+If you're embedding multiple elm-ui `layout` elements, you need to guarantee that only one is rendering the static style sheet and that it's above all the others in the DOM tree.
+ */
+const noStaticStyleSheet: Option = RenderModeOption(
+    RenderMode.NoStaticStyleSheet
+);
+
+const _defaultFocus: FocusStyle = focusDefaultStyle;
+
+// Disable all `mouseOver` styles.
+const noHover: Option = HoverOption(HoverSetting.NoHover);
+
+/**
+ * Any `hover` styles, aka attributes with `mouseOver` in the name, will be always turned on.
+
+    This is useful for when you're targeting a platform that has no mouse, such as mobile.
+ */
+const forceHover: Option = HoverOption(HoverSetting.ForceHover);
+
+// When you want to render exactly nothing.
+const none: Element = Empty();
+
+const scrollbars: Attribute = Class(overflow, classes.scrollbars);
+
+const scrollbarY: Attribute = Class(overflow, classes.scrollbarsY);
+
+const scrollbarX: Attribute = Class(overflow, classes.scrollbarsX);
+
+const clip: Attribute = Class(overflow, classes.clip);
+
+const clipY: Attribute = Class(overflow, classes.clipY);
+
+const clipX: Attribute = Class(overflow, classes.clipX);
+
+const centerX: Attribute = AlignX(HAlign.CenterX);
+
+const centerY: Attribute = AlignY(VAlign.CenterY);
+
+const alignTop: Attribute = AlignY(VAlign.Top);
+
+const alignBottom: Attribute = AlignY(VAlign.Bottom);
+
+const alignLeft: Attribute = AlignX(HAlign.Left);
+
+const alignRight: Attribute = AlignX(HAlign.Right);
+
+const spaceEvenly: Attribute = Class(spacing_, classes.spaceEvenly);
+
+/**
+ * Set the cursor to be a pointing hand when it's hovering over this element.
+ */
+const pointer: Attribute = Class(cursor, classes.cursorPointer);
 
 function html(html: DOM.Node): Element {
     return unstyled(html);
@@ -308,12 +379,6 @@ function px(value: number): Length {
 function rem(value: number): Length {
     return Rem(value);
 }
-
-// Shrink an element to fit its contents.
-const shrink: Length = Content();
-
-// Fill the available space. The available space will be split evenly between elements that have `width fill`.
-const fill: Length = Fill(1);
 
 /** TODO: Similarly you can set a minimum boundary.
 
@@ -345,12 +410,6 @@ function maximum(value: number, length: Length): Length {
     return Max(value, length);
 }
 
-// Set supported CSS property to min-content
-const minContent: Length = MinContent();
-
-// Set supported CSS property to max-content
-const maxContent: Length = MaxContent();
-
 /** TODO: Sometimes you may not want to split available space evenly. In this case you can use `fillPortion` to define which elements should have what portion of the available space.
 
 So, two elements, one with `width (fillPortion 2)` and one with `width (fillPortion 3)`. The first would get 2 portions of the available space, while the second would get 3.
@@ -381,35 +440,9 @@ function layoutWith(
     );
 }
 
-/**TODO:
- * Elm UI embeds two StyleSheets, one that is constant, and one that changes dynamically based on styles collected from the elements being rendered.
-
-This option will stop the static/constant stylesheet from rendering.
-
-If you're embedding multiple elm-ui `layout` elements, you need to guarantee that only one is rendering the static style sheet and that it's above all the others in the DOM tree.
- */
-const noStaticStyleSheet: Option = RenderModeOption(
-    RenderMode.NoStaticStyleSheet
-);
-
-const defaultFocus: FocusStyle = focusDefaultStyle;
-
 function focusStyle(focus: FocusStyle): FocusStyleOption {
     return FocusStyleOption(focus);
 }
-
-// Disable all `mouseOver` styles.
-const noHover: Option = HoverOption(HoverSetting.NoHover);
-
-/**
- * Any `hover` styles, aka attributes with `mouseOver` in the name, will be always turned on.
-
-    This is useful for when you're targeting a platform that has no mouse, such as mobile.
- */
-const forceHover: Option = HoverOption(HoverSetting.ForceHover);
-
-// When you want to render exactly nothing.
-const none: Element = Empty();
 
 /**
  * Create some plain text.
@@ -1231,20 +1264,6 @@ function paddingEach({
           );
 }
 
-const centerX: Attribute = AlignX(HAlign.CenterX);
-
-const centerY: Attribute = AlignY(VAlign.CenterY);
-
-const alignTop: Attribute = AlignY(VAlign.Top);
-
-const alignBottom: Attribute = AlignY(VAlign.Bottom);
-
-const alignLeft: Attribute = AlignX(HAlign.Left);
-
-const alignRight: Attribute = AlignX(HAlign.Right);
-
-const spaceEvenly: Attribute = Class(spacing_, classes.spaceEvenly);
-
 function spacing(x: number): Attribute {
     return StyleClass(spacing_, SpacingStyle(spacingName(x, x), x, x));
 }
@@ -1288,23 +1307,6 @@ function alpha(o: number): Attribute {
         Transparency('transparency-' + floatClass(transparency_), transparency_)
     );
 }
-
-const scrollbars: Attribute = Class(overflow, classes.scrollbars);
-
-const scrollbarsY: Attribute = Class(overflow, classes.scrollbarsY);
-
-const scrollbarsX: Attribute = Class(overflow, classes.scrollbarsX);
-
-const clip: Attribute = Class(overflow, classes.clip);
-
-const clipY: Attribute = Class(overflow, classes.clipY);
-
-const clipX: Attribute = Class(overflow, classes.clipX);
-
-/**
- * Set the cursor to be a pointing hand when it's hovering over this element.
- */
-const pointer: Attribute = Class(cursor, classes.cursorPointer);
 
 /** TODO:
  * Takes in a Window.Size and returns a device profile which can be used for responsiveness.
@@ -1367,14 +1369,99 @@ function modular(normal: number, ratio: number, rescale: number): number {
     }
 }
 
+function mouseOver(decs: Attribute[]): Attribute {
+    return StyleClass(
+        hover,
+        PseudoSelector(PseudoClass.Hover, unwrapDecorations(decs))
+    );
+}
+
+function mouseDown(decs: Attribute[]): Attribute {
+    return StyleClass(
+        active,
+        PseudoSelector(PseudoClass.Active, unwrapDecorations(decs))
+    );
+}
+
+function focused(decs: Attribute[]): Attribute {
+    return StyleClass(
+        onFocus,
+        PseudoSelector(PseudoClass.Focus, unwrapDecorations(decs))
+    );
+}
+
 export {
-    px,
     rem,
+    minContent,
+    maxContent,
+    none,
+    text,
+    el,
+    row,
+    wrappedRow,
+    column,
+    paragraph,
+    textColumn,
+    table,
+    indexedTable,
+    width,
+    height,
+    px,
     shrink,
     fill,
     fillPortion,
-    minContent,
-    maxContent,
-    minimum,
     maximum,
+    minimum,
+    explain,
+    padding,
+    paddingXY,
+    paddingEach,
+    spacing,
+    spacingXY,
+    spaceEvenly,
+    centerX,
+    centerY,
+    alignLeft,
+    alignRight,
+    alignTop,
+    alignBottom,
+    transparent,
+    alpha,
+    pointer,
+    moveUp,
+    moveDown,
+    moveRight,
+    moveLeft,
+    rotate,
+    scale,
+    clip,
+    clipX,
+    clipY,
+    scrollbars,
+    scrollbarX,
+    scrollbarY,
+    layout,
+    layoutWith,
+    noStaticStyleSheet,
+    forceHover,
+    noHover,
+    focusStyle,
+    link,
+    newTabLink,
+    download,
+    downloadAs,
+    image,
+    above,
+    below,
+    onRight,
+    onLeft,
+    inFront,
+    behindContent,
+    mouseOver,
+    mouseDown,
+    focused,
+    classifyDevice,
+    modular,
+    html,
+    htmlAttribute,
 };
