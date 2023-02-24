@@ -295,16 +295,24 @@ import {
 
 const { Just, Nothing, withDefault } = elmish.Maybe;
 
-// Shrink an element to fit its contents.
+/**
+ * Shrink an element to fit its contents.
+ */
 const shrink: Length = Content();
 
-// Fill the available space. The available space will be split evenly between elements that have `width fill`.
+/**
+ * Fill the available space. The available space will be split evenly between elements that have `width fill`.
+ */
 const fill: Length = Fill(1);
 
-// Set supported CSS property to min-content
+/**
+ * Set supported CSS property to min-content
+ */
 const minContent: Length = MinContent();
 
-// Set supported CSS property to max-content
+/**
+ * Set supported CSS property to max-content
+ */
 const maxContent: Length = MaxContent();
 
 /**TODO:
@@ -320,7 +328,9 @@ const noStaticStyleSheet: Option = RenderModeOption(
 
 const _defaultFocus: FocusStyle = focusDefaultStyle;
 
-// Disable all `mouseOver` styles.
+/**
+ * Disable all `mouseOver` styles.
+ */
 const noHover: Option = HoverOption(HoverSetting.NoHover);
 
 /**
@@ -330,7 +340,9 @@ const noHover: Option = HoverOption(HoverSetting.NoHover);
  */
 const forceHover: Option = HoverOption(HoverSetting.ForceHover);
 
-// When you want to render exactly nothing.
+/**
+ * When you want to render exactly nothing.
+ */
 const none: Element = Empty();
 
 const scrollbars: Attribute = Class(overflow, classes.scrollbars);
