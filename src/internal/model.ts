@@ -1482,6 +1482,20 @@ function gatherAttrRecursive(
                                 (attr_) => attr_.type !== attr.type
                             )
                         );
+
+                    case Attributes.Event:
+                        return gatherAttrRecursive(
+                            classes,
+                            node,
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            elementAttrs.filter(
+                                (attr_) => attr_.type !== attr.type
+                            )
+                        );
                 }
             }
     }

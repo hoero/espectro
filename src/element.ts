@@ -221,16 +221,9 @@ import {
     PaddingStyle,
     StyleClass,
     SpacingStyle,
-    InternalTable,
-    InternalTableColumns,
-    InternalTableColumn,
     GridPosition,
     GridTemplateStyle,
     asGrid,
-    InternalIndexedColumn,
-    IndexedColumn,
-    Column,
-    InternalColumn,
     asParagraph,
     Paragraph,
     Describe,
@@ -252,9 +245,6 @@ import {
     VAlign,
     Class,
     Transparency,
-    Device,
-    DeviceClass,
-    Orientation,
     PseudoSelector,
     PseudoClass,
 } from './internal/data.ts';
@@ -292,6 +282,102 @@ import {
     floatClass,
     unwrapDecorations,
 } from './internal/model.ts';
+
+interface Column<T extends Record<string, unknown>> {
+    header: Element;
+    width: Length;
+    view: (record: T) => Element;
+}
+
+function Column(
+    header: Element,
+    width: Length,
+    view: (record: Record<string, unknown>) => Element
+): Column<Record<string, unknown>> {
+    return { header, width, view };
+}
+
+interface IndexedColumn<T extends Record<string, unknown>> {
+    header: Element;
+    width: Length;
+    view: (a: number, record: T) => Element;
+}
+
+function IndexedColumn(
+    header: Element,
+    width: Length,
+    view: (a: number, record: Record<string, unknown>) => Element
+): IndexedColumn<Record<string, unknown>> {
+    return { header, width, view };
+}
+
+interface InternalTable<T extends Record<string, unknown>> {
+    data: T[];
+    columns: InternalTableColumn[];
+}
+
+function _InternalTable(
+    data: Record<string, unknown>[],
+    columns: InternalTableColumn[]
+): InternalTable<Record<string, unknown>> {
+    return { data, columns };
+}
+
+enum InternalTableColumns {
+    InternalIndexedColumn,
+    InternalColumn,
+}
+
+interface InternalIndexedColumn {
+    type: InternalTableColumns.InternalIndexedColumn;
+    column: IndexedColumn<Record<string, unknown>>;
+}
+
+function InternalIndexedColumn(
+    column: IndexedColumn<Record<string, unknown>>
+): InternalIndexedColumn {
+    return {
+        type: InternalTableColumns.InternalIndexedColumn,
+        column,
+    };
+}
+
+interface InternalColumn {
+    type: InternalTableColumns.InternalColumn;
+    column: Column<Record<string, unknown>>;
+}
+
+function InternalColumn(
+    column: Column<Record<string, unknown>>
+): InternalColumn {
+    return {
+        type: InternalTableColumns.InternalColumn,
+        column,
+    };
+}
+
+type InternalTableColumn = InternalIndexedColumn | InternalColumn;
+
+enum DeviceClass {
+    Phone,
+    Tablet,
+    Desktop,
+    BigDesktop,
+}
+
+enum Orientation {
+    Portrait,
+    Landscape,
+}
+
+interface Device {
+    class_: DeviceClass;
+    orientation: Orientation;
+}
+
+function Device(class_: DeviceClass, orientation: Orientation): Device {
+    return { class_, orientation };
+}
 
 const { Just, Nothing, withDefault } = elmish.Maybe;
 
@@ -1411,10 +1497,12 @@ export {
     el,
     row,
     wrappedRow,
+    Column,
     column,
     paragraph,
     textColumn,
     table,
+    IndexedColumn,
     indexedTable,
     width,
     height,
@@ -1472,6 +1560,9 @@ export {
     mouseOver,
     mouseDown,
     focused,
+    DeviceClass,
+    Orientation,
+    Device,
     classifyDevice,
     modular,
     html,

@@ -1,5 +1,6 @@
 import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
+import { EventHandler } from '../dom/event.ts';
 
 import { Flag_, Second, Field } from './flag.ts';
 
@@ -654,6 +655,7 @@ export enum Attributes {
     Height,
     Nearby,
     TransformComponent,
+    Event,
 }
 
 export interface NoAttribute {
@@ -783,6 +785,15 @@ export function TransformComponent_(
     return { type: Attributes.TransformComponent, flag, component };
 }
 
+export interface Event {
+    type: Attributes.Event;
+    handler: EventHandler;
+}
+
+export function Event(handler: EventHandler): Event {
+    return { type: Attributes.Event, handler };
+}
+
 export type Attribute =
     | NoAttribute
     | Attr
@@ -794,7 +805,8 @@ export type Attribute =
     | Width
     | Height
     | Nearby
-    | TransformComponent_;
+    | TransformComponent_
+    | Event;
 
 export enum TransformComponents {
     MoveX,
@@ -1430,101 +1442,3 @@ export const asRow = LayoutContext.AsRow,
     asGrid = LayoutContext.AsGrid,
     asParagraph = LayoutContext.AsParagraph,
     asTextColumn = LayoutContext.AsTextColumn;
-
-// Element
-
-export interface Column<T extends Record<string, unknown>> {
-    header: Element;
-    width: Length;
-    view: (record: T) => Element;
-}
-
-export function Column(
-    header: Element,
-    width: Length,
-    view: (record: Record<string, unknown>) => Element
-): Column<Record<string, unknown>> {
-    return { header, width, view };
-}
-
-export interface IndexedColumn<T extends Record<string, unknown>> {
-    header: Element;
-    width: Length;
-    view: (a: number, record: T) => Element;
-}
-
-export function IndexedColumn(
-    header: Element,
-    width: Length,
-    view: (a: number, record: Record<string, unknown>) => Element
-): IndexedColumn<Record<string, unknown>> {
-    return { header, width, view };
-}
-
-export interface InternalTable<T extends Record<string, unknown>> {
-    data: T[];
-    columns: InternalTableColumn[];
-}
-
-export function InternalTable(
-    data: Record<string, unknown>[],
-    columns: InternalTableColumn[]
-): InternalTable<Record<string, unknown>> {
-    return { data, columns };
-}
-
-export enum InternalTableColumns {
-    InternalIndexedColumn,
-    InternalColumn,
-}
-
-export interface InternalIndexedColumn {
-    type: InternalTableColumns.InternalIndexedColumn;
-    column: IndexedColumn<Record<string, unknown>>;
-}
-
-export function InternalIndexedColumn(
-    column: IndexedColumn<Record<string, unknown>>
-): InternalIndexedColumn {
-    return {
-        type: InternalTableColumns.InternalIndexedColumn,
-        column,
-    };
-}
-
-export interface InternalColumn {
-    type: InternalTableColumns.InternalColumn;
-    column: Column<Record<string, unknown>>;
-}
-
-export function InternalColumn(
-    column: Column<Record<string, unknown>>
-): InternalColumn {
-    return {
-        type: InternalTableColumns.InternalColumn,
-        column,
-    };
-}
-
-export type InternalTableColumn = InternalIndexedColumn | InternalColumn;
-
-export enum DeviceClass {
-    Phone,
-    Tablet,
-    Desktop,
-    BigDesktop,
-}
-
-export enum Orientation {
-    Portrait,
-    Landscape,
-}
-
-export interface Device {
-    class_: DeviceClass;
-    orientation: Orientation;
-}
-
-export function Device(class_: DeviceClass, orientation: Orientation): Device {
-    return { class_, orientation };
-}
