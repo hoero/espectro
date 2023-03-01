@@ -248,40 +248,10 @@ import {
     PseudoSelector,
     PseudoClass,
 } from './internal/data.ts';
-import {
-    padding as padding_,
-    spacing as spacing_,
-    gridPosition,
-    gridTemplate,
-    scale as scale_,
-    rotate as rotate_,
-    moveY,
-    moveX,
-    transparency,
-    overflow,
-    cursor,
-    hover,
-    active,
-    onFocus,
-} from './internal/flag.ts';
+import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { attribute } from './dom/attribute.ts';
-import {
-    unstyled,
-    renderRoot,
-    htmlClass,
-    rootStyle,
-    focusDefaultStyle,
-    element,
-    div,
-    extractSpacingAndPadding,
-    paddingNameFloat,
-    getSpacing,
-    spacingName,
-    paddingName,
-    floatClass,
-    unwrapDecorations,
-} from './internal/model.ts';
+import * as Internal from './internal/model.ts';
 
 interface Column<T extends Record<string, unknown>> {
     header: Element;
@@ -412,7 +382,7 @@ const noStaticStyleSheet: Option = RenderModeOption(
     RenderMode.NoStaticStyleSheet
 );
 
-const _defaultFocus: FocusStyle = focusDefaultStyle;
+const _defaultFocus: FocusStyle = Internal.focusDefaultStyle;
 
 /**
  * Disable all `mouseOver` styles.
@@ -431,17 +401,17 @@ const forceHover: Option = HoverOption(HoverSetting.ForceHover);
  */
 const none: Element = Empty();
 
-const scrollbars: Attribute = Class(overflow, classes.scrollbars);
+const scrollbars: Attribute = Class(Flag.overflow, classes.scrollbars);
 
-const scrollbarY: Attribute = Class(overflow, classes.scrollbarsY);
+const scrollbarY: Attribute = Class(Flag.overflow, classes.scrollbarsY);
 
-const scrollbarX: Attribute = Class(overflow, classes.scrollbarsX);
+const scrollbarX: Attribute = Class(Flag.overflow, classes.scrollbarsX);
 
-const clip: Attribute = Class(overflow, classes.clip);
+const clip: Attribute = Class(Flag.overflow, classes.clip);
 
-const clipY: Attribute = Class(overflow, classes.clipY);
+const clipY: Attribute = Class(Flag.overflow, classes.clipY);
 
-const clipX: Attribute = Class(overflow, classes.clipX);
+const clipX: Attribute = Class(Flag.overflow, classes.clipX);
 
 const centerX: Attribute = AlignX(HAlign.CenterX);
 
@@ -455,15 +425,15 @@ const alignLeft: Attribute = AlignX(HAlign.Left);
 
 const alignRight: Attribute = AlignX(HAlign.Right);
 
-const spaceEvenly: Attribute = Class(spacing_, classes.spaceEvenly);
+const spaceEvenly: Attribute = Class(Flag.spacing, classes.spaceEvenly);
 
 /**
  * Set the cursor to be a pointing hand when it's hovering over this element.
  */
-const pointer: Attribute = Class(cursor, classes.cursorPointer);
+const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
 function html(html: DOM.Node): Element {
-    return unstyled(html);
+    return Internal.unstyled(html);
 }
 
 function htmlAttribute(attribute: DOM.Attr): Attribute {
@@ -528,11 +498,13 @@ function layoutWith(
     attributes: Attribute[],
     child: Element
 ): DOM.Node {
-    return renderRoot(
+    return Internal.renderRoot(
         options,
         [
-            htmlClass(`${classes.root} ${classes.any} ${classes.single}`),
-            ...rootStyle.concat(attributes),
+            Internal.htmlClass(
+                `${classes.root} ${classes.any} ${classes.single}`
+            ),
+            ...Internal.rootStyle.concat(attributes),
         ],
         child
     );
@@ -573,20 +545,22 @@ If you want multiple children, you'll need to use something like `row` or `colum
             (Element.text "You've made a stylish element!")
  */
 function el(attributes: Attribute[], child: Element): Element {
-    return element(
+    return Internal.element(
         asEl,
-        div,
+        Internal.div,
         [width(shrink), height(shrink), ...attributes],
         Unkeyed([child])
     );
 }
 
 function row(attributes: Attribute[], children: Element[]): Element {
-    return element(
+    return Internal.element(
         asRow,
-        div,
+        Internal.div,
         [
-            htmlClass(classes.contentLeft + ' ' + classes.contentCenterY),
+            Internal.htmlClass(
+                classes.contentLeft + ' ' + classes.contentCenterY
+            ),
             width(shrink),
             height(shrink),
             ...attributes,
@@ -596,11 +570,11 @@ function row(attributes: Attribute[], children: Element[]): Element {
 }
 
 function column(attributes: Attribute[], children: Element[]): Element {
-    return element(
+    return Internal.element(
         asColumn,
-        div,
+        Internal.div,
         [
-            htmlClass(classes.contentTop + ' ' + classes.contentLeft),
+            Internal.htmlClass(classes.contentTop + ' ' + classes.contentLeft),
             height(shrink),
             width(shrink),
             ...attributes,
@@ -612,15 +586,15 @@ function column(attributes: Attribute[], children: Element[]): Element {
 // Same as `row`, but will wrap if it takes up too much horizontal space.
 function wrappedRow(attributes: Attribute[], children: Element[]): Element {
     const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
-        extractSpacingAndPadding(attributes);
+        Internal.extractSpacingAndPadding(attributes);
 
     switch (spaced) {
         case Nothing():
-            return element(
+            return Internal.element(
                 asRow,
-                div,
+                Internal.div,
                 [
-                    htmlClass(
+                    Internal.htmlClass(
                         classes.contentLeft +
                             ' ' +
                             classes.contentCenterY +
@@ -653,9 +627,9 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                     newLeft = left - x / 2;
                                 return Just(
                                     StyleClass(
-                                        padding_,
+                                        Flag.padding,
                                         PaddingStyle(
-                                            paddingNameFloat(
+                                            Internal.paddingNameFloat(
                                                 newTop,
                                                 newRight,
                                                 newBottom,
@@ -679,16 +653,16 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                     // Not enough space in padding to compensate for spacing
                     const halfX = (x / 2) * -1,
                         halfY = (y / 2) * -1;
-                    return element(
+                    return Internal.element(
                         asEl,
-                        div,
+                        Internal.div,
                         attributes,
                         Unkeyed([
-                            element(
+                            Internal.element(
                                 asRow,
-                                div,
+                                Internal.div,
                                 [
-                                    htmlClass(
+                                    Internal.htmlClass(
                                         classes.contentLeft +
                                             ' ' +
                                             classes.contentCenterY +
@@ -714,7 +688,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                         )
                                     ),
                                     StyleClass(
-                                        spacing_,
+                                        Flag.spacing,
                                         SpacingStyle(name, x, y)
                                     ),
                                 ],
@@ -726,14 +700,14 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
 
                 default: {
                     const pad = withDefault(
-                        StyleClass(padding_, PaddingStyle('', 0, 0, 0, 0)),
+                        StyleClass(Flag.padding, PaddingStyle('', 0, 0, 0, 0)),
                         newPadding
                     );
-                    return element(
+                    return Internal.element(
                         asRow,
-                        div,
+                        Internal.div,
                         [
-                            htmlClass(
+                            Internal.htmlClass(
                                 classes.contentLeft +
                                     ' ' +
                                     classes.contentCenterY +
@@ -758,7 +732,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
  */
 function explain(): Attribute {
     console.error(`An element is being debugged!`);
-    return htmlClass('explain');
+    return Internal.htmlClass('explain');
 }
 
 /** TODO:
@@ -838,7 +812,7 @@ function tableHelper(
     attributes: Attribute[],
     config: InternalTable<Record<string, unknown>>
 ): Element {
-    const [sX, sY] = getSpacing(attributes, [0, 0]);
+    const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
 
     const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
         return headers.every((value: Element) => value === Empty())
@@ -851,7 +825,7 @@ function tableHelper(
     })(config.columns.map(columnHeader));
 
     const template: Attribute = StyleClass(
-        gridTemplate,
+        Flag.gridTemplate,
         GridTemplateStyle(
             [Px(sX), Px(sY)],
             config.columns.map(columnWidth),
@@ -897,12 +871,12 @@ function tableHelper(
         columnLevel: number,
         elem: Element
     ): Element {
-        return element(
+        return Internal.element(
             asEl,
-            div,
+            Internal.div,
             [
                 StyleClass(
-                    gridPosition,
+                    Flag.gridPosition,
                     GridPosition(rowLevel, columnLevel, 1, 1)
                 ),
             ],
@@ -970,9 +944,9 @@ function tableHelper(
         };
     }
 
-    return element(
+    return Internal.element(
         asGrid,
-        div,
+        Internal.div,
         [width(fill), template, ...attributes],
         Unkeyed(
             (() => {
@@ -1035,9 +1009,9 @@ Which will look something like
 
  */
 function paragraph(attributes: Attribute[], children: Element[]): Element {
-    return element(
+    return Internal.element(
         asParagraph,
-        div,
+        Internal.div,
         [Describe(Paragraph()), width(fill), spacing(5), ...attributes],
         Unkeyed(children)
     );
@@ -1063,9 +1037,9 @@ Which will result in something like:
 ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
  */
 function textColumn(attributes: Attribute[], children: Element[]): Element {
-    return element(
+    return Internal.element(
         asTextColumn,
-        div,
+        Internal.div,
         [width(maximum(750, minimum(500, fill))), ...attributes],
         Unkeyed(children)
     );
@@ -1096,12 +1070,12 @@ function image(
                 return false;
         }
     });
-    return element(
+    return Internal.element(
         asEl,
-        div,
-        [htmlClass(classes.imageContainer), ...attributes],
+        Internal.div,
+        [Internal.htmlClass(classes.imageContainer), ...attributes],
         Unkeyed([
-            element(
+            Internal.element(
                 asEl,
                 NodeName('img'),
                 [
@@ -1148,7 +1122,7 @@ function linkCore(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
 ): Element {
-    return element(
+    return Internal.element(
         asEl,
         NodeName('a'),
         [
@@ -1156,7 +1130,7 @@ function linkCore(
             Attr(attribute('rel', 'noopener noreferrer')),
             width(shrink),
             height(shrink),
-            htmlClass(
+            Internal.htmlClass(
                 `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`
             ),
             ...attributes,
@@ -1195,7 +1169,7 @@ function downloadCore(
     attributes: Attribute[],
     { url, filename, label }: { url: string; filename: string; label: Element }
 ): Element {
-    return element(
+    return Internal.element(
         asEl,
         NodeName('a'),
         [
@@ -1203,8 +1177,8 @@ function downloadCore(
             Attr(attribute('download', filename)),
             width(shrink),
             height(shrink),
-            htmlClass(classes.contentCenterX),
-            htmlClass(classes.contentCenterY),
+            Internal.htmlClass(classes.contentCenterX),
+            Internal.htmlClass(classes.contentCenterY),
             ...attributes,
         ],
         Unkeyed([label])
@@ -1277,7 +1251,7 @@ function height(width: Length): Attribute {
 }
 
 function scale(n: number): Attribute {
-    return TransformComponent_(scale_, Scale([n, n, 1]));
+    return TransformComponent_(Flag.scale, Scale([n, n, 1]));
 }
 
 /**TODO:
@@ -1286,27 +1260,27 @@ function scale(n: number): Attribute {
  * @returns
  */
 function rotate(angle: number): Attribute {
-    return TransformComponent_(rotate_, Rotate([0, 0, 1], angle));
+    return TransformComponent_(Flag.rotate, Rotate([0, 0, 1], angle));
 }
 
 function moveUp(y: number): Attribute {
-    return TransformComponent_(moveY, MoveY(y * -1));
+    return TransformComponent_(Flag.moveY, MoveY(y * -1));
 }
 
 function moveDown(y: number): Attribute {
-    return TransformComponent_(moveY, MoveY(y));
+    return TransformComponent_(Flag.moveY, MoveY(y));
 }
 
 function moveRight(x: number): Attribute {
-    return TransformComponent_(moveX, MoveX(x));
+    return TransformComponent_(Flag.moveX, MoveX(x));
 }
 
 function moveLeft(x: number): Attribute {
-    return TransformComponent_(moveX, MoveX(x * -1));
+    return TransformComponent_(Flag.moveX, MoveX(x * -1));
 }
 
 function padding(x: number): Attribute {
-    return StyleClass(padding_, PaddingStyle('p-' + x, x, x, x, x));
+    return StyleClass(Flag.padding, PaddingStyle('p-' + x, x, x, x, x));
 }
 
 /**
@@ -1318,7 +1292,7 @@ function padding(x: number): Attribute {
 function paddingXY(x: number, y: number): Attribute {
     return x === y
         ? padding(x)
-        : StyleClass(padding_, PaddingStyle(`p-${x}-${y}`, y, x, y, x));
+        : StyleClass(Flag.padding, PaddingStyle(`p-${x}-${y}`, y, x, y, x));
 }
 
 /** TODO:
@@ -1351,9 +1325,9 @@ function paddingEach({
     return top === right && top === bottom && top === left
         ? padding(top)
         : StyleClass(
-              padding_,
+              Flag.padding,
               PaddingStyle(
-                  paddingName(top, right, bottom, left),
+                  Internal.paddingName(top, right, bottom, left),
                   top,
                   right,
                   bottom,
@@ -1363,7 +1337,10 @@ function paddingEach({
 }
 
 function spacing(x: number): Attribute {
-    return StyleClass(spacing_, SpacingStyle(spacingName(x, x), x, x));
+    return StyleClass(
+        Flag.spacing,
+        SpacingStyle(Internal.spacingName(x, x), x, x)
+    );
 }
 
 /**TODO:
@@ -1375,7 +1352,10 @@ However for some layouts, like `textColumn`, you may want to set a different spa
  * @returns 
  */
 function spacingXY(x: number, y: number): Attribute {
-    return StyleClass(spacing_, SpacingStyle(spacingName(x, y), x, y));
+    return StyleClass(
+        Flag.spacing,
+        SpacingStyle(Internal.spacingName(x, y), x, y)
+    );
 }
 
 /**TODO:
@@ -1385,8 +1365,8 @@ function spacingXY(x: number, y: number): Attribute {
  */
 function transparent(on: boolean): Attribute {
     return on
-        ? StyleClass(transparency, Transparency('transparent', 1.0))
-        : StyleClass(transparency, Transparency('visible', 0.0));
+        ? StyleClass(Flag.transparency, Transparency('transparent', 1.0))
+        : StyleClass(Flag.transparency, Transparency('visible', 0.0));
 }
 
 /**TODO:
@@ -1401,8 +1381,11 @@ function alpha(o: number): Attribute {
         Math.min(1.0, Math.max(0.0, o))
     );
     return StyleClass(
-        transparency,
-        Transparency('transparency-' + floatClass(transparency_), transparency_)
+        Flag.transparency,
+        Transparency(
+            'transparency-' + Internal.floatClass(transparency_),
+            transparency_
+        )
     );
 }
 
@@ -1469,22 +1452,22 @@ function modular(normal: number, ratio: number, rescale: number): number {
 
 function mouseOver(decs: Attribute[]): Attribute {
     return StyleClass(
-        hover,
-        PseudoSelector(PseudoClass.Hover, unwrapDecorations(decs))
+        Flag.hover,
+        PseudoSelector(PseudoClass.Hover, Internal.unwrapDecorations(decs))
     );
 }
 
 function mouseDown(decs: Attribute[]): Attribute {
     return StyleClass(
-        active,
-        PseudoSelector(PseudoClass.Active, unwrapDecorations(decs))
+        Flag.active,
+        PseudoSelector(PseudoClass.Active, Internal.unwrapDecorations(decs))
     );
 }
 
 function focused(decs: Attribute[]): Attribute {
     return StyleClass(
-        onFocus,
-        PseudoSelector(PseudoClass.Focus, unwrapDecorations(decs))
+        Flag.focus,
+        PseudoSelector(PseudoClass.Focus, Internal.unwrapDecorations(decs))
     );
 }
 

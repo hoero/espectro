@@ -2,33 +2,7 @@ import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
 import _ from 'lodash';
 
-import {
-    Field,
-    Flag,
-    bgColor,
-    fontColor,
-    fontSize,
-    fontFamily,
-    present,
-    xAlign,
-    yAlign,
-    add,
-    centerX,
-    centerY,
-    alignRight,
-    alignBottom,
-    borderWidth,
-    width,
-    widthContent,
-    widthFill,
-    none,
-    widthBetween,
-    heightContent,
-    heightFill,
-    heightBetween,
-    merge,
-    height,
-} from './flag.ts';
+import * as Flag from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
 import {
     Elements,
@@ -108,6 +82,7 @@ import {
     SpacingStyle,
     OnlyDynamic,
     StaticRootAndDynamic,
+    Px,
 } from './data.ts';
 import { attribute, attributes } from '../dom/attribute.ts';
 import domElement from '../dom/element.ts';
@@ -211,7 +186,7 @@ function unstyled(node: DOM.Node): Element {
 }
 
 function finalizeNode(
-    has: Field,
+    has: Flag.Field,
     node: NodeName,
     attributes: DOM.Attr[],
     children: Children<DOM.Node>,
@@ -324,9 +299,12 @@ function finalizeNode(
 
     switch (parentContext) {
         case LayoutContext.AsRow:
-            if (present(widthFill, has) && !present(widthBetween, has)) {
+            if (
+                Flag.present(Flag.widthFill, has) &&
+                !Flag.present(Flag.widthBetween, has)
+            ) {
                 return html;
-            } else if (present(alignRight, has)) {
+            } else if (Flag.present(Flag.alignRight, has)) {
                 const el = domElement('u', [
                     [
                         'class',
@@ -341,7 +319,7 @@ function finalizeNode(
                 ]);
                 el.append(html);
                 return el;
-            } else if (present(centerX, has)) {
+            } else if (Flag.present(Flag.centerX, has)) {
                 const el = domElement('s', [
                     [
                         'class',
@@ -361,9 +339,12 @@ function finalizeNode(
             }
 
         case LayoutContext.AsColumn:
-            if (present(heightFill, has) && !present(heightBetween, has)) {
+            if (
+                Flag.present(Flag.heightFill, has) &&
+                !Flag.present(Flag.heightBetween, has)
+            ) {
                 return html;
-            } else if (present(centerY, has)) {
+            } else if (Flag.present(Flag.centerY, has)) {
                 const el = domElement('s', [
                     [
                         'class',
@@ -377,7 +358,7 @@ function finalizeNode(
                 ]);
                 el.append(html);
                 return el;
-            } else if (present(alignBottom, has)) {
+            } else if (Flag.present(Flag.alignBottom, has)) {
                 const el = domElement('u', [
                     [
                         'class',
@@ -709,8 +690,8 @@ function composeTransformation(
     }
 }
 
-function skippable(flag: Flag, style: Style) {
-    if (flag === borderWidth) {
+function skippable(flag: Flag.Flag, style: Style) {
+    if (flag === Flag.borderWidth) {
         switch (style.type) {
             case Styles.Single:
                 switch (style.value) {
@@ -771,7 +752,7 @@ function skippable(flag: Flag, style: Style) {
 function gatherAttrRecursive(
     classes: string,
     node: NodeName,
-    has: Field,
+    has: Flag.Field,
     transform: Transformation,
     styles: Style[],
     attrs: DOM.Attr[],
@@ -1031,7 +1012,7 @@ function gatherAttrRecursive(
                         break;
 
                     case Attributes.Class:
-                        if (present(attr.flag, has)) {
+                        if (Flag.present(attr.flag, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1049,7 +1030,7 @@ function gatherAttrRecursive(
                         return gatherAttrRecursive(
                             `${attr.class_} ${classes}`,
                             node,
-                            add(attr.flag, has),
+                            Flag.add(attr.flag, has),
                             transform,
                             styles,
                             attrs,
@@ -1060,7 +1041,7 @@ function gatherAttrRecursive(
                         );
 
                     case Attributes.StyleClass:
-                        if (present(attr.flag, has)) {
+                        if (Flag.present(attr.flag, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1077,7 +1058,7 @@ function gatherAttrRecursive(
                             return gatherAttrRecursive(
                                 `${getStyleName(attr.style)} ${classes}`,
                                 node,
-                                add(attr.flag, has),
+                                Flag.add(attr.flag, has),
                                 transform,
                                 styles,
                                 attrs,
@@ -1090,7 +1071,7 @@ function gatherAttrRecursive(
                             return gatherAttrRecursive(
                                 `${getStyleName(attr.style)} ${classes}`,
                                 node,
-                                add(attr.flag, has),
+                                Flag.add(attr.flag, has),
                                 transform,
                                 [attr.style, ...styles],
                                 attrs,
@@ -1102,7 +1083,7 @@ function gatherAttrRecursive(
                         }
 
                     case Attributes.AlignY: {
-                        if (present(yAlign, has)) {
+                        if (Flag.present(Flag.yAlign, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1117,16 +1098,16 @@ function gatherAttrRecursive(
                             );
                         }
 
-                        const flags: Field = add(yAlign, has);
+                        const flags: Flag.Field = Flag.add(Flag.yAlign, has);
                         const align: VAlign = attr.y;
 
-                        const has_ = (): Field => {
+                        const has_ = (): Flag.Field => {
                             switch (align) {
                                 case VAlign.CenterY:
-                                    return add(centerY, flags);
+                                    return Flag.add(Flag.centerY, flags);
 
                                 case VAlign.Bottom:
-                                    return add(alignBottom, flags);
+                                    return Flag.add(Flag.alignBottom, flags);
 
                                 default:
                                     return flags;
@@ -1148,7 +1129,7 @@ function gatherAttrRecursive(
                     }
 
                     case Attributes.AlignX: {
-                        if (present(xAlign, has)) {
+                        if (Flag.present(Flag.xAlign, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1163,16 +1144,16 @@ function gatherAttrRecursive(
                             );
                         }
 
-                        const flags: Field = add(xAlign, has);
+                        const flags: Flag.Field = Flag.add(Flag.xAlign, has);
                         const align: HAlign = attr.x;
 
-                        const has_ = (): Field => {
+                        const has_ = (): Flag.Field => {
                             switch (align) {
                                 case HAlign.CenterX:
-                                    return add(centerX, flags);
+                                    return Flag.add(Flag.centerX, flags);
 
                                 case HAlign.Right:
-                                    return add(alignRight, flags);
+                                    return Flag.add(Flag.alignRight, flags);
 
                                 default:
                                     return flags;
@@ -1194,7 +1175,7 @@ function gatherAttrRecursive(
                     }
 
                     case Attributes.Width:
-                        if (present(width, has)) {
+                        if (Flag.present(Flag.width, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1214,7 +1195,7 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${cls.widthExact} width-px-${attr.width.px} ${classes}`,
                                     node,
-                                    add(width, has),
+                                    Flag.add(Flag.width, has),
                                     transform,
                                     [
                                         Single(
@@ -1235,7 +1216,7 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${cls.widthExact} width-rem-${attr.width.rem} ${classes}`,
                                     node,
-                                    add(width, has),
+                                    Flag.add(Flag.width, has),
                                     transform,
                                     [
                                         Single(
@@ -1256,7 +1237,10 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${classes} ${cls.widthContent}`,
                                     node,
-                                    add(widthContent, add(width, has)),
+                                    Flag.add(
+                                        Flag.widthContent,
+                                        Flag.add(Flag.width, has)
+                                    ),
                                     transform,
                                     styles,
                                     attrs,
@@ -1271,7 +1255,10 @@ function gatherAttrRecursive(
                                     return gatherAttrRecursive(
                                         `${classes} ${cls.widthFill}`,
                                         node,
-                                        add(widthFill, add(width, has)),
+                                        Flag.add(
+                                            Flag.widthFill,
+                                            Flag.add(Flag.width, has)
+                                        ),
                                         transform,
                                         styles,
                                         attrs,
@@ -1285,7 +1272,10 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${classes} ${cls.widthFillPortion} width-fill-${attr.width.i}`,
                                     node,
-                                    add(widthFill, add(width, has)),
+                                    Flag.add(
+                                        Flag.widthFill,
+                                        Flag.add(Flag.width, has)
+                                    ),
                                     transform,
                                     [
                                         Single(
@@ -1305,12 +1295,15 @@ function gatherAttrRecursive(
                                 );
 
                             default: {
-                                const [addToFlags, newClass, newStyles] =
+                                const [addToFlag, newClass, newStyles] =
                                     renderWidth(attr.width);
                                 return gatherAttrRecursive(
                                     `${classes} ${newClass}`,
                                     node,
-                                    merge(addToFlags, add(width, has)),
+                                    Flag.merge(
+                                        addToFlag,
+                                        Flag.add(Flag.width, has)
+                                    ),
                                     transform,
                                     [...newStyles, ...styles],
                                     attrs,
@@ -1323,7 +1316,7 @@ function gatherAttrRecursive(
                         }
 
                     case Attributes.Height:
-                        if (present(height, has)) {
+                        if (Flag.present(Flag.height, has)) {
                             return gatherAttrRecursive(
                                 classes,
                                 node,
@@ -1343,7 +1336,7 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${cls.heightExact} height-px-${attr.height.px} ${classes}`,
                                     node,
-                                    add(height, has),
+                                    Flag.add(Flag.height, has),
                                     transform,
                                     [
                                         Single(
@@ -1364,7 +1357,7 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${cls.heightExact} height-rem-${attr.height.rem} ${classes}`,
                                     node,
-                                    add(height, has),
+                                    Flag.add(Flag.height, has),
                                     transform,
                                     [
                                         Single(
@@ -1385,7 +1378,10 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${classes} ${cls.heightContent}`,
                                     node,
-                                    add(heightContent, add(height, has)),
+                                    Flag.add(
+                                        Flag.heightContent,
+                                        Flag.add(Flag.height, has)
+                                    ),
                                     transform,
                                     styles,
                                     attrs,
@@ -1400,7 +1396,10 @@ function gatherAttrRecursive(
                                     return gatherAttrRecursive(
                                         `${classes} ${cls.heightFill}`,
                                         node,
-                                        add(heightFill, add(height, has)),
+                                        Flag.add(
+                                            Flag.heightFill,
+                                            Flag.add(Flag.height, has)
+                                        ),
                                         transform,
                                         styles,
                                         attrs,
@@ -1414,7 +1413,10 @@ function gatherAttrRecursive(
                                 return gatherAttrRecursive(
                                     `${classes} ${cls.heightFillPortion} height-fill-${attr.height.i}`,
                                     node,
-                                    add(heightFill, add(height, has)),
+                                    Flag.add(
+                                        Flag.heightFill,
+                                        Flag.add(Flag.height, has)
+                                    ),
                                     transform,
                                     [
                                         Single(
@@ -1434,12 +1436,15 @@ function gatherAttrRecursive(
                                 );
 
                             default: {
-                                const [addToFlags, newClass, newStyles] =
+                                const [addToFlag, newClass, newStyles] =
                                     renderHeight(attr.height);
                                 return gatherAttrRecursive(
                                     `${classes} ${newClass}`,
                                     node,
-                                    merge(addToFlags, add(width, has)),
+                                    Flag.merge(
+                                        addToFlag,
+                                        Flag.add(Flag.width, has)
+                                    ),
                                     transform,
                                     [...newStyles, ...styles],
                                     attrs,
@@ -1473,7 +1478,7 @@ function gatherAttrRecursive(
                         return gatherAttrRecursive(
                             classes,
                             node,
-                            add(attr.flag, has),
+                            Flag.add(attr.flag, has),
                             composeTransformation(transform, attr.component),
                             styles,
                             attrs,
@@ -1615,32 +1620,36 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
     return el;
 }
 
-function renderWidth(w: Length): [Field, string, Style[]] {
+function renderWidth(w: Length): [Flag.Field, string, Style[]] {
     switch (w.type) {
         case Lengths.Px:
             return [
-                none,
+                Flag.none,
                 `${cls.widthExact} width-px-${w.px}`,
                 [Single(`width-px-${w.px}`, 'width', `${w.px}px`)],
             ];
 
         case Lengths.Rem:
             return [
-                none,
+                Flag.none,
                 `${cls.widthExact} width-rem-${w.rem}`,
                 [Single(`width-rem-${w.rem}`, 'width', `${w.rem}rem`)],
             ];
 
         case Lengths.Content:
-            return [add(widthContent, none), cls.widthContent, []];
+            return [
+                Flag.add(Flag.widthContent, Flag.none),
+                cls.widthContent,
+                [],
+            ];
 
         case Lengths.Fill:
             if (w.i === 1) {
-                return [add(widthFill, none), cls.widthFill, []];
+                return [Flag.add(Flag.widthFill, Flag.none), cls.widthFill, []];
             }
 
             return [
-                add(widthFill, none),
+                Flag.add(Flag.widthFill, Flag.none),
                 `${cls.widthFillPortion} width-fill-${w.i}`,
                 [
                     Single(
@@ -1657,7 +1666,7 @@ function renderWidth(w: Length): [Field, string, Style[]] {
                 [minFlag, minAttrs, newMinStyle] = renderWidth(w.length);
 
             return [
-                add(widthBetween, minFlag),
+                Flag.add(Flag.widthBetween, minFlag),
                 `${minCls} ${minAttrs}`,
                 [minStyle, ...newMinStyle],
             ];
@@ -1669,7 +1678,7 @@ function renderWidth(w: Length): [Field, string, Style[]] {
                 [maxFlag, maxAttrs, newMaxStyle] = renderWidth(w.length);
 
             return [
-                add(widthBetween, maxFlag),
+                Flag.add(Flag.widthBetween, maxFlag),
                 `${max} ${maxAttrs}`,
                 [maxStyle, ...newMaxStyle],
             ];
@@ -1677,46 +1686,54 @@ function renderWidth(w: Length): [Field, string, Style[]] {
 
         case Lengths.MinContent:
             return [
-                none,
+                Flag.none,
                 'min-width',
                 [Single('min-width', 'min-width', 'min-content')],
             ];
 
         case Lengths.MaxContent:
             return [
-                none,
+                Flag.none,
                 'max-width',
                 [Single('max-width', 'max-width', 'max-content')],
             ];
     }
 }
 
-function renderHeight(h: Length): [Field, string, Style[]] {
+function renderHeight(h: Length): [Flag.Field, string, Style[]] {
     switch (h.type) {
         case Lengths.Px:
             return [
-                none,
+                Flag.none,
                 `${cls.heightExact} height-px-${h.px}`,
                 [Single(`height-px-${h.px}`, 'height', `${h.px}px`)],
             ];
 
         case Lengths.Rem:
             return [
-                none,
+                Flag.none,
                 `${cls.heightExact} height-rem-${h.rem}`,
                 [Single(`height-rem-${h.rem}`, 'height', `${h.rem}rem`)],
             ];
 
         case Lengths.Content:
-            return [add(heightContent, none), cls.heightContent, []];
+            return [
+                Flag.add(Flag.heightContent, Flag.none),
+                cls.heightContent,
+                [],
+            ];
 
         case Lengths.Fill:
             if (h.i === 1) {
-                return [add(heightFill, none), cls.heightFill, []];
+                return [
+                    Flag.add(Flag.heightFill, Flag.none),
+                    cls.heightFill,
+                    [],
+                ];
             }
 
             return [
-                add(heightFill, none),
+                Flag.add(Flag.heightFill, Flag.none),
                 `${cls.heightFillPortion} height-fill-${h.i}`,
                 [
                     Single(
@@ -1741,7 +1758,7 @@ function renderHeight(h: Length): [Field, string, Style[]] {
                 [minFlag, minAttrs, newMinStyle] = renderHeight(h.length);
 
             return [
-                add(heightBetween, minFlag),
+                Flag.add(Flag.heightBetween, minFlag),
                 `${minCls} ${minAttrs}`,
                 [minStyle, ...newMinStyle],
             ];
@@ -1753,7 +1770,7 @@ function renderHeight(h: Length): [Field, string, Style[]] {
                 [maxFlag, maxAttrs, newMaxStyle] = renderHeight(h.length);
 
             return [
-                add(heightBetween, maxFlag),
+                Flag.add(Flag.heightBetween, maxFlag),
                 `${max} ${maxAttrs}`,
                 [maxStyle, ...newMaxStyle],
             ];
@@ -1761,14 +1778,14 @@ function renderHeight(h: Length): [Field, string, Style[]] {
 
         case Lengths.MinContent:
             return [
-                none,
+                Flag.none,
                 'min-height',
                 [Single('min-height', 'min-height', 'min-content')],
             ];
 
         case Lengths.MaxContent:
             return [
-                none,
+                Flag.none,
                 'max-height',
                 [Single('max-height', 'max-height', 'max-content')],
             ];
@@ -1818,7 +1835,7 @@ function element(
         gatherAttrRecursive(
             contextClasses(context),
             node,
-            none,
+            Flag.none,
             untransformed,
             [],
             [],
@@ -2283,6 +2300,29 @@ function getHeight(attrs: Attribute[]): Maybe<Length> {
     }, Nothing());
 }
 
+function getLength(length: Maybe<Length>): Maybe<number> {
+    const length_: Length = withDefault(Px(0), length);
+    switch (length_.type) {
+        case Lengths.Px:
+            return Just(length_.px);
+
+        case Lengths.Rem:
+            return Just(length_.rem);
+
+        case Lengths.Fill:
+            return Just(length_.i);
+
+        case Lengths.Min:
+            return Just(length_.min);
+
+        case Lengths.Max:
+            return Just(length_.max);
+
+        default:
+            return Nothing();
+    }
+}
+
 function textElement(type: TextElement, str: string): DOM.Element {
     const textClasses = `${cls.any} ${cls.text} ${cls.widthContent} ${cls.heightContent}`,
         textFillClasses = `${cls.any} ${cls.text} ${cls.widthFill} ${cls.heightFill}`;
@@ -2351,7 +2391,7 @@ const families: Font[] = [
 
 const rootStyle: Attribute[] = [
     StyleClass(
-        bgColor,
+        Flag.bgColor,
         Colored(
             `bg-${formatColorClass(0, 0, 1, 0)}`,
             'background-color',
@@ -2359,16 +2399,16 @@ const rootStyle: Attribute[] = [
         )
     ),
     StyleClass(
-        fontColor,
+        Flag.fontColor,
         Colored(
             `fc-${formatColorClass(0, 0, 0, 1)}`,
             'color',
             formatColor(0, 0, 0, 1)
         )
     ),
-    StyleClass(fontSize, FontSize(20)),
+    StyleClass(Flag.fontSize, FontSize(20)),
     StyleClass(
-        fontFamily,
+        Flag.fontFamily,
         FontFamily(
             families.reduce(
                 (acc: string, font: Font) => renderFontClassName(font, acc),
@@ -3398,6 +3438,7 @@ function floatClass(x: number): string {
     return Math.round(x * 255).toString();
 }
 
+// TODO: Review colors format
 function formatColor(
     a: number,
     b: number,
@@ -3692,6 +3733,7 @@ export {
     formatTextShadow,
     gatherAttrRecursive,
     getHeight,
+    getLength,
     getSpacing,
     getStyleName,
     getWidth,

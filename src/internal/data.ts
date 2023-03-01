@@ -199,10 +199,14 @@ export interface Colored {
     type: Styles.Colored;
     class_: string;
     prop: string;
-    color: Color;
+    color: Color | Promise<Color>;
 }
 
-export function Colored(class_: string, prop: string, color: Color): Colored {
+export function Colored(
+    class_: string,
+    prop: string,
+    color: Color | Promise<Color>
+): Colored {
     return {
         type: Styles.Colored,
         class_,
@@ -1136,6 +1140,7 @@ export type Colour = [number, number, number, number];
 
 export type Color = Hsla | Rgba | string;
 
+// TODO: Review colors notation, is there a necessity for Rgb to not have 255 values?
 export enum Notation {
     Hsl,
     Hsla,
@@ -1412,7 +1417,7 @@ export function FocusStyle(
 }
 
 export interface Shadow {
-    color: Hsla | Rgba;
+    color: Hsla | Rgba | Promise<Hsla | Rgba>;
     offset: [number, number];
     inset?: boolean;
     blur: number;
@@ -1420,7 +1425,7 @@ export interface Shadow {
 }
 
 export function Shadow(
-    color: Hsla | Rgba,
+    color: Hsla | Rgba | Promise<Hsla | Rgba>,
     offset: [number, number],
     blur: number,
     size: number,

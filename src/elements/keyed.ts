@@ -27,7 +27,7 @@ import {
     Element,
     Keyed,
 } from '../internal/data.ts';
-import { div, element, htmlClass } from '../internal/model.ts';
+import * as Internal from '../internal/model.ts';
 import { classes } from '../internal/style.ts';
 
 /**
@@ -37,9 +37,9 @@ import { classes } from '../internal/style.ts';
  * @returns
  */
 function el(attributes: Attribute[], child: [string, Element]): Element {
-    return element(
+    return Internal.element(
         asEl,
-        div,
+        Internal.div,
         [width(shrink), height(shrink), ...attributes],
         Keyed([child])
     );
@@ -52,11 +52,13 @@ function el(attributes: Attribute[], child: [string, Element]): Element {
  * @returns
  */
 function row(attributes: Attribute[], children: [string, Element][]): Element {
-    return element(
+    return Internal.element(
         asRow,
-        div,
+        Internal.div,
         [
-            htmlClass(classes.contentLeft + ' ' + classes.contentCenterY),
+            Internal.htmlClass(
+                classes.contentLeft + ' ' + classes.contentCenterY
+            ),
             width(shrink),
             height(shrink),
             ...attributes,
@@ -75,11 +77,11 @@ function column(
     attributes: Attribute[],
     children: [string, Element][]
 ): Element {
-    return element(
+    return Internal.element(
         asColumn,
-        div,
+        Internal.div,
         [
-            htmlClass(classes.contentTop + ' ' + classes.contentLeft),
+            Internal.htmlClass(classes.contentTop + ' ' + classes.contentLeft),
             width(shrink),
             height(shrink),
             ...attributes,

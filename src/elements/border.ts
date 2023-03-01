@@ -26,43 +26,32 @@ import {
     Attribute,
     BorderWidth,
     Class,
-    Color,
     Colored,
+    Hsla,
+    Rgba,
     Shadow,
     Single,
     StyleClass,
 } from '../internal/data.ts';
-import {
-    borderColor as borderColor_,
-    borderRound,
-    borderStyle,
-    borderWidth,
-    shadows,
-} from '../internal/flag.ts';
-import {
-    boxShadowClass,
-    formatBoxShadow,
-    formatColorClass,
-} from '../internal/model.ts';
+import * as Flag from '../internal/flag.ts';
+import * as Internal from '../internal/model.ts';
 import { classes } from '../internal/style.ts';
 
-const solid: Attribute = Class(borderStyle, classes.borderSolid),
-    dashed: Attribute = Class(borderStyle, classes.borderDashed),
-    dotted: Attribute = Class(borderStyle, classes.borderDotted);
+const solid: Attribute = Class(Flag.borderStyle, classes.borderSolid),
+    dashed: Attribute = Class(Flag.borderStyle, classes.borderDashed),
+    dotted: Attribute = Class(Flag.borderStyle, classes.borderDotted);
 
 /**TODO:
  *
  * @param clr
  * @returns
  */
-function color(borderColor: Color): Attribute {
-    if (typeof borderColor === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function color(borderColor: Promise<Hsla | Rgba>): Attribute {
     const [a, b, c, d, e] = Object.values(borderColor);
     return StyleClass(
-        borderColor_,
+        Flag.borderColor,
         Colored(
-            `bc-${formatColorClass(a, b, c, d, e)}`,
+            `bc-${Internal.formatColorClass(a, b, c, d, e)}`,
             'border-color',
             borderColor
         )
@@ -75,7 +64,7 @@ function color(borderColor: Color): Attribute {
  * @returns
  */
 function width(v: number): Attribute {
-    return StyleClass(borderWidth, BorderWidth('b-' + v, v, v, v, v));
+    return StyleClass(Flag.borderWidth, BorderWidth('b-' + v, v, v, v, v));
 }
 
 /** TODO:
@@ -85,7 +74,10 @@ function width(v: number): Attribute {
  * @returns
  */
 function widthXY(x: number, y: number): Attribute {
-    return StyleClass(borderWidth, BorderWidth('b-' + x + '-' + y, y, x, y, x));
+    return StyleClass(
+        Flag.borderWidth,
+        BorderWidth('b-' + x + '-' + y, y, x, y, x)
+    );
 }
 
 /**TODO:
@@ -109,7 +101,7 @@ function widthEach({
         return widthXY(left, top);
     } else {
         return StyleClass(
-            borderWidth,
+            Flag.borderWidth,
             BorderWidth(
                 `b-${top}-${right}-${bottom}-${left}`,
                 top,
@@ -128,7 +120,7 @@ function widthEach({
  */
 function rounded(radius: number): Attribute {
     return StyleClass(
-        borderRound,
+        Flag.borderRound,
         Single('br-' + radius, 'border-radius', radius + 'px')
     );
 }
@@ -150,7 +142,7 @@ function roundEach({
     bottomRight: number;
 }): Attribute {
     return StyleClass(
-        borderRound,
+        Flag.borderRound,
         Single(
             `br-${topLeft}-${topRight}${bottomLeft}-${bottomRight}`,
             'border-radius',
@@ -165,9 +157,10 @@ function roundEach({
  * @param size
  * @returns
  */
-function glow(clr: Color, size: number): Attribute {
-    if (typeof clr === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function glow(
+    clr: Hsla | Rgba | Promise<Hsla | Rgba>,
+    size: number
+): Attribute {
     return shadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
@@ -177,9 +170,10 @@ function glow(clr: Color, size: number): Attribute {
  * @param size
  * @returns
  */
-function innerGlow(clr: Color, size: number): Attribute {
-    if (typeof clr === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function innerGlow(
+    clr: Hsla | Rgba | Promise<Hsla | Rgba>,
+    size: number
+): Attribute {
     return innerShadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
@@ -197,14 +191,16 @@ function shadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Color;
+    color: Hsla | Rgba | Promise<Hsla | Rgba>;
 }): Attribute {
-    if (typeof color === 'string')
-        throw new Error('Please do not provide a color as a string.');
     const shade = Shadow(color, offset, blur, size, false);
     return StyleClass(
-        shadows,
-        Single(boxShadowClass(shade), 'box-shadow', formatBoxShadow(shade))
+        Flag.shadows,
+        Single(
+            Internal.boxShadowClass(shade),
+            'box-shadow',
+            Internal.formatBoxShadow(shade)
+        )
     );
 }
 
@@ -222,14 +218,16 @@ function innerShadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Color;
+    color: Hsla | Rgba | Promise<Hsla | Rgba>;
 }): Attribute {
-    if (typeof color === 'string')
-        throw new Error('Please do not provide a color as a string.');
     const shade = Shadow(color, offset, blur, size, true);
     return StyleClass(
-        shadows,
-        Single(boxShadowClass(shade), 'box-shadow', formatBoxShadow(shade))
+        Flag.shadows,
+        Single(
+            Internal.boxShadowClass(shade),
+            'box-shadow',
+            Internal.formatBoxShadow(shade)
+        )
     );
 }
 

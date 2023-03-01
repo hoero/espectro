@@ -63,10 +63,12 @@ import {
     FontFamily,
     FontSize,
     FontWith,
+    Hsla,
     ImportFont,
     Maybe,
     Monospace,
     Property,
+    Rgba,
     SansSerif,
     Serif,
     Shadow,
@@ -79,27 +81,8 @@ import {
     VariantIndexed,
     Variants,
 } from '../internal/data.ts';
-import {
-    fontAlignment,
-    fontColor as fontColor_,
-    fontFamily,
-    fontSize,
-    fontVariant,
-    fontWeight,
-    letterSpacing as letterSpacing_,
-    txtShadows,
-    wordSpacing as wordSpacing_,
-} from '../internal/flag.ts';
-import {
-    floatClass,
-    formatColorClass,
-    formatTextShadow,
-    htmlClass,
-    renderFontClassName,
-    renderVariant,
-    textShadowClass,
-    variantName,
-} from '../internal/model.ts';
+import * as Flag from '../internal/flag.ts';
+import * as Internal from '../internal/model.ts';
 import { classes } from '../internal/style.ts';
 
 // Font
@@ -108,53 +91,53 @@ const serif: Font = Serif(),
     monospace: Font = Monospace();
 
 // Size
-const _sizeByCapital: Attribute = htmlClass(classes.sizeByCapital),
-    _full: Attribute = htmlClass(classes.fullSize);
+const _sizeByCapital: Attribute = Internal.htmlClass(classes.sizeByCapital),
+    _full: Attribute = Internal.htmlClass(classes.fullSize);
 
 // Alignment
 /**
  * Align the font to the left.
  */
-const alignLeft: Attribute = Class(fontAlignment, classes.textLeft);
+const alignLeft: Attribute = Class(Flag.fontAlignment, classes.textLeft);
 
 /**
  * Align the font to the right.
  */
-const alignRight: Attribute = Class(fontAlignment, classes.textRight);
+const alignRight: Attribute = Class(Flag.fontAlignment, classes.textRight);
 
 /**
  * Center align the font.
  */
-const center: Attribute = Class(fontAlignment, classes.textCenter);
+const center: Attribute = Class(Flag.fontAlignment, classes.textCenter);
 
-const justify: Attribute = Class(fontAlignment, classes.textJustify);
+const justify: Attribute = Class(Flag.fontAlignment, classes.textJustify);
 
-const underline: Attribute = htmlClass(classes.underline),
-    strike: Attribute = htmlClass(classes.strike),
-    italic: Attribute = htmlClass(classes.italic);
+const underline: Attribute = Internal.htmlClass(classes.underline),
+    strike: Attribute = Internal.htmlClass(classes.strike),
+    italic: Attribute = Internal.htmlClass(classes.italic);
 
 // Font Weight
-const hairline: Attribute = Class(fontWeight, classes.textThin),
+const hairline: Attribute = Class(Flag.fontWeight, classes.textThin),
     thin: Attribute = hairline,
-    extraLight: Attribute = Class(fontWeight, classes.textExtraLight),
+    extraLight: Attribute = Class(Flag.fontWeight, classes.textExtraLight),
     ultraLight: Attribute = extraLight,
-    light: Attribute = Class(fontWeight, classes.textLight),
-    normal: Attribute = Class(fontWeight, classes.textNormalWeight),
+    light: Attribute = Class(Flag.fontWeight, classes.textLight),
+    normal: Attribute = Class(Flag.fontWeight, classes.textNormalWeight),
     book: Attribute = normal,
     regular: Attribute = normal,
-    medium: Attribute = Class(fontWeight, classes.textMedium),
-    semiBold: Attribute = Class(fontWeight, classes.textSemiBold),
+    medium: Attribute = Class(Flag.fontWeight, classes.textMedium),
+    semiBold: Attribute = Class(Flag.fontWeight, classes.textSemiBold),
     demiBold: Attribute = semiBold,
-    bold: Attribute = Class(fontWeight, classes.bold),
-    extraBold: Attribute = Class(fontWeight, classes.textExtraBold),
+    bold: Attribute = Class(Flag.fontWeight, classes.bold),
+    extraBold: Attribute = Class(Flag.fontWeight, classes.textExtraBold),
     ultraBold: Attribute = extraBold,
-    black: Attribute = Class(fontWeight, classes.textHeavy),
+    black: Attribute = Class(Flag.fontWeight, classes.textHeavy),
     heavy: Attribute = black;
 
 /**
  * This will reset bold and italic.
  */
-const unitalicized: Attribute = htmlClass(classes.textUnitalicized);
+const unitalicized: Attribute = Internal.htmlClass(classes.textUnitalicized);
 
 // Variants
 /**
@@ -202,13 +185,15 @@ const swash: Variant = VariantActive('swsh');
  * @param clr
  * @returns
  */
-function color(fontColor: Color): Attribute {
-    if (typeof fontColor === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function color(fontColor: Promise<Hsla | Rgba>): Attribute {
     const [a, b, c, d, e] = Object.values(fontColor);
     return StyleClass(
-        fontColor_,
-        Colored(`fc-${formatColorClass(a, b, c, d, e)}`, 'color', fontColor)
+        Flag.fontColor,
+        Colored(
+            `fc-${Internal.formatColorClass(a, b, c, d, e)}`,
+            'color',
+            fontColor
+        )
     );
 }
 
@@ -229,10 +214,11 @@ function color(fontColor: Color): Attribute {
  */
 function family(families: Font[]): Attribute {
     return StyleClass(
-        fontFamily,
+        Flag.fontFamily,
         FontFamily(
             families.reduce(
-                (acc: string, font: Font) => renderFontClassName(font, acc),
+                (acc: string, font: Font) =>
+                    Internal.renderFontClassName(font, acc),
                 'ff-'
             ),
             families
@@ -302,7 +288,7 @@ function external({ url, name }: { url: string; name: string }): Font {
  * @returns
  */
 function size(i: number): Attribute {
-    return StyleClass(fontSize, FontSize(i));
+    return StyleClass(Flag.fontSize, FontSize(i));
 }
 
 /**TODO:
@@ -312,8 +298,12 @@ function size(i: number): Attribute {
  */
 function letterSpacing(offset: number): Attribute {
     return StyleClass(
-        letterSpacing_,
-        Single('ls-' + floatClass(offset), 'letter-spacing', offset + 'px')
+        Flag.letterSpacing,
+        Single(
+            'ls-' + Internal.floatClass(offset),
+            'letter-spacing',
+            offset + 'px'
+        )
     );
 }
 
@@ -324,8 +314,12 @@ function letterSpacing(offset: number): Attribute {
  */
 function wordSpacing(offset: number): Attribute {
     return StyleClass(
-        wordSpacing_,
-        Single('ws-' + floatClass(offset), 'word-spacing', offset + 'px')
+        Flag.wordSpacing,
+        Single(
+            'ws-' + Internal.floatClass(offset),
+            'word-spacing',
+            offset + 'px'
+        )
     );
 }
 
@@ -341,14 +335,16 @@ function shadow({
 }: {
     offset: [number, number];
     blur: number;
-    color: Color;
+    color: Hsla | Rgba | Promise<Hsla | Rgba>;
 }): Attribute {
-    if (typeof color === 'string')
-        throw new Error('Please do not provide a color as a string.');
     const shade = Shadow(color, offset, blur, 0, false);
     return StyleClass(
-        txtShadows,
-        Single(textShadowClass(shade), 'text-shadow', formatTextShadow(shade))
+        Flag.txtShadows,
+        Single(
+            Internal.textShadowClass(shade),
+            'text-shadow',
+            Internal.formatTextShadow(shade)
+        )
     );
 }
 
@@ -358,13 +354,15 @@ function shadow({
  * @param param0
  * @returns
  */
-function glow(color: Color, i: number): Attribute {
-    if (typeof color === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function glow(color: Hsla | Rgba | Promise<Hsla | Rgba>, i: number): Attribute {
     const shade = Shadow(color, [0, 0], i * 2, 0, false);
     return StyleClass(
-        txtShadows,
-        Single(textShadowClass(shade), 'text-shadow', formatTextShadow(shade))
+        Flag.txtShadows,
+        Single(
+            Internal.textShadowClass(shade),
+            'text-shadow',
+            Internal.formatTextShadow(shade)
+        )
     );
 }
 
@@ -383,14 +381,14 @@ function glow(color: Color, i: number): Attribute {
 function variant(variant_: Variant): Attribute {
     switch (variant_.type) {
         case Variants.VariantActive:
-            return Class(fontVariant, 'v-' + variant_.name);
+            return Class(Flag.fontVariant, 'v-' + variant_.name);
 
         case Variants.VariantOff:
-            return Class(fontVariant, 'v-' + variant_.name + '-off');
+            return Class(Flag.fontVariant, 'v-' + variant_.name + '-off');
 
         case Variants.VariantIndexed:
             return StyleClass(
-                fontVariant,
+                Flag.fontVariant,
                 Single(
                     `v-${variant_.name}-${variant_.index.toString()}`,
                     'font-feature-settings',
@@ -421,14 +419,14 @@ function isSmallCaps(x: Variant): boolean {
  * @returns
  */
 function variantList(vars: Variant[]): Attribute {
-    const features: string[] = vars.map(renderVariant),
+    const features: string[] = vars.map(Internal.renderVariant),
         hasSmallCaps: boolean = vars.every(isSmallCaps),
         name: string = hasSmallCaps
-            ? `${vars.map(variantName).join('-')}-sc`
-            : vars.map(variantName).join('-'),
+            ? `${vars.map(Internal.variantName).join('-')}-sc`
+            : vars.map(Internal.variantName).join('-'),
         featureString: string = features.join(', ');
     return StyleClass(
-        fontVariant,
+        Flag.fontVariant,
         Style_('v-' + name, [
             Property('font-feature-settings', featureString),
             Property('font-variant', hasSmallCaps ? 'small-caps' : 'normal'),

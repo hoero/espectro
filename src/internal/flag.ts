@@ -144,7 +144,7 @@ const yAlign = flag(29);
 
 const xAlign = flag(30);
 
-const onFocus = flag(31);
+const focus = flag(31);
 
 const active = flag(32);
 
@@ -199,7 +199,7 @@ export {
     centerY,
     cursor,
     flag,
-    onFocus,
+    focus,
     fontAlignment,
     fontColor,
     fontFamily,

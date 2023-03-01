@@ -1,5 +1,8 @@
 import { capsule } from '../deps.ts';
 
+/**
+ * From Capsule module
+ */
 export interface EventRegistry {
     outside: {
         [key: string]: EventHandler;
@@ -11,6 +14,9 @@ export interface EventRegistry {
     };
 }
 
+/**
+ * From Capsule module
+ */
 export interface ComponentEventContext {
     /** The event */
     e: Event;
@@ -29,6 +35,9 @@ export interface ComponentEventContext {
     emit<T = unknown>(name: string, data?: T): void;
 }
 
+/**
+ * From Capsule module
+ */
 export type EventHandler = (el: ComponentEventContext) => void;
 
 export function on(class_: string) {

@@ -13,32 +13,27 @@ import { attribute } from '../dom/attribute.ts';
 import {
     Attr,
     Attribute,
-    Color,
     Colored,
+    Hsla,
     NoAttribute,
+    Rgba,
     Single,
     StyleClass,
 } from '../internal/data.ts';
-import { bgColor, bgGradient } from '../internal/flag.ts';
-import {
-    floatClass,
-    formatColor,
-    formatColorClass,
-} from '../internal/model.ts';
+import * as Flag from '../internal/flag.ts';
+import * as Internal from '../internal/model.ts';
 
 /**
  * TODO:
  * @param clr
  * @returns
  */
-function color(backgroundColor: Color): Attribute {
-    if (typeof backgroundColor === 'string')
-        throw new Error('Please do not provide a color as a string.');
+function color(backgroundColor: Promise<Hsla | Rgba>): Attribute {
     const [a, b, c, d, e] = Object.values(backgroundColor);
     return StyleClass(
-        bgColor,
+        Flag.bgColor,
         Colored(
-            `bg-${formatColorClass(a, b, c, d, e)}`,
+            `bg-${Internal.formatColorClass(a, b, c, d, e)}`,
             'background-color',
             backgroundColor
         )
@@ -97,7 +92,7 @@ function tiledY(src: string): Attribute {
     return Attr(attribute('style', `background: url('${src}') repeat-y`));
 }
 
-function gradient(angle: number, steps: Color[]): Attribute {
+function gradient(angle: number, steps: Promise<Hsla | Rgba>[]): Attribute {
     switch (steps) {
         case []:
             return NoAttribute();
@@ -107,22 +102,22 @@ function gradient(angle: number, steps: Color[]): Attribute {
 
         default:
             return StyleClass(
-                bgGradient,
+                Flag.bgGradient,
                 Single(
-                    `bg-grad-${[floatClass(angle)]
+                    `bg-grad-${[Internal.floatClass(angle)]
                         .concat(
-                            steps.map((clr: Color) => {
+                            steps.map((clr: Promise<Hsla | Rgba>) => {
                                 const [a, b, c, d, e] = Object.values(clr);
-                                return formatColorClass(a, b, c, d, e);
+                                return Internal.formatColorClass(a, b, c, d, e);
                             })
                         )
                         .join('-')}`,
                     'background-image',
                     `linear-gradient(${[angle + 'rad']
                         .concat(
-                            steps.map((clr: Color) => {
+                            steps.map((clr: Promise<Hsla | Rgba>) => {
                                 const [a, b, c, d, e] = Object.values(clr);
-                                return formatColor(a, b, c, d, e);
+                                return Internal.formatColor(a, b, c, d, e);
                             })
                         )
                         .join(', ')}`
