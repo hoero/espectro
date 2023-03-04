@@ -57,7 +57,6 @@ import {
     Adjustment,
     Attribute,
     Class,
-    Color,
     Colored,
     Font,
     FontFamily,

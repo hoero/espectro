@@ -107,6 +107,19 @@ function onFocus(class_: string, handler: EventHandler): Attribute {
     return Event((on_(class_).focus = handler));
 }
 
+// Keyboard Events
+/**
+ * TODO:
+ * @param class_
+ * @param handler
+ * @returns
+ */
+function onInput(class_: string, handler: EventHandler): Attribute {
+    return Event((on_(class_).input = handler));
+}
+
+// General Events
+
 /**
  * TODO:
  * @param class_
@@ -128,4 +141,5 @@ export {
     onMouseMove,
     onFocus,
     onLoseFocus,
+    onInput,
 };
