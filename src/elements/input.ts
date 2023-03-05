@@ -87,7 +87,7 @@ Nevertheless, here we are. Here's how you put one together
 
     Input.radio
         [ padding 10
-        , spacing 20
+        , Element_.spacing 20
         ]
         { onChange = ChooseLunch
         , selected = Just model.lunch
@@ -177,35 +177,7 @@ import { elmish } from '../deps.ts';
 import { hsl, hsla } from '../color.ts';
 import { attribute } from '../dom/attribute.ts';
 import { ComponentEventContext, EventHandler } from '../dom/event.ts';
-import {
-    centerY,
-    fill,
-    height,
-    pointer,
-    px,
-    shrink,
-    spacing,
-    width,
-    alignLeft,
-    spacingXY,
-    row,
-    el,
-    none,
-    behindContent,
-    fillPortion,
-    centerX,
-    paddingXY,
-    inFront,
-    rotate,
-    moveUp,
-    transparent,
-    alpha,
-    clip,
-    htmlAttribute,
-    paddingEach,
-    scrollbarY,
-    text as text_,
-} from '../element.ts';
+import * as Element_ from '../element.ts';
 import {
     Attribute,
     Describe,
@@ -236,6 +208,7 @@ import {
     PaddingStyle,
     asParagraph,
     Class,
+    asRow,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
 import * as Internal from '../internal/model.ts';
@@ -353,6 +326,36 @@ interface Text {
     label: Label;
 }
 
+enum OptionState {
+    Idle,
+    Focused,
+    Selected,
+}
+
+interface Option_ {
+    // deno-lint-ignore no-explicit-any
+    value: any;
+    view: (x: OptionState) => Element;
+}
+
+// deno-lint-ignore no-explicit-any
+function Option(value: any, view: (x: OptionState) => Element): Option {
+    return { value, view };
+}
+
+type Option = Option_;
+
+enum Found {
+    NotFound,
+    BeforeFound,
+    AfterFound,
+}
+
+enum Orientation {
+    Row,
+    Column,
+}
+
 // Colors
 const white: Promise<Hsla | Rgba> = hsl(0, 0, 1),
     darkGrey: Promise<Hsla | Rgba> = hsl(86, 0.05, 0.73),
@@ -360,8 +363,8 @@ const white: Promise<Hsla | Rgba> = hsl(0, 0, 1),
 
 // Thumb
 const defaultThumb: Thumb = Thumb([
-    width(px(16)),
-    height(px(16)),
+    Element_.width(Element_.px(16)),
+    Element_.height(Element_.px(16)),
     Border.rounded(8),
     Border.width(1),
     Border.color(hsl(0, 0, 0.5)),
@@ -393,15 +396,15 @@ You should only have a maximum of one per page.
 const focusedOnLoad: Attribute = Attr(attribute('autocomplete', 'true'));
 
 // Style Defaults
-const defaultTextPadding: Attribute = paddingXY(12, 12),
+const defaultTextPadding: Attribute = Element_.paddingXY(12, 12),
     defaultTextBoxStyle: Attribute[] = [
         defaultTextPadding,
         Border.rounded(3),
         Border.color(white),
         Border.width(1),
-        spacing(5),
-        width(fill),
-        height(shrink),
+        Element_.spacing(5),
+        Element_.width(Element_.fill),
+        Element_.height(Element_.shrink),
     ];
 
 /**
@@ -556,12 +559,12 @@ function button(
         asEl,
         Internal.div,
         [
-            width(shrink),
-            height(shrink),
+            Element_.width(Element_.shrink),
+            Element_.height(Element_.shrink),
             Internal.htmlClass(
                 `${classes.contentCenterX} ${classes.contentCenterY} ${classes.seButton} ${classes.noTextSelection}`
             ),
-            pointer,
+            Element_.pointer,
             focusDefault(attributes),
             Describe(Button()),
             tabindex(0),
@@ -647,7 +650,7 @@ function checkbox(
     }
 ): Element {
     const attrs: Attribute[] = [
-        isHiddenLabel(label) ? NoAttribute() : spacing(6),
+        isHiddenLabel(label) ? NoAttribute() : Element_.spacing(6),
         Events.onClick(onChange.componentClass, (ctx) =>
             onChange.handler(!checked, ctx)
         ),
@@ -664,9 +667,9 @@ function checkbox(
             }
         }),
         tabindex(0),
-        pointer,
-        alignLeft,
-        width(fill),
+        Element_.pointer,
+        Element_.alignLeft,
+        Element_.width(Element_.fill),
         ...attributes,
     ];
     return applyLabel(
@@ -680,7 +683,11 @@ function checkbox(
         Internal.element(
             asEl,
             Internal.div,
-            [centerY, height(fill), width(shrink)],
+            [
+                Element_.centerY,
+                Element_.height(Element_.fill),
+                Element_.width(Element_.shrink),
+            ],
             Unkeyed([icon(checked)])
         )
     );
@@ -699,13 +706,13 @@ function thumb(attributes: Attribute[]): Thumb {
         -- Here is where we're creating/styling the "track"
         , Element.behindContent
             (Element.el
-                [ Element.width Element.fill
+                [ Element.width Element.Element_.fill
                 , Element.height (Element.px 2)
-                , Element.centerY
+                , Element.Element_.centerY
                 , Background.color grey
                 , Border.rounded 2
                 ]
-                Element.none
+                Element.Element_.none
             )
         ]
         { onChange = AdjustValue
@@ -724,7 +731,7 @@ function thumb(attributes: Attribute[]): Thumb {
 
 The slider can be vertical or horizontal depending on the width/height of the slider.
 
-  - `height fill` and `width (px someWidth)` will cause the slider to be vertical.
+  - `height Element_.fill` and `width (px someWidth)` will cause the slider to be vertical.
   - `height (px someHeight)` and `width (px someWidth)` where `someHeight` > `someWidth` will also do it.
   - otherwise, the slider will be horizontal.
 
@@ -845,45 +852,45 @@ function slider(
         [
             isHiddenLabel(input.label)
                 ? NoAttribute()
-                : spacingXY(spacingX, spacingY),
+                : Element_.spacingXY(spacingX, spacingY),
             Region.announce,
             tabindex(0),
-            width(
+            Element_.width(
                 (() => {
                     const w: Length = withDefault(Px(0), trackWidth);
                     switch (trackWidth) {
                         case Just(Px(0)):
-                            return shrink;
+                            return Element_.shrink;
 
                         case Just(w):
                             return w;
 
                         default:
-                            return fill;
+                            return Element_.fill;
                     }
                 })()
             ),
-            height(
+            Element_.height(
                 (() => {
                     const h: Length = withDefault(Px(0), trackHeight);
                     switch (trackHeight) {
                         case Just(Px(0)):
-                            return shrink;
+                            return Element_.shrink;
 
                         case Just(h):
                             return h;
 
                         default:
-                            return shrink;
+                            return Element_.shrink;
                     }
                 })()
             ),
         ],
         input.label,
-        row(
+        Element_.row(
             [
-                width(withDefault(fill, trackWidth)),
-                height(withDefault(px(20), trackHeight)),
+                Element_.width(withDefault(Element_.fill, trackWidth)),
+                Element_.height(withDefault(Element_.px(20), trackHeight)),
             ],
             [
                 Internal.element(
@@ -946,26 +953,28 @@ function slider(
                         vertical
                             ? Attr(attribute('orient', 'vertical'))
                             : NoAttribute(),
-                        width(
+                        Element_.width(
                             vertical
-                                ? withDefault(px(20), trackHeight)
-                                : withDefault(fill, trackWidth)
+                                ? withDefault(Element_.px(20), trackHeight)
+                                : withDefault(Element_.fill, trackWidth)
                         ),
-                        height(
+                        Element_.height(
                             vertical
-                                ? withDefault(fill, trackWidth)
-                                : withDefault(px(20), trackHeight)
+                                ? withDefault(Element_.fill, trackWidth)
+                                : withDefault(Element_.px(20), trackHeight)
                         ),
                     ],
                     Unkeyed([])
                 ),
-                el(
+                Element_.el(
                     [
-                        width(withDefault(fill, trackWidth)),
-                        height(withDefault(px(20), trackHeight)),
+                        Element_.width(withDefault(Element_.fill, trackWidth)),
+                        Element_.height(
+                            withDefault(Element_.px(20), trackHeight)
+                        ),
                         ...attributes,
                         // This is after `attributes` because the thumb should be in front of everything.
-                        behindContent(
+                        Element_.behindContent(
                             vertical
                                 ? viewVerticalThumb(
                                       factor,
@@ -985,7 +994,7 @@ function slider(
                                   )
                         ),
                     ],
-                    none
+                    Element_.none
                 ),
             ]
         )
@@ -997,14 +1006,31 @@ function viewHorizontalThumb(
     attributes: Attribute[],
     trackHeight: Maybe<Length>
 ): Element {
-    return row(
-        [width(fill), height(withDefault(fill, trackHeight)), centerY],
+    return Element_.row(
         [
-            el([width(fillPortion(Math.round(factor * 10000)))], none),
-            el([centerY, ...attributes], none),
-            el(
-                [width(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
-                none
+            Element_.width(Element_.fill),
+            Element_.height(withDefault(Element_.fill, trackHeight)),
+            Element_.centerY,
+        ],
+        [
+            Element_.el(
+                [
+                    Element_.width(
+                        Element_.fillPortion(Math.round(factor * 10000))
+                    ),
+                ],
+                Element_.none
+            ),
+            Element_.el([Element_.centerY, ...attributes], Element_.none),
+            Element_.el(
+                [
+                    Element_.width(
+                        Element_.fillPortion(
+                            Math.round(Math.abs(1 - factor) * 10000)
+                        )
+                    ),
+                ],
+                Element_.none
             ),
         ]
     );
@@ -1015,15 +1041,32 @@ function viewVerticalThumb(
     attributes: Attribute[],
     trackWidth: Maybe<Length>
 ): Element {
-    return row(
-        [height(fill), width(withDefault(fill, trackWidth)), centerX],
+    return Element_.row(
         [
-            el(
-                [height(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
-                none
+            Element_.height(Element_.fill),
+            Element_.width(withDefault(Element_.fill, trackWidth)),
+            Element_.centerX,
+        ],
+        [
+            Element_.el(
+                [
+                    Element_.height(
+                        Element_.fillPortion(
+                            Math.round(Math.abs(1 - factor) * 10000)
+                        )
+                    ),
+                ],
+                Element_.none
             ),
-            el([centerX, ...attributes], none),
-            el([height(fillPortion(Math.round(factor * 10000)))], none),
+            Element_.el([Element_.centerX, ...attributes], Element_.none),
+            Element_.el(
+                [
+                    Element_.height(
+                        Element_.fillPortion(Math.round(factor * 10000))
+                    ),
+                ],
+                Element_.none
+            ),
         ]
     );
 }
@@ -1093,12 +1136,12 @@ function textHelper(
 
                     default:
                         return [
-                            clip,
-                            height(fill),
+                            Element_.clip,
+                            Element_.height(Element_.fill),
                             // The only reason we do this padding trick is so that when the user clicks in the padding,
                             // that the cursor will reset correctly.
                             // This could probably be combined with the above `calcMoveToCompensateForPadding`
-                            paddingEach(parentPadding),
+                            Element_.paddingEach(parentPadding),
                             calcMoveToCompensateForPadding(withDefaults),
                             Internal.htmlClass(classes.inputMultiline),
                             Attr(
@@ -1130,26 +1173,30 @@ function textHelper(
                 case TextKinds.TextArea:
                     // textarea with height-content means that
                     // the input element is rendered `inFront` with a transparent background
-                    // Then the input text is rendered as the space filling element.
+                    // Then the input text is rendered as the space Element_.filling element.
                     return Internal.element(
                         asEl,
                         Internal.div,
-                        (heightConstrained ? [scrollbarY] : []).concat([
-                            width(fill),
-                            withDefaults.every(hasFocusStyle)
-                                ? NoAttribute()
-                                : Internal.htmlClass(classes.focusedWithin),
-                            Internal.htmlClass(classes.inputMultilineWrapper),
-                            ...redistributed.parent,
-                        ]),
+                        (heightConstrained ? [Element_.scrollbarY] : []).concat(
+                            [
+                                Element_.width(Element_.fill),
+                                withDefaults.every(hasFocusStyle)
+                                    ? NoAttribute()
+                                    : Internal.htmlClass(classes.focusedWithin),
+                                Internal.htmlClass(
+                                    classes.inputMultilineWrapper
+                                ),
+                                ...redistributed.parent,
+                            ]
+                        ),
                         Unkeyed([
                             Internal.element(
                                 asParagraph,
                                 Internal.div,
                                 [
-                                    width(fill),
-                                    height(fill),
-                                    inFront(inputElement),
+                                    Element_.width(Element_.fill),
+                                    Element_.height(Element_.fill),
+                                    Element_.inFront(inputElement),
                                     Internal.htmlClass(
                                         classes.inputMultilineParent
                                     ),
@@ -1162,11 +1209,18 @@ function textHelper(
                                                 case Nothing():
                                                     // Without this, firefox will make the text area lose focus
                                                     // if the input is empty and you mash the keyboard
-                                                    return [text_('\u{00A0}')];
+                                                    return [
+                                                        Element_.text(
+                                                            '\u{00A0}'
+                                                        ),
+                                                    ];
 
                                                 default: {
                                                     const place = withDefault(
-                                                        placeholder([], none),
+                                                        placeholder(
+                                                            [],
+                                                            Element_.none
+                                                        ),
                                                         textOptions.placeholder
                                                     );
                                                     return [
@@ -1203,7 +1257,7 @@ function textHelper(
                         asEl,
                         Internal.div,
                         [
-                            width(fill),
+                            Element_.width(Element_.fill),
                             withDefaults.every(hasFocusStyle)
                                 ? NoAttribute()
                                 : Internal.htmlClass(classes.focusedWithin),
@@ -1215,11 +1269,11 @@ function textHelper(
 
                                     default: {
                                         const place = withDefault(
-                                            placeholder([], none),
+                                            placeholder([], Element_.none),
                                             textOptions.placeholder
                                         );
                                         return [
-                                            behindContent(
+                                            Element_.behindContent(
                                                 renderPlaceholder(
                                                     place,
                                                     redistributed.cover,
@@ -1271,7 +1325,9 @@ function textHelper(
     return applyLabel(
         [
             Class(Flag.cursor, classes.cursorText),
-            isHiddenLabel(textOptions.label) ? NoAttribute() : spacing(5),
+            isHiddenLabel(textOptions.label)
+                ? NoAttribute()
+                : Element_.spacing(5),
             Region.announce,
             ...redistributed.fullParent,
         ],
@@ -1323,16 +1379,16 @@ function renderPlaceholder(
     forPlaceholder: Attribute[],
     on: boolean
 ): Element {
-    return el(
+    return Element_.el(
         [
             ...forPlaceholder,
             Internal.htmlClass(
                 `${classes.noTextSelection} ${classes.passPointerEvents}`
             ),
-            height(fill),
-            width(fill),
-            alpha(on ? 1 : 0),
-            clip,
+            Element_.height(Element_.fill),
+            Element_.width(Element_.fill),
+            Element_.alpha(on ? 1 : 0),
+            Element_.clip,
             Font.color(charcoal),
             Background.color(hsla(0, 0, 0, 0)),
             Border.color(hsla(0, 0, 0, 0)),
@@ -1344,7 +1400,7 @@ function renderPlaceholder(
 
 /**
  * Because textareas are now shadowed, where they're rendered twice,
- * we to move the literal text area up because spacing is based on line height.
+ * we to move the literal text area up because Element_.spacing is based on line height.
  */
 function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
     const gathered: Maybe<number> = attributes.reduceRight(
@@ -1383,7 +1439,7 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
 
         default: {
             const vSpace: number = withDefault(0, gathered);
-            return moveUp(Math.floor(vSpace / 2));
+            return Element_.moveUp(Math.floor(vSpace / 2));
         }
     }
 }
@@ -1606,7 +1662,7 @@ function redistributeOver(
                         els.cover = [attr, ...els.cover];
                         return els;
                     } else {
-                        const newHeight = htmlAttribute(
+                        const newHeight = Element_.htmlAttribute(
                                 attribute(
                                     'style',
                                     `height: calc(1.0em + ${
@@ -1618,7 +1674,7 @@ function redistributeOver(
                                     }px)"`
                                 )
                             ),
-                            newLineHeight = htmlAttribute(
+                            newLineHeight = Element_.htmlAttribute(
                                 attribute(
                                     'style',
                                     `line-height: calc(1.0em + ${
@@ -1772,6 +1828,147 @@ function search(attributes: Attribute[], textOptions: Text): Element {
 }
 
 /**
+ *
+ * @param attributes
+ * @param pass
+ * @returns
+ */
+function newPassword(
+    attributes: Attribute[],
+    pass: {
+        onChange: {
+            componentClass: string;
+            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
+        };
+        text: string;
+        placeholder: Maybe<Placeholder>;
+        label: Label;
+        show: boolean;
+    }
+): Element {
+    return textHelper(
+        {
+            input: TextInputNode(pass.show ? 'text' : 'password'),
+            spellchecked: false,
+            autofill: Just('new-password'),
+        },
+        attributes,
+        {
+            onChange: pass.onChange,
+            text: pass.text,
+            placeholder: pass.placeholder,
+            label: pass.label,
+        }
+    );
+}
+
+/**
+ *
+ * @param attributes
+ * @param pass
+ * @returns
+ */
+function currentPassword(
+    attributes: Attribute[],
+    pass: {
+        onChange: {
+            componentClass: string;
+            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
+        };
+        text: string;
+        placeholder: Maybe<Placeholder>;
+        label: Label;
+        show: boolean;
+    }
+): Element {
+    return textHelper(
+        {
+            input: TextInputNode(pass.show ? 'text' : 'password'),
+            spellchecked: false,
+            autofill: Just('current-password'),
+        },
+        attributes,
+        {
+            onChange: pass.onChange,
+            text: pass.text,
+            placeholder: pass.placeholder,
+            label: pass.label,
+        }
+    );
+}
+
+/**
+ * TODO:
+ * @param attributes
+ * @param textOptions
+ * @returns
+ */
+function username(attributes: Attribute[], textOptions: Text): Element {
+    return textHelper(
+        {
+            input: TextInputNode('text'),
+            spellchecked: false,
+            autofill: Just('username'),
+        },
+        attributes,
+        textOptions
+    );
+}
+
+/**
+ * TODO:
+ * @param attributes
+ * @param textOptions
+ * @returns
+ */
+function email(attributes: Attribute[], textOptions: Text): Element {
+    return textHelper(
+        {
+            input: TextInputNode('email'),
+            spellchecked: false,
+            autofill: Just('email'),
+        },
+        attributes,
+        textOptions
+    );
+}
+
+/**
+ *
+ * @param attributes
+ * @param multi
+ * @returns
+ */
+function multiline(
+    attributes: Attribute[],
+    multi: {
+        onChange: {
+            componentClass: string;
+            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
+        };
+        text: string;
+        placeholder: Maybe<Placeholder>;
+        label: Label;
+        spellcheck: boolean;
+    }
+): Element {
+    return textHelper(
+        {
+            input: TextArea(),
+            spellchecked: multi.spellcheck,
+            autofill: Nothing(),
+        },
+        attributes,
+        {
+            onChange: multi.onChange,
+            text: multi.text,
+            placeholder: multi.placeholder,
+            label: multi.label,
+        }
+    );
+}
+
+/**
  *TODO:
  * @param label
  * @returns
@@ -1853,7 +2050,110 @@ function applyLabel(
     }
 }
 
+/**
+ * Add a choice to your radio element. This will be rendered with the default radio icon.
+ */
+// deno-lint-ignore no-explicit-any
+function option(value: any, text: Element): Option {
+    return Option(value, (status: OptionState) =>
+        defaultRadioOption(text, status)
+    );
+}
+
+/**
+ * Customize exactly what your radio option should look like in different states.
+ */
+// deno-lint-ignore no-explicit-any
+function optionWith(value: any, view: (x: OptionState) => Element): Option {
+    return Option(value, view);
+}
+
+function defaultRadioOption(
+    optionLabel: Element,
+    status: OptionState
+): Element {
+    return Element_.row(
+        [
+            Element_.spacing(10),
+            Element_.alignLeft,
+            Element_.width(Element_.shrink),
+        ],
+        [
+            Element_.el(
+                [
+                    status === OptionState.Selected
+                        ? Internal.htmlClass('unfocusable')
+                        : NoAttribute(),
+                    Element_.width(Element_.px(14)),
+                    Element_.height(Element_.px(14)),
+                    Background.color(white),
+                    Border.rounded(7),
+                    Border.width(
+                        (() => {
+                            switch (status) {
+                                case OptionState.Idle:
+                                    return 1;
+
+                                case OptionState.Focused:
+                                    return 1;
+
+                                case OptionState.Selected:
+                                    return 5;
+                            }
+                        })()
+                    ),
+                    Border.color(
+                        (() => {
+                            switch (status) {
+                                case OptionState.Idle:
+                                    return hsl(0, 0, 0.82);
+
+                                case OptionState.Focused:
+                                    return hsl(0, 0, 0.82);
+
+                                case OptionState.Selected:
+                                    return hsl(211, 0.97, 0.61);
+                            }
+                        })()
+                    ),
+                ],
+                Element_.none
+            ),
+            Element_.el(
+                [
+                    Element_.width(Element_.fill),
+                    Internal.htmlClass('unfocusable'),
+                ],
+                optionLabel
+            ),
+        ]
+    );
+}
+
+function column(attributes: Attribute[], children: Element[]): Element {
+    return Internal.element(
+        asColumn,
+        Internal.div,
+        [
+            Element_.height(Element_.shrink),
+            Element_.width(Element_.fill),
+            ...attributes,
+        ],
+        Unkeyed(children)
+    );
+}
+
+function row(attributes: Attribute[], children: Element[]): Element {
+    return Internal.element(
+        asRow,
+        Internal.div,
+        [Element_.width(Element_.fill), ...attributes],
+        Unkeyed(children)
+    );
+}
+
 // Event Handlers
+
 /**
  * TODO:
  * @param class_
@@ -1971,12 +2271,12 @@ You'll likely want to make your own checkbox at some point that fits your design
  * @returns 
  */
 function defaultCheckbox(checked: boolean): Element {
-    return el(
+    return Element_.el(
         [
             Internal.htmlClass('focusable'),
-            width(px(14)),
-            height(px(14)),
-            centerY,
+            Element_.width(Element_.px(14)),
+            Element_.height(Element_.px(14)),
+            Element_.centerY,
             Font.color(white),
             Font.size(9),
             Font.center,
@@ -1992,16 +2292,16 @@ function defaultCheckbox(checked: boolean): Element {
                 )
             ),
             Background.color(checked ? hsl(211, 0.97, 0.61) : white),
-            inFront(
-                el(
+            Element_.inFront(
+                Element_.el(
                     [
-                        height(px(6)),
-                        width(px(9)),
-                        rotate(-45),
-                        centerX,
-                        centerY,
-                        moveUp(1),
-                        transparent(!checked),
+                        Element_.height(Element_.px(6)),
+                        Element_.width(Element_.px(9)),
+                        Element_.rotate(-45),
+                        Element_.centerX,
+                        Element_.centerY,
+                        Element_.moveUp(1),
+                        Element_.transparent(!checked),
                         Border.color(white),
                         Border.widthEach({
                             top: 0,
@@ -2010,10 +2310,10 @@ function defaultCheckbox(checked: boolean): Element {
                             right: 0,
                         }),
                     ],
-                    none
+                    Element_.none
                 )
             ),
         ],
-        none
+        Element_.none
     );
 }
