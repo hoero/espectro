@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /** TODO:
  * Input elements have a lot of constraints!
 
@@ -87,7 +88,7 @@ Nevertheless, here we are. Here's how you put one together
 
     Input.radio
         [ padding 10
-        , Element_.spacing 20
+        , spacing 20
         ]
         { onChange = ChooseLunch
         , selected = Just model.lunch
@@ -177,7 +178,35 @@ import { elmish } from '../deps.ts';
 import { hsl, hsla } from '../color.ts';
 import { attribute } from '../dom/attribute.ts';
 import { ComponentEventContext, EventHandler } from '../dom/event.ts';
-import * as Element_ from '../element.ts';
+import {
+    alignLeft,
+    alpha,
+    behindContent,
+    centerX,
+    centerY,
+    clip,
+    el,
+    fill,
+    fillPortion,
+    height,
+    htmlAttribute,
+    inFront,
+    moveUp,
+    none,
+    paddingEach,
+    paddingXY,
+    pointer,
+    px,
+    rotate,
+    row as row_,
+    scrollbarY,
+    shrink,
+    spacing,
+    spacingXY,
+    text as text_,
+    transparent,
+    width,
+} from '../element.ts';
 import {
     Attribute,
     Describe,
@@ -191,7 +220,6 @@ import {
     Styles,
     PseudoClass,
     Button,
-    Attr,
     asColumn,
     NodeName,
     Hsla,
@@ -219,6 +247,22 @@ import * as Border from './border.ts';
 import * as Background from './background.ts';
 import * as Font from './font.ts';
 import domElement from '../dom/element.ts';
+import {
+    ariaChecked,
+    autofill,
+    class_,
+    disabled,
+    max,
+    min,
+    orient,
+    role,
+    spellcheck,
+    step,
+    style,
+    tabindex,
+    type,
+    value,
+} from './attributes.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -333,12 +377,10 @@ enum OptionState {
 }
 
 interface Option_ {
-    // deno-lint-ignore no-explicit-any
     value: any;
     view: (x: OptionState) => Element;
 }
 
-// deno-lint-ignore no-explicit-any
 function Option(value: any, view: (x: OptionState) => Element): Option {
     return { value, view };
 }
@@ -358,53 +400,28 @@ enum Orientation {
 
 // Colors
 const white: Promise<Hsla | Rgba> = hsl(0, 0, 1),
-    darkGrey: Promise<Hsla | Rgba> = hsl(86, 0.05, 0.73),
     charcoal: Promise<Hsla | Rgba> = hsl(84, 0.02, 0.53);
 
 // Thumb
 const defaultThumb: Thumb = Thumb([
-    Element_.width(Element_.px(16)),
-    Element_.height(Element_.px(16)),
+    width(px(16)),
+    height(px(16)),
     Border.rounded(8),
     Border.width(1),
     Border.color(hsl(0, 0, 0.5)),
     Background.color(white),
 ]);
 
-// Key events
-const enter = 'Enter',
-    tab = 'Tab',
-    delete_ = 'Delete',
-    backspace = 'Backspace',
-    upArrow = 'ArrowUp',
-    upArrow_ = 'Up', // IE/Edge specific value
-    leftArrow = 'ArrowLeft',
-    leftArrow_ = 'Left', // IE/Edge specific value
-    rightArrow = 'ArrowRight',
-    rightArrow_ = 'Right', // IE/Edge specific value
-    downArrow = 'ArrowDown',
-    downArrow_ = 'Down', // IE/Edge specific value
-    space = ' ',
-    escape = 'Escape',
-    escape_ = 'Esc'; // IE/Edge specific value
-
-/**
- * Attach this attribute to any `Input` that you would like to be automatically focused when the page loads.
-
-You should only have a maximum of one per page.
-*/
-const focusedOnLoad: Attribute = Attr(attribute('autocomplete', 'true'));
-
 // Style Defaults
-const defaultTextPadding: Attribute = Element_.paddingXY(12, 12),
+const defaultTextPadding: Attribute = paddingXY(12, 12),
     defaultTextBoxStyle: Attribute[] = [
         defaultTextPadding,
         Border.rounded(3),
         Border.color(white),
         Border.width(1),
-        Element_.spacing(5),
-        Element_.width(Element_.fill),
-        Element_.height(Element_.shrink),
+        spacing(5),
+        width(fill),
+        height(shrink),
     ];
 
 /**
@@ -559,12 +576,12 @@ function button(
         asEl,
         Internal.div,
         [
-            Element_.width(Element_.shrink),
-            Element_.height(Element_.shrink),
+            width(shrink),
+            height(shrink),
             Internal.htmlClass(
                 `${classes.contentCenterX} ${classes.contentCenterY} ${classes.seButton} ${classes.noTextSelection}`
             ),
-            Element_.pointer,
+            pointer,
             focusDefault(attributes),
             Describe(Button()),
             tabindex(0),
@@ -578,17 +595,20 @@ function button(
                         const handler = withDefault(() => {}, onPress.handler);
                         return [
                             Events.onClick(onPress.componentClass, handler),
-                            onKeyLookUp(onPress.componentClass, (ctx) => {
-                                const { key } = <KeyboardEvent>ctx.e;
-                                switch (key) {
-                                    case enter:
-                                    case space:
-                                        handler(ctx);
-                                        break;
-                                    default:
-                                        break;
+                            Events.onKeyLookUp(
+                                onPress.componentClass,
+                                (ctx) => {
+                                    const { key } = <KeyboardEvent>ctx.e;
+                                    switch (key) {
+                                        case Events.enter:
+                                        case Events.space:
+                                            handler(ctx);
+                                            break;
+                                        default:
+                                            break;
+                                    }
                                 }
-                            }),
+                            ),
                             ...attributes,
                         ];
                     }
@@ -650,16 +670,16 @@ function checkbox(
     }
 ): Element {
     const attrs: Attribute[] = [
-        isHiddenLabel(label) ? NoAttribute() : Element_.spacing(6),
+        isHiddenLabel(label) ? NoAttribute() : spacing(6),
         Events.onClick(onChange.componentClass, (ctx) =>
             onChange.handler(!checked, ctx)
         ),
         Region.announce,
-        onKeyLookUp(onChange.componentClass, (ctx) => {
+        Events.onKeyLookUp(onChange.componentClass, (ctx) => {
             const { key } = <KeyboardEvent>ctx.e;
             switch (key) {
-                case enter:
-                case space:
+                case Events.enter:
+                case Events.space:
                     onChange.handler(!checked, ctx);
                     break;
                 default:
@@ -667,15 +687,15 @@ function checkbox(
             }
         }),
         tabindex(0),
-        Element_.pointer,
-        Element_.alignLeft,
-        Element_.width(Element_.fill),
+        pointer,
+        alignLeft,
+        width(fill),
         ...attributes,
     ];
     return applyLabel(
         [
-            Attr(attribute('role', 'checkbox')),
-            Attr(attribute('aria-checked', checked ? 'true' : 'false')),
+            role('checkbox'),
+            ariaChecked(checked ? true : false),
             hiddenLabelAttribute(label),
             ...attrs,
         ],
@@ -683,11 +703,7 @@ function checkbox(
         Internal.element(
             asEl,
             Internal.div,
-            [
-                Element_.centerY,
-                Element_.height(Element_.fill),
-                Element_.width(Element_.shrink),
-            ],
+            [centerY, height(fill), width(shrink)],
             Unkeyed([icon(checked)])
         )
     );
@@ -706,13 +722,13 @@ function thumb(attributes: Attribute[]): Thumb {
         -- Here is where we're creating/styling the "track"
         , Element.behindContent
             (Element.el
-                [ Element.width Element.Element_.fill
+                [ Element.width Element.fill
                 , Element.height (Element.px 2)
-                , Element.Element_.centerY
+                , Element.centerY
                 , Background.color grey
                 , Border.rounded 2
                 ]
-                Element.Element_.none
+                Element.none
             )
         ]
         { onChange = AdjustValue
@@ -731,7 +747,7 @@ function thumb(attributes: Attribute[]): Thumb {
 
 The slider can be vertical or horizontal depending on the width/height of the slider.
 
-  - `height Element_.fill` and `width (px someWidth)` will cause the slider to be vertical.
+  - `height fill` and `width (px someWidth)` will cause the slider to be vertical.
   - `height (px someHeight)` and `width (px someWidth)` where `someHeight` > `someWidth` will also do it.
   - otherwise, the slider will be horizontal.
 
@@ -852,45 +868,45 @@ function slider(
         [
             isHiddenLabel(input.label)
                 ? NoAttribute()
-                : Element_.spacingXY(spacingX, spacingY),
+                : spacingXY(spacingX, spacingY),
             Region.announce,
             tabindex(0),
-            Element_.width(
+            width(
                 (() => {
                     const w: Length = withDefault(Px(0), trackWidth);
                     switch (trackWidth) {
                         case Just(Px(0)):
-                            return Element_.shrink;
+                            return shrink;
 
                         case Just(w):
                             return w;
 
                         default:
-                            return Element_.fill;
+                            return fill;
                     }
                 })()
             ),
-            Element_.height(
+            height(
                 (() => {
                     const h: Length = withDefault(Px(0), trackHeight);
                     switch (trackHeight) {
                         case Just(Px(0)):
-                            return Element_.shrink;
+                            return shrink;
 
                         case Just(h):
                             return h;
 
                         default:
-                            return Element_.shrink;
+                            return shrink;
                     }
                 })()
             ),
         ],
         input.label,
-        Element_.row(
+        row_(
             [
-                Element_.width(withDefault(Element_.fill, trackWidth)),
-                Element_.height(withDefault(Element_.px(20), trackHeight)),
+                width(withDefault(fill, trackWidth)),
+                height(withDefault(px(20), trackHeight)),
             ],
             [
                 Internal.element(
@@ -919,12 +935,7 @@ function slider(
                                 thumbShadowStyle
                             )
                         ),
-                        Attr(
-                            attribute(
-                                'class',
-                                className + ' ui-slide-bar focusable-parent'
-                            )
-                        ),
+                        class_(className + ' ui-slide-bar focusable-parent'),
                         Events.onInput(input.onChange.componentClass, (ctx) => {
                             const { inputType } = <InputEvent>ctx.e;
                             return input.onChange.handler(
@@ -932,49 +943,42 @@ function slider(
                                 ctx
                             );
                         }),
-                        Attr(attribute('type', 'range')),
-                        Attr(
-                            attribute(
-                                'step',
-                                input.step === Nothing()
-                                    ? // Note: If we set `any` here,
-                                      // Firefox makes a single press of the arrows keys equal to 1
-                                      // We could set the step manually to the effective range / 100
-                                      // String.fromFloat ((input.max - input.min) / 100)
-                                      // Which matches Chrome's default behavior
-                                      // HOWEVER, that means manually moving a slider with the mouse will snap to that interval.
-                                      'any'
-                                    : withDefault(0, input.step).toString()
-                            )
+                        type('range'),
+                        step(
+                            input.step === Nothing()
+                                ? // Note: If we set `any` here,
+                                  // Firefox makes a single press of the arrows keys equal to 1
+                                  // We could set the step manually to the effective range / 100
+                                  // String.fromFloat ((input.max - input.min) / 100)
+                                  // Which matches Chrome's default behavior
+                                  // HOWEVER, that means manually moving a slider with the mouse will snap to that interval.
+                                  'any'
+                                : withDefault(0, input.step)
                         ),
-                        Attr(attribute('min', input.min.toString())),
-                        Attr(attribute('max', input.max.toString())),
-                        Attr(attribute('value', input.value.toString())),
-                        vertical
-                            ? Attr(attribute('orient', 'vertical'))
-                            : NoAttribute(),
-                        Element_.width(
+                        min(input.min),
+                        max(input.max),
+                        value(input.value),
+                        vertical ? orient('vertical') : NoAttribute(),
+                        width(
                             vertical
-                                ? withDefault(Element_.px(20), trackHeight)
-                                : withDefault(Element_.fill, trackWidth)
+                                ? withDefault(px(20), trackHeight)
+                                : withDefault(fill, trackWidth)
                         ),
-                        Element_.height(
+                        height(
                             vertical
-                                ? withDefault(Element_.fill, trackWidth)
-                                : withDefault(Element_.px(20), trackHeight)
+                                ? withDefault(fill, trackWidth)
+                                : withDefault(px(20), trackHeight)
                         ),
                     ],
                     Unkeyed([])
                 ),
-                Element_.el(
+                el(
                     [
-                        Element_.width(withDefault(Element_.fill, trackWidth)),
-                        Element_.height(
-                            withDefault(Element_.px(20), trackHeight)
-                        ),
+                        width(withDefault(fill, trackWidth)),
+                        height(withDefault(px(20), trackHeight)),
                         ...attributes,
                         // This is after `attributes` because the thumb should be in front of everything.
-                        Element_.behindContent(
+                        behindContent(
                             vertical
                                 ? viewVerticalThumb(
                                       factor,
@@ -994,7 +998,7 @@ function slider(
                                   )
                         ),
                     ],
-                    Element_.none
+                    none
                 ),
             ]
         )
@@ -1006,31 +1010,14 @@ function viewHorizontalThumb(
     attributes: Attribute[],
     trackHeight: Maybe<Length>
 ): Element {
-    return Element_.row(
+    return row_(
+        [width(fill), height(withDefault(fill, trackHeight)), centerY],
         [
-            Element_.width(Element_.fill),
-            Element_.height(withDefault(Element_.fill, trackHeight)),
-            Element_.centerY,
-        ],
-        [
-            Element_.el(
-                [
-                    Element_.width(
-                        Element_.fillPortion(Math.round(factor * 10000))
-                    ),
-                ],
-                Element_.none
-            ),
-            Element_.el([Element_.centerY, ...attributes], Element_.none),
-            Element_.el(
-                [
-                    Element_.width(
-                        Element_.fillPortion(
-                            Math.round(Math.abs(1 - factor) * 10000)
-                        )
-                    ),
-                ],
-                Element_.none
+            el([width(fillPortion(Math.round(factor * 10000)))], none),
+            el([centerY, ...attributes], none),
+            el(
+                [width(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
+                none
             ),
         ]
     );
@@ -1041,32 +1028,15 @@ function viewVerticalThumb(
     attributes: Attribute[],
     trackWidth: Maybe<Length>
 ): Element {
-    return Element_.row(
+    return row_(
+        [height(fill), width(withDefault(fill, trackWidth)), centerX],
         [
-            Element_.height(Element_.fill),
-            Element_.width(withDefault(Element_.fill, trackWidth)),
-            Element_.centerX,
-        ],
-        [
-            Element_.el(
-                [
-                    Element_.height(
-                        Element_.fillPortion(
-                            Math.round(Math.abs(1 - factor) * 10000)
-                        )
-                    ),
-                ],
-                Element_.none
+            el(
+                [height(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
+                none
             ),
-            Element_.el([Element_.centerX, ...attributes], Element_.none),
-            Element_.el(
-                [
-                    Element_.height(
-                        Element_.fillPortion(Math.round(factor * 10000))
-                    ),
-                ],
-                Element_.none
-            ),
+            el([centerX, ...attributes], none),
+            el([height(fillPortion(Math.round(factor * 10000)))], none),
         ]
     );
 }
@@ -1130,29 +1100,25 @@ function textHelper(
                         // `type` needs to come _before_ `value`
                         // More reading: https://github.com/mdgriffith/elm-ui/pull/94/commits/4f493a27001ccc3cf1f2baa82e092c35d3811876
                         return [
-                            Attr(attribute('type', textInput.input.inputType)),
+                            type(textInput.input.inputType),
                             Internal.htmlClass(classes.inputText),
                         ];
 
                     default:
                         return [
-                            Element_.clip,
-                            Element_.height(Element_.fill),
+                            clip,
+                            height(fill),
                             // The only reason we do this padding trick is so that when the user clicks in the padding,
                             // that the cursor will reset correctly.
                             // This could probably be combined with the above `calcMoveToCompensateForPadding`
-                            Element_.paddingEach(parentPadding),
+                            paddingEach(parentPadding),
                             calcMoveToCompensateForPadding(withDefaults),
                             Internal.htmlClass(classes.inputMultiline),
-                            Attr(
-                                attribute(
-                                    'style',
-                                    `margin: ${renderBox(
-                                        negateBox(parentPadding)
-                                    )}`
-                                )
+                            style(
+                                'margin',
+                                `${renderBox(negateBox(parentPadding))}`
                             ),
-                            Attr(attribute('style', 'box-sizing: content-box')),
+                            style('box-sizing', 'content-box'),
                         ];
                 }
             })().concat([
@@ -1173,30 +1139,26 @@ function textHelper(
                 case TextKinds.TextArea:
                     // textarea with height-content means that
                     // the input element is rendered `inFront` with a transparent background
-                    // Then the input text is rendered as the space Element_.filling element.
+                    // Then the input text is rendered as the space filling element.
                     return Internal.element(
                         asEl,
                         Internal.div,
-                        (heightConstrained ? [Element_.scrollbarY] : []).concat(
-                            [
-                                Element_.width(Element_.fill),
-                                withDefaults.every(hasFocusStyle)
-                                    ? NoAttribute()
-                                    : Internal.htmlClass(classes.focusedWithin),
-                                Internal.htmlClass(
-                                    classes.inputMultilineWrapper
-                                ),
-                                ...redistributed.parent,
-                            ]
-                        ),
+                        (heightConstrained ? [scrollbarY] : []).concat([
+                            width(fill),
+                            withDefaults.every(hasFocusStyle)
+                                ? NoAttribute()
+                                : Internal.htmlClass(classes.focusedWithin),
+                            Internal.htmlClass(classes.inputMultilineWrapper),
+                            ...redistributed.parent,
+                        ]),
                         Unkeyed([
                             Internal.element(
                                 asParagraph,
                                 Internal.div,
                                 [
-                                    Element_.width(Element_.fill),
-                                    Element_.height(Element_.fill),
-                                    Element_.inFront(inputElement),
+                                    width(fill),
+                                    height(fill),
+                                    inFront(inputElement),
                                     Internal.htmlClass(
                                         classes.inputMultilineParent
                                     ),
@@ -1209,18 +1171,11 @@ function textHelper(
                                                 case Nothing():
                                                     // Without this, firefox will make the text area lose focus
                                                     // if the input is empty and you mash the keyboard
-                                                    return [
-                                                        Element_.text(
-                                                            '\u{00A0}'
-                                                        ),
-                                                    ];
+                                                    return [text_('\u{00A0}')];
 
                                                 default: {
                                                     const place = withDefault(
-                                                        placeholder(
-                                                            [],
-                                                            Element_.none
-                                                        ),
+                                                        placeholder([], none),
                                                         textOptions.placeholder
                                                     );
                                                     return [
@@ -1257,7 +1212,7 @@ function textHelper(
                         asEl,
                         Internal.div,
                         [
-                            Element_.width(Element_.fill),
+                            width(fill),
                             withDefaults.every(hasFocusStyle)
                                 ? NoAttribute()
                                 : Internal.htmlClass(classes.focusedWithin),
@@ -1269,11 +1224,11 @@ function textHelper(
 
                                     default: {
                                         const place = withDefault(
-                                            placeholder([], Element_.none),
+                                            placeholder([], none),
                                             textOptions.placeholder
                                         );
                                         return [
-                                            Element_.behindContent(
+                                            behindContent(
                                                 renderPlaceholder(
                                                     place,
                                                     redistributed.cover,
@@ -1325,9 +1280,7 @@ function textHelper(
     return applyLabel(
         [
             Class(Flag.cursor, classes.cursorText),
-            isHiddenLabel(textOptions.label)
-                ? NoAttribute()
-                : Element_.spacing(5),
+            isHiddenLabel(textOptions.label) ? NoAttribute() : spacing(5),
             Region.announce,
             ...redistributed.fullParent,
         ],
@@ -1379,16 +1332,16 @@ function renderPlaceholder(
     forPlaceholder: Attribute[],
     on: boolean
 ): Element {
-    return Element_.el(
+    return el(
         [
             ...forPlaceholder,
             Internal.htmlClass(
                 `${classes.noTextSelection} ${classes.passPointerEvents}`
             ),
-            Element_.height(Element_.fill),
-            Element_.width(Element_.fill),
-            Element_.alpha(on ? 1 : 0),
-            Element_.clip,
+            height(fill),
+            width(fill),
+            alpha(on ? 1 : 0),
+            clip,
             Font.color(charcoal),
             Background.color(hsla(0, 0, 0, 0)),
             Border.color(hsla(0, 0, 0, 0)),
@@ -1400,7 +1353,7 @@ function renderPlaceholder(
 
 /**
  * Because textareas are now shadowed, where they're rendered twice,
- * we to move the literal text area up because Element_.spacing is based on line height.
+ * we to move the literal text area up because spacing is based on line height.
  */
 function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
     const gathered: Maybe<number> = attributes.reduceRight(
@@ -1439,7 +1392,7 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
 
         default: {
             const vSpace: number = withDefault(0, gathered);
-            return Element_.moveUp(Math.floor(vSpace / 2));
+            return moveUp(Math.floor(vSpace / 2));
         }
     }
 }
@@ -1515,16 +1468,16 @@ function isFill(length: Length): boolean {
     }
 }
 
-function isShrink(length: Length): boolean {
+function _isShrink(length: Length): boolean {
     switch (length.type) {
         case Lengths.Content:
             return true;
 
         case Lengths.Min:
-            return isShrink(length.length);
+            return _isShrink(length.length);
 
         case Lengths.Max:
-            return isShrink(length.length);
+            return _isShrink(length.length);
 
         default:
             return false;
@@ -1662,7 +1615,7 @@ function redistributeOver(
                         els.cover = [attr, ...els.cover];
                         return els;
                     } else {
-                        const newHeight = Element_.htmlAttribute(
+                        const newHeight = htmlAttribute(
                                 attribute(
                                     'style',
                                     `height: calc(1.0em + ${
@@ -1674,7 +1627,7 @@ function redistributeOver(
                                     }px)"`
                                 )
                             ),
-                            newLineHeight = Element_.htmlAttribute(
+                            newLineHeight = htmlAttribute(
                                 attribute(
                                     'style',
                                     `line-height: calc(1.0em + ${
@@ -2053,7 +2006,6 @@ function applyLabel(
 /**
  * Add a choice to your radio element. This will be rendered with the default radio icon.
  */
-// deno-lint-ignore no-explicit-any
 function option(value: any, text: Element): Option {
     return Option(value, (status: OptionState) =>
         defaultRadioOption(text, status)
@@ -2063,29 +2015,66 @@ function option(value: any, text: Element): Option {
 /**
  * Customize exactly what your radio option should look like in different states.
  */
-// deno-lint-ignore no-explicit-any
 function optionWith(value: any, view: (x: OptionState) => Element): Option {
     return Option(value, view);
+}
+
+/**
+ * TODO:
+ * @param attributes
+ * @param input
+ * @returns
+ */
+function radio(
+    attributes: Attribute[],
+    input: {
+        onChange: {
+            componentClass: string;
+            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
+        };
+        options: Option[];
+        selected: Maybe<any>;
+        label: Label;
+    }
+): Element {
+    return radioHelper(Orientation.Column, attributes, input);
+}
+
+/**TODO:
+ * Same as radio, but displayed as a row
+ * @param attributes
+ * @param input
+ * @returns
+ */
+function radioRow(
+    attributes: Attribute[],
+    input: {
+        onChange: {
+            componentClass: string;
+            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
+        };
+        options: Option[];
+        selected: Maybe<any>;
+        label: Label;
+    }
+): Element {
+    return radioHelper(Orientation.Row, attributes, input);
 }
 
 function defaultRadioOption(
     optionLabel: Element,
     status: OptionState
 ): Element {
-    return Element_.row(
+    return row_(
+        [spacing(10), alignLeft, width(shrink)],
         [
-            Element_.spacing(10),
-            Element_.alignLeft,
-            Element_.width(Element_.shrink),
-        ],
-        [
-            Element_.el(
+            el(
                 [
                     status === OptionState.Selected
                         ? Internal.htmlClass('unfocusable')
                         : NoAttribute(),
-                    Element_.width(Element_.px(14)),
-                    Element_.height(Element_.px(14)),
+                    width(px(14)),
+                    height(px(14)),
                     Background.color(white),
                     Border.rounded(7),
                     Border.width(
@@ -2117,16 +2106,187 @@ function defaultRadioOption(
                         })()
                     ),
                 ],
-                Element_.none
+                none
             ),
-            Element_.el(
-                [
-                    Element_.width(Element_.fill),
-                    Internal.htmlClass('unfocusable'),
-                ],
-                optionLabel
-            ),
+            el([width(fill), Internal.htmlClass('unfocusable')], optionLabel),
         ]
+    );
+}
+
+function radioHelper(
+    orientation: Orientation,
+    attributes: Attribute[],
+    input: {
+        onChange: {
+            componentClass: string;
+            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
+        };
+        options: Option[];
+        selected: Maybe<any>;
+        label: Label;
+    }
+): Element {
+    const optionArea: Element = (() => {
+            switch (orientation) {
+                case Orientation.Row:
+                    return row(
+                        [hiddenLabelAttribute(input.label), ...attributes],
+                        input.options.map(renderOption)
+                    );
+
+                case Orientation.Column:
+                    return column(
+                        [hiddenLabelAttribute(input.label), ...attributes],
+                        input.options.map(renderOption)
+                    );
+            }
+        })(),
+        prevNext: Maybe<[any, any]> = (() => {
+            switch (input.options) {
+                case []:
+                    return Nothing();
+
+                default: {
+                    const val: any = input.options[0].value;
+                    return (([found, b, a]) => {
+                        switch (found) {
+                            case Found.NotFound:
+                                return Just([b, val]);
+
+                            case Found.BeforeFound:
+                                return Just([b, val]);
+
+                            case Found.AfterFound:
+                                return Just([b, a]);
+                        }
+                    })(
+                        input.options.reduce(
+                            (
+                                acc: [Found, any, any],
+                                option: Option
+                            ): [Found, any, any] => track(option, acc),
+                            [Found.NotFound, val, val]
+                        )
+                    );
+                }
+            }
+        })(),
+        events: Attribute[] = Internal.get(attributes, (attr) => {
+            switch (attr.type) {
+                case Attributes.Width:
+                    if (attr.width === fill) return true;
+                    return false;
+
+                case Attributes.Height:
+                    if (attr.height === fill) return true;
+                    return false;
+
+                case Attributes.Attr:
+                    return true;
+
+                default:
+                    return false;
+            }
+        });
+
+    function renderOption({ value, view }: Option) {
+        const status =
+            Just(value) === input.selected
+                ? OptionState.Selected
+                : OptionState.Idle;
+        return el(
+            [
+                pointer,
+                (() => {
+                    switch (orientation) {
+                        case Orientation.Row:
+                            return width(shrink);
+
+                        case Orientation.Column:
+                            return width(fill);
+                    }
+                })(),
+                (() => {
+                    switch (status) {
+                        case OptionState.Selected:
+                            return ariaChecked(true);
+
+                        default:
+                            return ariaChecked(false);
+                    }
+                })(),
+                role('radio'),
+                Events.onClick(input.onChange.componentClass, (ctx) =>
+                    input.onChange.handler(value, ctx)
+                ),
+            ],
+            view(status)
+        );
+    }
+
+    function track(
+        opt: Option,
+        [found, prev, next]: [Found, any, any]
+    ): [Found, any, any] {
+        switch (opt) {
+            default:
+                switch (found) {
+                    case Found.NotFound:
+                        if (Just(opt.value) === input.selected) {
+                            return [Found.BeforeFound, prev, next];
+                        } else {
+                            return [found, opt.value, next];
+                        }
+
+                    case Found.BeforeFound:
+                        return [Found.AfterFound, prev, opt.value];
+
+                    case Found.AfterFound:
+                        return [found, prev, next];
+                }
+        }
+    }
+
+    return applyLabel(
+        [
+            alignLeft,
+            tabindex(0),
+            Internal.htmlClass('focus'),
+            Region.announce,
+            role('radiogroup'),
+            Events.onKeyLookUp(input.onChange.componentClass, (ctx) => {
+                const { key } = <KeyboardEvent>ctx.e;
+                const [prev, next] = withDefault(['', ''], prevNext);
+                switch (key) {
+                    case Events.leftArrow:
+                    case Events.leftArrow_:
+                    case Events.upArrow:
+                    case Events.upArrow_:
+                        input.onChange.handler(prev, ctx);
+                        break;
+                    case Events.rightArrow:
+                    case Events.rightArrow_:
+                    case Events.downArrow:
+                    case Events.downArrow_:
+                        input.onChange.handler(next, ctx);
+                        break;
+                    case Events.space:
+                        switch (input.selected) {
+                            case Nothing():
+                                input.onChange.handler(prev, ctx);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }),
+            ...events,
+        ],
+        input.label,
+        optionArea
     );
 }
 
@@ -2134,11 +2294,7 @@ function column(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asColumn,
         Internal.div,
-        [
-            Element_.height(Element_.shrink),
-            Element_.width(Element_.fill),
-            ...attributes,
-        ],
+        [height(shrink), width(fill), ...attributes],
         Unkeyed(children)
     );
 }
@@ -2147,118 +2303,9 @@ function row(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asRow,
         Internal.div,
-        [Element_.width(Element_.fill), ...attributes],
+        [width(fill), ...attributes],
         Unkeyed(children)
     );
-}
-
-// Event Handlers
-
-/**
- * TODO:
- * @param class_
- * @param handler
- * @returns
- */
-function onKeyLookUp(class_: string, handler: EventHandler): Attribute {
-    // We generally want these attached to the keydown event because it allows us to prevent default on things like spacebar scrolling the page.
-    // https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/button_role
-    return Events.on(class_, 'keydown', (ctx) => {
-        ctx.e.preventDefault();
-        handler(ctx);
-    });
-}
-
-/**
- * TODO:
- * @param class_
- * @param handler
- * @returns
- */
-function onFocusOut(class_: string, handler: EventHandler): Attribute {
-    return Events.on(class_, 'focusout', handler);
-}
-
-/**
- * TODO:
- * @param class_
- * @param handler
- * @returns
- */
-function onFocusIn(class_: string, handler: EventHandler): Attribute {
-    return Events.on(class_, 'focusin', handler);
-}
-
-/**
- * TODO:
- * @param selected_
- * @returns
- */
-function selected(selected_: boolean): Attribute {
-    return Attr(attribute('selected', `${selected_}`));
-}
-
-/**
- * TODO:
- * @param name_
- * @returns
- */
-function name(name_: string): Attribute {
-    return Attr(attribute('name', name_));
-}
-
-/**
- * TODO:
- * @param value_
- * @returns
- */
-function value(value_: string): Attribute {
-    return Attr(attribute('value', value_));
-}
-
-/**
- * TODO:
- * @param i
- * @returns
- */
-function tabindex(i: number): Attribute {
-    return Attr(attribute('tabindex', i.toString()));
-}
-
-/**
- *TODO:
- * @param disabled_
- * @returns
- */
-function disabled(disabled_: boolean): Attribute {
-    return Attr(attribute('disabled', `${disabled_}`));
-}
-
-/**
- *TODO:
- * @param spellchecked_
- * @returns
- */
-function spellcheck(spellchecked_: boolean): Attribute {
-    return Attr(attribute('spellchecked', `${spellchecked_}`));
-}
-
-/**
- *TODO:
- * @param readonly_
- * @returns
- */
-function readonly(readonly_: boolean): Attribute {
-    return Attr(attribute('readonly', `${readonly_}`));
-}
-
-/**
- *TODO:
- * @param autofill_
- * @returns
- */
-function autofill(autofill_: string): Attribute {
-    return Attr(attribute('autocomplete', autofill_));
 }
 
 // Style Defaults
@@ -2271,12 +2318,12 @@ You'll likely want to make your own checkbox at some point that fits your design
  * @returns 
  */
 function defaultCheckbox(checked: boolean): Element {
-    return Element_.el(
+    return el(
         [
             Internal.htmlClass('focusable'),
-            Element_.width(Element_.px(14)),
-            Element_.height(Element_.px(14)),
-            Element_.centerY,
+            width(px(14)),
+            height(px(14)),
+            centerY,
             Font.color(white),
             Font.size(9),
             Font.center,
@@ -2292,16 +2339,16 @@ function defaultCheckbox(checked: boolean): Element {
                 )
             ),
             Background.color(checked ? hsl(211, 0.97, 0.61) : white),
-            Element_.inFront(
-                Element_.el(
+            inFront(
+                el(
                     [
-                        Element_.height(Element_.px(6)),
-                        Element_.width(Element_.px(9)),
-                        Element_.rotate(-45),
-                        Element_.centerX,
-                        Element_.centerY,
-                        Element_.moveUp(1),
-                        Element_.transparent(!checked),
+                        height(px(6)),
+                        width(px(9)),
+                        rotate(-45),
+                        centerX,
+                        centerY,
+                        moveUp(1),
+                        transparent(!checked),
                         Border.color(white),
                         Border.widthEach({
                             top: 0,
@@ -2310,10 +2357,42 @@ function defaultCheckbox(checked: boolean): Element {
                             right: 0,
                         }),
                     ],
-                    Element_.none
+                    none
                 )
             ),
         ],
-        Element_.none
+        none
     );
 }
+
+export {
+    button,
+    checkbox,
+    defaultCheckbox,
+    text,
+    multiline,
+    Placeholder,
+    placeholder,
+    username,
+    newPassword,
+    currentPassword,
+    email,
+    search,
+    spellChecked,
+    slider,
+    Thumb,
+    thumb,
+    defaultThumb,
+    radio,
+    radioRow,
+    Option,
+    option,
+    optionWith,
+    OptionState,
+    Label,
+    labelAbove,
+    labelBelow,
+    labelLeft,
+    labelRight,
+    labelHidden,
+};

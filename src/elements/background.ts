@@ -9,9 +9,7 @@
 **Note** if you want more control over a background image than is provided here, you should try just using a normal `Element.image` with something like `Element.behindContent`.
  */
 
-import { attribute } from '../dom/attribute.ts';
 import {
-    Attr,
     Attribute,
     Colored,
     Hsla,
@@ -22,6 +20,7 @@ import {
 } from '../internal/data.ts';
 import * as Flag from '../internal/flag.ts';
 import * as Internal from '../internal/model.ts';
+import { style } from './attributes.ts';
 
 /**
  * TODO:
@@ -46,9 +45,7 @@ function color(backgroundColor: Promise<Hsla | Rgba>): Attribute {
  * @returns
  */
 function image(src: string): Attribute {
-    return Attr(
-        attribute('style', `background: url('${src}') center / cover no-repeat`)
-    );
+    return style('background', `url('${src}') center / cover no-repeat`);
 }
 
 /** TODO:
@@ -57,12 +54,7 @@ function image(src: string): Attribute {
  * @returns
  */
 function uncropped(src: string): Attribute {
-    return Attr(
-        attribute(
-            'style',
-            `background: url('${src}') center / contain no-repeat`
-        )
-    );
+    return style('background', `url('${src}') center / contain no-repeat`);
 }
 
 /** TODO:
@@ -71,7 +63,7 @@ function uncropped(src: string): Attribute {
  * @returns
  */
 function tiled(src: string): Attribute {
-    return Attr(attribute('style', `background: url('${src}') repeat`));
+    return style('background', `url('${src}') repeat`);
 }
 
 /** TODO:
@@ -80,7 +72,7 @@ function tiled(src: string): Attribute {
  * @returns
  */
 function tiledX(src: string): Attribute {
-    return Attr(attribute('style', `background: url('${src}') repeat-x`));
+    return style('background', `url('${src}') repeat-x`);
 }
 
 /** TODO:
@@ -89,7 +81,7 @@ function tiledX(src: string): Attribute {
  * @returns
  */
 function tiledY(src: string): Attribute {
-    return Attr(attribute('style', `background: url('${src}') repeat-y`));
+    return style('background', `url('${src}') repeat-y`);
 }
 
 function gradient(angle: number, steps: Promise<Hsla | Rgba>[]): Attribute {

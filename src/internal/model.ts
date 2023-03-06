@@ -2166,6 +2166,89 @@ function staticRoot(options: OptionObject): DOM.Node {
     }
 }
 
+// TODO: This doesn't reduce equivalent attributes completely.
+function filter(attrs: Attribute[]): Attribute[] {
+    return attrs.reduceRight(
+        (
+            [found, has]: [Attribute[], Set<string>],
+            x: Attribute
+        ): [Attribute[], Set<string>] => {
+            switch (x.type) {
+                case Attributes.NoAttribute:
+                    return [found, has];
+
+                case Attributes.Class:
+                    return [[x, ...found], has];
+
+                case Attributes.Attr:
+                    return [[x, ...found], has];
+
+                case Attributes.StyleClass:
+                    return [[x, ...found], has];
+
+                case Attributes.Width:
+                    if (has.has('width')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('width')];
+                    }
+
+                case Attributes.Height:
+                    if (has.has('height')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('height')];
+                    }
+
+                case Attributes.Describe:
+                    if (has.has('described')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('described')];
+                    }
+
+                case Attributes.Nearby:
+                    return [[x, ...found], has];
+
+                case Attributes.AlignX:
+                    if (has.has('align-x')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('align-x')];
+                    }
+
+                case Attributes.AlignY:
+                    if (has.has('align-y')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('align-y')];
+                    }
+
+                case Attributes.TransformComponent:
+                    if (has.has('transform')) {
+                        return [found, has];
+                    } else {
+                        return [[x, ...found], has.add('transform')];
+                    }
+
+                default:
+                    return [found, has];
+            }
+        },
+        [[], new Set('')]
+    )[0];
+}
+
+function get(
+    attrs: Attribute[],
+    isAttr: (x: Attribute) => boolean
+): Attribute[] {
+    return filter(attrs).reduceRight((found: Attribute[], x: Attribute) => {
+        if (isAttr(x)) return [x, ...found];
+        return found;
+    }, []);
+}
+
 function extractSpacingAndPadding(
     attrs: Attribute[]
 ): [Maybe<Padding>, Maybe<Spacing>] {
@@ -3722,6 +3805,7 @@ export {
     element,
     embedKeyed,
     embedWith,
+    filter,
     extractSpacingAndPadding,
     finalizeNode,
     floatClass,
@@ -3732,6 +3816,7 @@ export {
     formatDropShadow,
     formatTextShadow,
     gatherAttrRecursive,
+    get,
     getHeight,
     getLength,
     getSpacing,

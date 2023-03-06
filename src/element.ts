@@ -252,6 +252,7 @@ import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { attribute } from './dom/attribute.ts';
 import * as Internal from './internal/model.ts';
+import { style } from './elements/attributes.ts';
 
 interface Column<T extends Record<string, unknown>> {
     header: Element;
@@ -669,23 +670,17 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                             ' ' +
                                             classes.wrapped
                                     ),
-                                    Attr(
-                                        attribute(
-                                            'style',
-                                            `margin: ${halfY.toString()}px ${halfX.toString()}px`
-                                        )
+                                    style(
+                                        'margin',
+                                        `${halfY.toString()}px ${halfX.toString()}px`
                                     ),
-                                    Attr(
-                                        attribute(
-                                            'style',
-                                            `width: calc(100% + ${x.toString()}px)`
-                                        )
+                                    style(
+                                        'width',
+                                        `calc(100% + ${x.toString()}px)`
                                     ),
-                                    Attr(
-                                        attribute(
-                                            'style',
-                                            `height: calc(100% + ${y.toString()}px)`
-                                        )
+                                    style(
+                                        'height',
+                                        `calc(100% + ${y.toString()}px)`
                                     ),
                                     StyleClass(
                                         Flag.spacing,
