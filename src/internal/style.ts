@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { range } from '../utils/utils.ts';
 
 interface Class {
     name: string;
@@ -1702,17 +1702,17 @@ const baseSheet: Class[] = [
 ];
 
 const commonValues: Class[] = [
-    _.range(0, 6).map((x: number) =>
+    range(6).map((x: number) =>
         Class(`.border-${x.toString()}`, [
             Prop('border-width', `${x.toString()}px`),
         ])
     ),
-    _.range(8, 32).map((i: number) =>
+    range(32, 8).map((i: number) =>
         Class(`.font-size-${i.toString()}`, [
             Prop('font-size', `${i.toString()}px`),
         ])
     ),
-    _.range(0, 24).map((i: number) =>
+    range(24).map((i: number) =>
         Class(`.p-${i.toString()}`, [Prop('padding', `${i.toString()}px`)])
     ),
     // Common Font Variants

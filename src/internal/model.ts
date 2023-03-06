@@ -1,6 +1,5 @@
 import { DOM } from '../deps.ts';
 import { elmish } from '../deps.ts';
-import _ from 'lodash';
 
 import * as Flag from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
@@ -86,6 +85,13 @@ import {
 } from './data.ts';
 import { attribute, attributes } from '../dom/attribute.ts';
 import domElement from '../dom/element.ts';
+import {
+    isArray,
+    isEmpty,
+    isNumber,
+    isPlainObject,
+    isString,
+} from '../utils/utils.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -94,19 +100,19 @@ const noStyleSheet = NoStyleSheet();
 function renderVariant(variant: Variant): string {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (_.isString(variant.name)) {
+            if (isString(variant.name)) {
                 return `\'${variant.name}\'`;
             }
             return '';
 
         case Variants.VariantOff:
-            if (_.isString(variant.name)) {
+            if (isString(variant.name)) {
                 return `\'${variant.name}\' 0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (_.isObject(variant)) {
+            if (isPlainObject(variant)) {
                 return `\'${variant.name}\' ${variant.index}`;
             }
             return '';
@@ -116,19 +122,19 @@ function renderVariant(variant: Variant): string {
 function variantName(variant: Variant): string {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (_.isString(variant.name)) {
+            if (isString(variant.name)) {
                 return variant.name;
             }
             return '';
 
         case Variants.VariantOff:
-            if (_.isString(variant.name)) {
+            if (isString(variant.name)) {
                 return `${variant.name}-0`;
             }
             return '';
 
         case Variants.VariantIndexed:
-            if (_.isObject(variant)) {
+            if (isPlainObject(variant)) {
                 return `${variant.name}-${variant.index}`;
             }
             return '';
@@ -149,7 +155,7 @@ function renderVariants(typeface: Font): Maybe<string> {
 function isSmallCaps(variant: Variant): boolean {
     switch (variant.type) {
         case Variants.VariantActive:
-            if (_.isString(variant.name)) {
+            if (isString(variant.name)) {
                 return variant.name === 'smcp';
             }
             return false;
@@ -158,7 +164,7 @@ function isSmallCaps(variant: Variant): boolean {
             return false;
 
         case Variants.VariantIndexed:
-            if (_.isObject(variant)) {
+            if (isPlainObject(variant)) {
                 return variant.name === 'smcp' && variant.index === 1;
             }
             return false;
@@ -484,7 +490,7 @@ function transformClass(transform: Transformation): Maybe<string> {
             return Nothing();
 
         case Transformations.Moved:
-            if (_.isArray(transform.xyz)) {
+            if (isArray(transform.xyz)) {
                 return Just(
                     `mv-${floatClass(transform.xyz[0])}-${floatClass(
                         transform.xyz[1]
@@ -494,7 +500,7 @@ function transformClass(transform: Transformation): Maybe<string> {
             break;
 
         case Transformations.FullTransform:
-            if (_.isObject(transform) && !_.isArray(transform)) {
+            if (isPlainObject(transform) && !isArray(transform)) {
                 return Just(
                     `tfrm-${floatClass(transform.translate[0])}-${floatClass(
                         transform.translate[1]
@@ -520,7 +526,7 @@ function transformValue(transform: Transformation): Maybe<string> {
             return Nothing();
 
         case Transformations.Moved:
-            if (_.isArray(transform.xyz)) {
+            if (isArray(transform.xyz)) {
                 return Just(
                     `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`
                 );
@@ -528,7 +534,7 @@ function transformValue(transform: Transformation): Maybe<string> {
             break;
 
         case Transformations.FullTransform:
-            if (_.isObject(transform) && !_.isArray(transform)) {
+            if (isPlainObject(transform) && !isArray(transform)) {
                 const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
                 const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
                 const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
@@ -577,7 +583,7 @@ function composeTransformation(
             break;
 
         case Transformations.Moved:
-            if (_.isArray(transform.xyz)) {
+            if (isArray(transform.xyz)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return Moved([
@@ -623,7 +629,7 @@ function composeTransformation(
             return Untransformed();
 
         case Transformations.FullTransform:
-            if (_.isObject(transform) && !_.isArray(transform)) {
+            if (isPlainObject(transform) && !isArray(transform)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return FullTransform(
@@ -1870,13 +1876,13 @@ function createElement(
                 if (context === asParagraph)
                     return [
                         [child.html(NoStyleSheet(), context), ...htmls.unkeyed],
-                        _.isEmpty(existingStyles)
+                        isEmpty(existingStyles)
                             ? child.styles
                             : child.styles.concat(existingStyles),
                     ];
                 return [
                     [child.html(NoStyleSheet(), context), ...htmls.unkeyed],
-                    _.isEmpty(existingStyles)
+                    isEmpty(existingStyles)
                         ? child.styles
                         : child.styles.concat(existingStyles),
                 ];
@@ -1930,7 +1936,7 @@ function createElement(
                             [key, child.html(NoStyleSheet(), context)],
                             ...htmls.keyed,
                         ],
-                        _.isEmpty(existingStyles)
+                        isEmpty(existingStyles)
                             ? child.styles
                             : child.styles.concat(existingStyles),
                     ];
@@ -1939,7 +1945,7 @@ function createElement(
                         [key, child.html(NoStyleSheet(), context)],
                         ...htmls.keyed,
                     ],
-                    _.isEmpty(existingStyles)
+                    isEmpty(existingStyles)
                         ? child.styles
                         : child.styles.concat(existingStyles),
                 ];
@@ -1985,7 +1991,7 @@ function createElement(
 
             switch (gathered) {
                 default: {
-                    const newStyles: Style[] = _.isEmpty(gathered[1])
+                    const newStyles: Style[] = isEmpty(gathered[1])
                         ? rendered.styles
                         : rendered.styles.concat(gathered[1]);
                     switch (newStyles) {
@@ -2038,7 +2044,7 @@ function createElement(
 
             switch (gathered) {
                 default: {
-                    const newStyles: Style[] = _.isEmpty(gathered[1])
+                    const newStyles: Style[] = isEmpty(gathered[1])
                         ? rendered.styles
                         : rendered.styles.concat(gathered[1]);
                     switch (newStyles) {
@@ -2514,13 +2520,13 @@ function renderFontClassName(font: Font, current: string): string {
             return current + 'monospace';
 
         case FontFamilyType.Typeface:
-            if (_.isString(font)) {
+            if (isString(font)) {
                 return current + font.name.toLowerCase().split(' ').join('-');
             }
             return '';
 
         case FontFamilyType.ImportFont || FontFamilyType.FontWith:
-            if (_.isObject(font)) {
+            if (isPlainObject(font)) {
                 return current + font.name.toLowerCase().split(' ').join('-');
             }
             return '';
@@ -3105,7 +3111,7 @@ function renderStyleRule(
             return renderStyle(options, pseudo, '.' + rule.name, [
                 Property(
                     'opacity',
-                    _.isNumber(opacity) ? opacity.toString() : '1'
+                    isNumber(opacity) ? opacity.toString() : '1'
                 ),
             ]);
         }
@@ -3749,28 +3755,28 @@ function convertAdjustment(adjustment: Adjustment): {
             baseLine === undefined ? adjustment.baseline : baseLine,
         // newCapitalMiddle: number = (ascender - newBaseLine) / 2 + newBaseLine,
         // newFullMiddle: number = (ascender - descender) / 2 + descender,
-        capitalVertical: number = _.isNumber(ascender) ? 1 - ascender : 0,
-        capitalSize: number = _.isNumber(ascender)
+        capitalVertical: number = isNumber(ascender) ? 1 - ascender : 0,
+        capitalSize: number = isNumber(ascender)
             ? 1 / (ascender - newBaseLine)
             : 0,
         fullSize: number =
-            _.isNumber(ascender) && _.isNumber(descender)
+            isNumber(ascender) && isNumber(descender)
                 ? 1 / (ascender - descender)
                 : 0,
         // TODO: Same as capitalVertical
-        fullVertical: number = _.isNumber(ascender) ? 1 - ascender : 0;
+        fullVertical: number = isNumber(ascender) ? 1 - ascender : 0;
 
     return {
         full: adjust(
             fullSize,
-            _.isNumber(ascender) && _.isNumber(descender)
+            isNumber(ascender) && isNumber(descender)
                 ? ascender - descender
                 : 0,
             fullVertical
         ),
         capital: adjust(
             capitalSize,
-            _.isNumber(ascender) ? ascender - newBaseLine : 0,
+            isNumber(ascender) ? ascender - newBaseLine : 0,
             capitalVertical
         ),
     };
