@@ -1,6 +1,6 @@
-import { DOM } from '../deps.ts';
-import { DOMelement } from '../deps.ts';
-import { CTOR_KEY } from '../deps.ts';
+import { DOM } from '../../deps.ts';
+import { DOMelement } from '../../deps.ts';
+import { CTOR_KEY } from '../../deps.ts';
 
 export default function Element(
     tagName: string,

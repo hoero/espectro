@@ -1,6 +1,5 @@
-import { DOM } from '../deps.ts';
-import { elmish } from '../deps.ts';
-
+import { DOM } from '../../deps.ts';
+import { elmish } from '../../deps.ts';
 import * as Flag from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
 import {

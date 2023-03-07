@@ -1,4 +1,4 @@
-import { classValidator } from './deps.ts';
+import { classValidator } from '../deps.ts';
 import validate from './validation.ts';
 import { Colour, Hsla, Rgba, Notation } from './internal/data.ts';
 
@@ -13,6 +13,7 @@ const max = {
 
 class ChannelsColor {
     @classValidator.Min(0, min)
+    // TODO:
     private a: number;
     @classValidator.Min(0, min)
     private b: number;

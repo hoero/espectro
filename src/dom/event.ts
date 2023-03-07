@@ -1,4 +1,4 @@
-import { capsule } from '../deps.ts';
+import { capsule } from '../../deps.ts';
 
 /**
  * From Capsule module

@@ -130,7 +130,7 @@ function isBigDesktopLandscape(device: Device) {
     );
 }
 
-/** Simulates CSS @media query
+/** TODO: Simulates CSS @media query
 
     With device data it can return specific values for different
     device profiles using breakpoints.
@@ -213,12 +213,12 @@ function respond(device: Device, bps: Breakpoints) {
     }
 }
 
-// Gets the device data based on the viewport width and viewport height.
+// TODO: Gets the device data based on the viewport width and viewport height.
 function deviceData(vw: number, vh: number) {
     return classifyDevice({ width: vw, height: vh });
 }
 
-/** Takes in a Window.Size and returns a device profile which can be used for responsiveness.
+/** TODO: Takes in a Window.Size and returns a device profile which can be used for responsiveness.
 
 If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
 */
@@ -249,10 +249,6 @@ function classifyDevice(window: { width: number; height: number }): Device {
     };
 }
 
-/** Takes in a Window.Size and returns a device profile which can be used for responsiveness.
-
-If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
-*/
 export {
     DeviceClass,
     Orientation,

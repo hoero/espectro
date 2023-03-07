@@ -1,5 +1,4 @@
-import { classValidator } from './deps.ts';
-
+import { classValidator } from '../deps.ts';
 import { ChannelsColor } from './color.ts';
 
 const validateColor = (color: ChannelsColor) => {

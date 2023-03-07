@@ -173,8 +173,7 @@ For other inputs such as `Input.text`, consider simply rendering it in a normal 
 Alternatively, see if it's reasonable to _not_ display an input if you'd normally disable it. Is there an option where it's only visible when it's editable?
  */
 
-import { elmish } from '../deps.ts';
-
+import { elmish } from '../../deps.ts';
 import { hsl, hsla } from '../color.ts';
 import { attribute } from '../dom/attribute.ts';
 import { ComponentEventContext, EventHandler } from '../dom/event.ts';

@@ -1,7 +1,6 @@
-import { DOM } from '../deps.ts';
-import { elmish } from '../deps.ts';
+import { DOM } from '../../deps.ts';
+import { elmish } from '../../deps.ts';
 import { EventHandler } from '../dom/event.ts';
-
 import { Flag_, Second, Field } from './flag.ts';
 
 export type Maybe<T> = elmish.Maybe.Maybe<T>;

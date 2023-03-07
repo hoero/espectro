@@ -182,9 +182,8 @@ You'll also need to retrieve the initial window size. You can either use [`Brows
 
 @docs html, htmlAttribute
 */
-import { DOM } from './deps.ts';
-import { elmish } from './deps.ts';
-
+import { DOM } from '../deps.ts';
+import { elmish } from '../deps.ts';
 import {
     Length,
     Px,
