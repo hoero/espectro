@@ -184,8 +184,9 @@ const swash: Variant = VariantActive('swsh');
  * @param clr
  * @returns
  */
-function color(fontColor: Promise<Hsla | Rgba>): Attribute {
-    const [a, b, c, d, e] = Object.values(fontColor);
+async function color(fontColor: Promise<Hsla | Rgba>): Promise<Attribute> {
+    const val = await fontColor;
+    const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
         Flag.fontColor,
         Colored(
@@ -327,22 +328,22 @@ function wordSpacing(offset: number): Attribute {
  * @param param0
  * @returns
  */
-function shadow({
+async function shadow({
     offset,
     blur,
     color,
 }: {
     offset: [number, number];
     blur: number;
-    color: Hsla | Rgba | Promise<Hsla | Rgba>;
-}): Attribute {
+    color: Promise<Hsla | Rgba>;
+}): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, 0, false);
     return StyleClass(
         Flag.txtShadows,
         Single(
-            Internal.textShadowClass(shade),
+            await Internal.textShadowClass(shade),
             'text-shadow',
-            Internal.formatTextShadow(shade)
+            await Internal.formatTextShadow(shade)
         )
     );
 }
@@ -353,14 +354,17 @@ function shadow({
  * @param param0
  * @returns
  */
-function glow(color: Hsla | Rgba | Promise<Hsla | Rgba>, i: number): Attribute {
+async function glow(
+    color: Promise<Hsla | Rgba>,
+    i: number
+): Promise<Attribute> {
     const shade = Shadow(color, [0, 0], i * 2, 0, false);
     return StyleClass(
         Flag.txtShadows,
         Single(
-            Internal.textShadowClass(shade),
+            await Internal.textShadowClass(shade),
             'text-shadow',
-            Internal.formatTextShadow(shade)
+            await Internal.formatTextShadow(shade)
         )
     );
 }
@@ -419,7 +423,7 @@ function isSmallCaps(x: Variant): boolean {
  */
 function variantList(vars: Variant[]): Attribute {
     const features: string[] = vars.map(Internal.renderVariant),
-        hasSmallCaps: boolean = vars.every(isSmallCaps),
+        hasSmallCaps: boolean = vars.some(isSmallCaps),
         name: string = hasSmallCaps
             ? `${vars.map(Internal.variantName).join('-')}-sc`
             : vars.map(Internal.variantName).join('-'),

@@ -1,5 +1,4 @@
-import { DOM } from '../../deps.ts';
-import { elmish } from '../../deps.ts';
+import { DOM, elmish } from '../../deps.ts';
 import * as Flag from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
 import {
@@ -81,16 +80,12 @@ import {
     OnlyDynamic,
     StaticRootAndDynamic,
     Px,
+    Hsla,
 } from './data.ts';
-import { attribute, attributes } from '../dom/attribute.ts';
+import { attribute } from '../dom/attribute.ts';
 import domElement from '../dom/element.ts';
-import {
-    isArray,
-    isEmpty,
-    isNumber,
-    isPlainObject,
-    isString,
-} from '../utils/utils.ts';
+import { isEmpty, isNumber, isPlainObject, isString } from '../utils/utils.ts';
+import { rgba } from '../color.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -190,25 +185,25 @@ function unstyled(node: DOM.Node): Element {
     return Unstyled(() => node);
 }
 
-function finalizeNode(
+async function finalizeNode(
     has: Flag.Field,
     node: NodeName,
     attributes: DOM.Attr[],
     children: Children<DOM.Node>,
     embedMode: EmbedStyle,
     parentContext: LayoutContext
-): DOM.Node {
+): Promise<DOM.Node> {
     const attributes_: [string, string][] = attributes.map((x: DOM.Attr) => [
         x.name,
         x.value,
     ]);
-    const html: DOM.Node = (() => {
+    const html: Promise<DOM.Node> = (async () => {
         switch (node.type) {
             case NodeNames.Generic:
-                return createNode('div', attributes_);
+                return await createNode('div', attributes_);
 
             case NodeNames.NodeName:
-                return createNode(node.nodeName, attributes_);
+                return await createNode(node.nodeName, attributes_);
 
             case NodeNames.Embedded: {
                 const el = domElement(node.nodeName, attributes_);
@@ -217,23 +212,30 @@ function finalizeNode(
                     [['class', cls.any + ' ' + cls.single]],
                     el
                 );
-                el.append(child);
-                return el;
+                el.appendChild(child);
+                return new Promise<DOM.Node>((resolve, _reject) => {
+                    resolve(el);
+                });
             }
         }
     })();
 
-    function createNode(nodeName: string, attrs: [string, string][]): DOM.Node {
+    async function createNode(
+        nodeName: string,
+        attrs: [string, string][]
+    ): Promise<DOM.Node> {
         switch (children.type) {
             case Childrens.Keyed: {
                 const keyedNode = domElement(nodeName, attrs);
-                const child = (embedMode: EmbedStyle): [string, DOM.Node][] => {
+                const child = async (
+                    embedMode: EmbedStyle
+                ): Promise<[string, DOM.Node][]> => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.keyed;
 
                         case EmbedStyles.OnlyDynamic:
-                            return embedKeyed(
+                            return await embedKeyed(
                                 false,
                                 embedMode.options,
                                 embedMode.styles,
@@ -241,7 +243,7 @@ function finalizeNode(
                             );
 
                         case EmbedStyles.StaticRootAndDynamic:
-                            return embedKeyed(
+                            return await embedKeyed(
                                 true,
                                 embedMode.options,
                                 embedMode.styles,
@@ -249,11 +251,13 @@ function finalizeNode(
                             );
                     }
                 };
+                const child_ = await child(embedMode);
 
-                child(embedMode).map((value: [string, DOM.Node]) => {
-                    const html = domElement(value[0], [], keyedNode);
-                    html.append(value[1]);
-                    keyedNode.append(html);
+                // TODO: Review this logic, where to put the key
+                child_.map((value: [string, DOM.Node]) => {
+                    // const html = domElement(value[0], [], keyedNode);
+                    // html.appendChild(value[1]);
+                    keyedNode.appendChild(value[1]);
                 });
                 return keyedNode;
             }
@@ -271,13 +275,15 @@ function finalizeNode(
                             return domElement(nodeName, attrs);
                     }
                 })();
-                const child = (embedMode: EmbedStyle): DOM.Node[] => {
+                const child = async (
+                    embedMode: EmbedStyle
+                ): Promise<DOM.Node[]> => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.unkeyed;
 
                         case EmbedStyles.OnlyDynamic:
-                            return embedWith(
+                            return await embedWith(
                                 false,
                                 embedMode.options,
                                 embedMode.styles,
@@ -285,7 +291,7 @@ function finalizeNode(
                             );
 
                         case EmbedStyles.StaticRootAndDynamic:
-                            return embedWith(
+                            return await embedWith(
                                 true,
                                 embedMode.options,
                                 embedMode.styles,
@@ -293,10 +299,9 @@ function finalizeNode(
                             );
                     }
                 };
+                const child_ = await child(embedMode);
 
-                child(embedMode).map((value: DOM.Node) =>
-                    unkeyedNode.append(value)
-                );
+                child_.map((value: DOM.Node) => unkeyedNode.appendChild(value));
                 return unkeyedNode;
             }
         }
@@ -308,7 +313,7 @@ function finalizeNode(
                 Flag.present(Flag.widthFill, has) &&
                 !Flag.present(Flag.widthBetween, has)
             ) {
-                return html;
+                return await html;
             } else if (Flag.present(Flag.alignRight, has)) {
                 const el = domElement('u', [
                     [
@@ -322,7 +327,7 @@ function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.append(html);
+                el.appendChild(await html);
                 return el;
             } else if (Flag.present(Flag.centerX, has)) {
                 const el = domElement('s', [
@@ -337,10 +342,10 @@ function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.append(html);
+                el.appendChild(await html);
                 return el;
             } else {
-                return html;
+                return await html;
             }
 
         case LayoutContext.AsColumn:
@@ -348,7 +353,7 @@ function finalizeNode(
                 Flag.present(Flag.heightFill, has) &&
                 !Flag.present(Flag.heightBetween, has)
             ) {
-                return html;
+                return await html;
             } else if (Flag.present(Flag.centerY, has)) {
                 const el = domElement('s', [
                     [
@@ -361,7 +366,7 @@ function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.append(html);
+                el.appendChild(await html);
                 return el;
             } else if (Flag.present(Flag.alignBottom, has)) {
                 const el = domElement('u', [
@@ -375,23 +380,23 @@ function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.append(html);
+                el.appendChild(await html);
                 return el;
             } else {
-                return html;
+                return await html;
             }
 
         default:
-            return html;
+            return await html;
     }
 }
 
-function embedWith(
+async function embedWith(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
     children: DOM.Node[]
-): DOM.Node[] {
+): Promise<DOM.Node[]> {
     const dinamicStyleSheet: DOM.Node = toStyleSheet(
         opts,
         styles.reduce(
@@ -399,19 +404,19 @@ function embedWith(
                 acc: [Set<string>, Style[]],
                 style: Style
             ): [Set<string>, Style[]] => reduceStyles(style, acc),
-            [new Set(''), renderFocusStyle(opts.focus)]
+            [new Set(''), await renderFocusStyle(opts.focus)]
         )[1]
     );
     if (static_) return [staticRoot(opts), dinamicStyleSheet, ...children];
     return [dinamicStyleSheet, ...children];
 }
 
-function embedKeyed(
+async function embedKeyed(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
     children: [string, DOM.Node][]
-): [string, DOM.Node][] {
+): Promise<[string, DOM.Node][]> {
     const dinamicStyleSheet: DOM.Node = toStyleSheet(
         opts,
         styles.reduce(
@@ -419,7 +424,7 @@ function embedKeyed(
                 acc: [Set<string>, Style[]],
                 style: Style
             ): [Set<string>, Style[]] => reduceStyles(style, acc),
-            [new Set(''), renderFocusStyle(opts.focus)]
+            [new Set(''), await renderFocusStyle(opts.focus)]
         )[1]
     );
     if (static_)
@@ -473,13 +478,13 @@ function alignXName(align: HAlign) {
 function alignYName(align: VAlign) {
     switch (align) {
         case VAlign.Top:
-            return `${cls.alignedHorizontally} ${cls.alignTop}`;
+            return `${cls.alignedVertically} ${cls.alignTop}`;
 
         case VAlign.CenterY:
-            return `${cls.alignedHorizontally} ${cls.alignCenterY}`;
+            return `${cls.alignedVertically} ${cls.alignCenterY}`;
 
         case VAlign.Bottom:
-            return `${cls.alignedHorizontally} ${cls.alignBottom}`;
+            return `${cls.alignedVertically} ${cls.alignBottom}`;
     }
 }
 
@@ -489,17 +494,17 @@ function transformClass(transform: Transformation): Maybe<string> {
             return Nothing();
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (Array.isArray(transform.xyz)) {
                 return Just(
                     `mv-${floatClass(transform.xyz[0])}-${floatClass(
                         transform.xyz[1]
                     )}-${floatClass(transform.xyz[2])}`
                 );
             }
-            break;
+            return Nothing();
 
         case Transformations.FullTransform:
-            if (isPlainObject(transform) && !isArray(transform)) {
+            if (isPlainObject(transform) && !Array.isArray(transform)) {
                 return Just(
                     `tfrm-${floatClass(transform.translate[0])}-${floatClass(
                         transform.translate[1]
@@ -514,9 +519,8 @@ function transformClass(transform: Transformation): Maybe<string> {
                     )}`
                 );
             }
-            break;
+            return Nothing();
     }
-    return Just('');
 }
 
 function transformValue(transform: Transformation): Maybe<string> {
@@ -525,23 +529,22 @@ function transformValue(transform: Transformation): Maybe<string> {
             return Nothing();
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (Array.isArray(transform.xyz)) {
                 return Just(
                     `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`
                 );
             }
-            break;
+            return Nothing();
 
         case Transformations.FullTransform:
-            if (isPlainObject(transform) && !isArray(transform)) {
+            if (isPlainObject(transform) && !Array.isArray(transform)) {
                 const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
                 const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
                 const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
                 return Just(`${translate} ${scale} ${rotate}`);
             }
-            break;
+            return Nothing();
     }
-    return Just('');
 }
 
 function composeTransformation(
@@ -582,7 +585,7 @@ function composeTransformation(
             break;
 
         case Transformations.Moved:
-            if (isArray(transform.xyz)) {
+            if (Array.isArray(transform.xyz)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return Moved([
@@ -628,7 +631,7 @@ function composeTransformation(
             return Untransformed();
 
         case Transformations.FullTransform:
-            if (isPlainObject(transform) && !isArray(transform)) {
+            if (isPlainObject(transform) && !Array.isArray(transform)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
                         return FullTransform(
@@ -701,29 +704,18 @@ function skippable(flag: Flag.Flag, style: Style) {
             case Styles.Single:
                 switch (style.value) {
                     case '0px':
-                        return true;
-
                     case '1px':
-                        return true;
-
                     case '2px':
-                        return true;
-
                     case '3px':
-                        return true;
-
                     case '4px':
-                        return true;
-
                     case '5px':
-                        return true;
-
                     case '6px':
                         return true;
 
                     default:
                         return false;
                 }
+                break;
 
             default:
                 return false;
@@ -764,754 +756,646 @@ function gatherAttrRecursive(
     children: NearbyChildren,
     elementAttrs: Attribute[]
 ): Gathered {
-    switch (elementAttrs) {
-        case []:
-            switch (transformClass(transform)) {
-                case Nothing():
-                    return Gathered(
-                        node,
-                        [attribute('class', classes), ...attributes(attrs)],
+    if (isEmpty(elementAttrs)) {
+        switch (transformClass(transform)) {
+            case Nothing():
+                return Gathered(
+                    node,
+                    [attribute('class', classes), ...attrs],
+                    styles,
+                    children,
+                    has
+                );
+
+            default: {
+                const class_ = withDefault('', transformClass(transform));
+                return Gathered(
+                    node,
+                    [attribute('class', `${classes} ${class_}`), ...attrs],
+                    [Transform(transform), ...styles],
+                    children,
+                    has
+                );
+            }
+        }
+    }
+
+    const attribute_: Attribute = elementAttrs[0];
+    const remaining: Attribute[] = elementAttrs.splice(1);
+
+    switch (attribute_.type) {
+        case Attributes.NoAttribute:
+            return gatherAttrRecursive(
+                classes,
+                node,
+                has,
+                transform,
+                styles,
+                attrs,
+                children,
+                remaining
+            );
+
+        case Attributes.Attr:
+            return gatherAttrRecursive(
+                classes,
+                node,
+                has,
+                transform,
+                styles,
+                [attribute_.attr, ...attrs],
+                children,
+                remaining
+            );
+
+        case Attributes.Describe:
+            switch (attribute_.description.type) {
+                case Descriptions.Main:
+                    return gatherAttrRecursive(
+                        classes,
+                        addNodeName('main', node),
+                        has,
+                        transform,
                         styles,
+                        attrs,
                         children,
-                        has
+                        remaining
+                    );
+
+                case Descriptions.Navigation:
+                    return gatherAttrRecursive(
+                        classes,
+                        addNodeName('nav', node),
+                        has,
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.ContentInfo:
+                    return gatherAttrRecursive(
+                        classes,
+                        addNodeName('footer', node),
+                        has,
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.Complementary:
+                    return gatherAttrRecursive(
+                        classes,
+                        addNodeName('aside', node),
+                        has,
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.Heading:
+                    if (attribute_.description.i <= 1) {
+                        return gatherAttrRecursive(
+                            classes,
+                            addNodeName('h1', node),
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            remaining
+                        );
+                    } else if (attribute_.description.i < 7) {
+                        return gatherAttrRecursive(
+                            classes,
+                            addNodeName(`h${attribute_.description.i}`, node),
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            remaining
+                        );
+                    } else {
+                        return gatherAttrRecursive(
+                            classes,
+                            addNodeName('h6', node),
+                            has,
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            remaining
+                        );
+                    }
+
+                case Descriptions.Label:
+                    return gatherAttrRecursive(
+                        classes,
+                        node,
+                        has,
+                        transform,
+                        styles,
+                        [
+                            attribute(
+                                'aria-label',
+                                attribute_.description.label
+                            ),
+                            ...attrs,
+                        ],
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.LivePolite:
+                    return gatherAttrRecursive(
+                        classes,
+                        node,
+                        has,
+                        transform,
+                        styles,
+                        [attribute('aria-live', 'polite'), ...attrs],
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.LiveAssertive:
+                    return gatherAttrRecursive(
+                        classes,
+                        node,
+                        has,
+                        transform,
+                        styles,
+                        [attribute('aria-live', 'assertive'), ...attrs],
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.Button:
+                    return gatherAttrRecursive(
+                        classes,
+                        node,
+                        has,
+                        transform,
+                        styles,
+                        [attribute('role', 'button'), ...attrs],
+                        children,
+                        remaining
+                    );
+
+                case Descriptions.Paragraph:
+                    /**
+                     * previously we rendered a <p> tag, though apparently this invalidates the html if it has <div>s inside.
+                     * Since we can't guaranteee that there are no divs, we need another strategy.
+                     *  While it's not documented in many places, there apparently is a paragraph aria role
+                     * https://github.com/w3c/aria/blob/11f85f41a5b621fdbe85fc9bcdcd270e653a48ba/common/script/roleInfo.js
+                     * Though we'll need to wait till it gets released in an official wai-aria spec to use it.
+                     * If it's used at the moment, then Lighthouse complains (likely rightfully) that role paragraph is not recognized. */
+                    return gatherAttrRecursive(
+                        classes,
+                        node,
+                        has,
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+            }
+            break;
+
+        case Attributes.Class:
+            if (Flag.present(attribute_.flag, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
+
+            return gatherAttrRecursive(
+                `${attribute_.class_} ${classes}`,
+                node,
+                Flag.add(attribute_.flag, has),
+                transform,
+                styles,
+                attrs,
+                children,
+                remaining
+            );
+
+        case Attributes.StyleClass:
+            if (Flag.present(attribute_.flag, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            } else if (skippable(attribute_.flag, attribute_.style)) {
+                return gatherAttrRecursive(
+                    `${getStyleName(attribute_.style)} ${classes}`,
+                    node,
+                    Flag.add(attribute_.flag, has),
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            } else {
+                return gatherAttrRecursive(
+                    `${getStyleName(attribute_.style)} ${classes}`,
+                    node,
+                    Flag.add(attribute_.flag, has),
+                    transform,
+                    [attribute_.style, ...styles],
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
+
+        case Attributes.AlignY: {
+            if (Flag.present(Flag.yAlign, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
+
+            const flags: Flag.Field = Flag.add(Flag.yAlign, has);
+            const align: VAlign = attribute_.y;
+
+            const has_ = (): Flag.Field => {
+                switch (align) {
+                    case VAlign.CenterY:
+                        return Flag.add(Flag.centerY, flags);
+
+                    case VAlign.Bottom:
+                        return Flag.add(Flag.alignBottom, flags);
+
+                    default:
+                        return flags;
+                }
+            };
+
+            return gatherAttrRecursive(
+                `${alignYName(attribute_.y)} ${classes}`,
+                node,
+                has_(),
+                transform,
+                styles,
+                attrs,
+                children,
+                remaining
+            );
+        }
+
+        case Attributes.AlignX: {
+            if (Flag.present(Flag.xAlign, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
+
+            const flags: Flag.Field = Flag.add(Flag.xAlign, has);
+            const align: HAlign = attribute_.x;
+
+            const has_ = (): Flag.Field => {
+                switch (align) {
+                    case HAlign.CenterX:
+                        return Flag.add(Flag.centerX, flags);
+
+                    case HAlign.Right:
+                        return Flag.add(Flag.alignRight, flags);
+
+                    default:
+                        return flags;
+                }
+            };
+
+            return gatherAttrRecursive(
+                `${alignXName(attribute_.x)} ${classes}`,
+                node,
+                has_(),
+                transform,
+                styles,
+                attrs,
+                children,
+                remaining
+            );
+        }
+
+        case Attributes.Width:
+            if (Flag.present(Flag.width, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
+
+            switch (attribute_.width.type) {
+                case Lengths.Px:
+                    return gatherAttrRecursive(
+                        `${cls.widthExact} width-px-${attribute_.width.px} ${classes}`,
+                        node,
+                        Flag.add(Flag.width, has),
+                        transform,
+                        [
+                            Single(
+                                `width-px-${attribute_.width.px}`,
+                                'width',
+                                `${attribute_.width.px}px`
+                            ),
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Lengths.Rem:
+                    return gatherAttrRecursive(
+                        `${cls.widthExact} width-rem-${attribute_.width.rem} ${classes}`,
+                        node,
+                        Flag.add(Flag.width, has),
+                        transform,
+                        [
+                            Single(
+                                `width-rem-${attribute_.width.rem}`,
+                                'width',
+                                `${attribute_.width.rem}rem`
+                            ),
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Lengths.Content:
+                    return gatherAttrRecursive(
+                        `${classes} ${cls.widthContent}`,
+                        node,
+                        Flag.add(Flag.widthContent, Flag.add(Flag.width, has)),
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Lengths.Fill:
+                    if (attribute_.width.i === 1) {
+                        return gatherAttrRecursive(
+                            `${classes} ${cls.widthFill}`,
+                            node,
+                            Flag.add(Flag.widthFill, Flag.add(Flag.width, has)),
+                            transform,
+                            styles,
+                            attrs,
+                            children,
+                            remaining
+                        );
+                    }
+
+                    return gatherAttrRecursive(
+                        `${classes} ${cls.widthFillPortion} width-fill-${attribute_.width.i}`,
+                        node,
+                        Flag.add(Flag.widthFill, Flag.add(Flag.width, has)),
+                        transform,
+                        [
+                            Single(
+                                `${cls.any}.${cls.row} > ${dot(
+                                    `width-fill-${attribute_.width.i}`
+                                )}`,
+                                'flex-grow',
+                                `${attribute_.width.i * 100000}`
+                            ),
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
                     );
 
                 default: {
-                    const class_ = transformClass(transform);
-                    return Gathered(
+                    const [addToFlag, newClass, newStyles] = renderWidth(
+                        attribute_.width
+                    );
+                    return gatherAttrRecursive(
+                        `${classes} ${newClass}`,
                         node,
-                        [
-                            attribute('class', `${classes} ${class_}`),
-                            ...attributes(attrs),
-                        ],
-                        [Transform(transform), ...styles],
+                        Flag.merge(addToFlag, Flag.add(Flag.width, has)),
+                        transform,
+                        [...newStyles, ...styles],
+                        attrs,
                         children,
-                        has
+                        remaining
                     );
                 }
             }
 
-        default:
-            for (const attr of elementAttrs) {
-                switch (attr.type) {
-                    case Attributes.NoAttribute:
-                        return gatherAttrRecursive(
-                            classes,
-                            node,
-                            has,
-                            transform,
-                            styles,
-                            attrs,
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
+        case Attributes.Height:
+            if (Flag.present(Flag.height, has)) {
+                return gatherAttrRecursive(
+                    classes,
+                    node,
+                    has,
+                    transform,
+                    styles,
+                    attrs,
+                    children,
+                    remaining
+                );
+            }
 
-                    case Attributes.Attr:
-                        return gatherAttrRecursive(
-                            classes,
-                            node,
-                            has,
-                            transform,
-                            styles,
-                            [attr.attr, ...attrs],
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
-
-                    case Attributes.Describe:
-                        switch (attr.description.type) {
-                            case Descriptions.Main:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    addNodeName('main', node),
-                                    has,
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.Navigation:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    addNodeName('nav', node),
-                                    has,
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.ContentInfo:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    addNodeName('footer', node),
-                                    has,
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.Complementary:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    addNodeName('aside', node),
-                                    has,
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.Heading:
-                                if (attr.description.i <= 1) {
-                                    return gatherAttrRecursive(
-                                        classes,
-                                        addNodeName('h1', node),
-                                        has,
-                                        transform,
-                                        styles,
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
-                                } else if (attr.description.i < 7) {
-                                    return gatherAttrRecursive(
-                                        classes,
-                                        addNodeName(
-                                            `h${attr.description.i}`,
-                                            node
-                                        ),
-                                        has,
-                                        transform,
-                                        styles,
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
-                                } else {
-                                    return gatherAttrRecursive(
-                                        classes,
-                                        addNodeName('h6', node),
-                                        has,
-                                        transform,
-                                        styles,
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
-                                }
-
-                            case Descriptions.Label:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    node,
-                                    has,
-                                    transform,
-                                    styles,
-                                    [
-                                        attribute(
-                                            'aria-label',
-                                            attr.description.label
-                                        ),
-                                        ...attrs,
-                                    ],
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.LivePolite:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    node,
-                                    has,
-                                    transform,
-                                    styles,
-                                    [
-                                        attribute('aria-live', 'polite'),
-                                        ...attrs,
-                                    ],
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.LiveAssertive:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    node,
-                                    has,
-                                    transform,
-                                    styles,
-                                    [
-                                        attribute('aria-live', 'assertive'),
-                                        ...attrs,
-                                    ],
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.Button:
-                                return gatherAttrRecursive(
-                                    classes,
-                                    node,
-                                    has,
-                                    transform,
-                                    styles,
-                                    [attribute('role', 'button'), ...attrs],
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Descriptions.Paragraph:
-                                /**
-                                 * previously we rendered a <p> tag, though apparently this invalidates the html if it has <div>s inside.
-                                 * Since we can't guaranteee that there are no divs, we need another strategy.
-                                 *  While it's not documented in many places, there apparently is a paragraph aria role
-                                 * https://github.com/w3c/aria/blob/11f85f41a5b621fdbe85fc9bcdcd270e653a48ba/common/script/roleInfo.js
-                                 * Though we'll need to wait till it gets released in an official wai-aria spec to use it.
-                                 * If it's used at the moment, then Lighthouse complains (likely rightfully) that role paragraph is not recognized. */
-                                return gatherAttrRecursive(
-                                    classes,
-                                    node,
-                                    has,
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-                        }
-                        break;
-
-                    case Attributes.Class:
-                        if (Flag.present(attr.flag, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                        return gatherAttrRecursive(
-                            `${attr.class_} ${classes}`,
-                            node,
-                            Flag.add(attr.flag, has),
-                            transform,
-                            styles,
-                            attrs,
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
-
-                    case Attributes.StyleClass:
-                        if (Flag.present(attr.flag, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        } else if (skippable(attr.flag, attr.style)) {
-                            return gatherAttrRecursive(
-                                `${getStyleName(attr.style)} ${classes}`,
-                                node,
-                                Flag.add(attr.flag, has),
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        } else {
-                            return gatherAttrRecursive(
-                                `${getStyleName(attr.style)} ${classes}`,
-                                node,
-                                Flag.add(attr.flag, has),
-                                transform,
-                                [attr.style, ...styles],
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                    case Attributes.AlignY: {
-                        if (Flag.present(Flag.yAlign, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                        const flags: Flag.Field = Flag.add(Flag.yAlign, has);
-                        const align: VAlign = attr.y;
-
-                        const has_ = (): Flag.Field => {
-                            switch (align) {
-                                case VAlign.CenterY:
-                                    return Flag.add(Flag.centerY, flags);
-
-                                case VAlign.Bottom:
-                                    return Flag.add(Flag.alignBottom, flags);
-
-                                default:
-                                    return flags;
-                            }
-                        };
-
-                        return gatherAttrRecursive(
-                            `${alignYName(attr.y)} ${classes}`,
-                            node,
-                            has_(),
-                            transform,
-                            styles,
-                            attrs,
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
-                    }
-
-                    case Attributes.AlignX: {
-                        if (Flag.present(Flag.xAlign, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                        const flags: Flag.Field = Flag.add(Flag.xAlign, has);
-                        const align: HAlign = attr.x;
-
-                        const has_ = (): Flag.Field => {
-                            switch (align) {
-                                case HAlign.CenterX:
-                                    return Flag.add(Flag.centerX, flags);
-
-                                case HAlign.Right:
-                                    return Flag.add(Flag.alignRight, flags);
-
-                                default:
-                                    return flags;
-                            }
-                        };
-
-                        return gatherAttrRecursive(
-                            `${alignXName(attr.x)} ${classes}`,
-                            node,
-                            has_(),
-                            transform,
-                            styles,
-                            attrs,
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
-                    }
-
-                    case Attributes.Width:
-                        if (Flag.present(Flag.width, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                        switch (attr.width.type) {
-                            case Lengths.Px:
-                                return gatherAttrRecursive(
-                                    `${cls.widthExact} width-px-${attr.width.px} ${classes}`,
-                                    node,
-                                    Flag.add(Flag.width, has),
-                                    transform,
-                                    [
-                                        Single(
-                                            `width-px-${attr.width.px}`,
-                                            'width',
-                                            `${attr.width.px}px`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Rem:
-                                return gatherAttrRecursive(
-                                    `${cls.widthExact} width-rem-${attr.width.rem} ${classes}`,
-                                    node,
-                                    Flag.add(Flag.width, has),
-                                    transform,
-                                    [
-                                        Single(
-                                            `width-rem-${attr.width.rem}`,
-                                            'width',
-                                            `${attr.width.rem}rem`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Content:
-                                return gatherAttrRecursive(
-                                    `${classes} ${cls.widthContent}`,
-                                    node,
-                                    Flag.add(
-                                        Flag.widthContent,
-                                        Flag.add(Flag.width, has)
-                                    ),
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Fill:
-                                if (attr.width.i === 1) {
-                                    return gatherAttrRecursive(
-                                        `${classes} ${cls.widthFill}`,
-                                        node,
-                                        Flag.add(
-                                            Flag.widthFill,
-                                            Flag.add(Flag.width, has)
-                                        ),
-                                        transform,
-                                        styles,
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
-                                }
-
-                                return gatherAttrRecursive(
-                                    `${classes} ${cls.widthFillPortion} width-fill-${attr.width.i}`,
-                                    node,
-                                    Flag.add(
-                                        Flag.widthFill,
-                                        Flag.add(Flag.width, has)
-                                    ),
-                                    transform,
-                                    [
-                                        Single(
-                                            `${cls.any}.${cls.row} > ${dot(
-                                                `width-fill-${attr.width.i}`
-                                            )}`,
-                                            'flex-grow',
-                                            `${attr.width.i * 100000}`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            default: {
-                                const [addToFlag, newClass, newStyles] =
-                                    renderWidth(attr.width);
-                                return gatherAttrRecursive(
-                                    `${classes} ${newClass}`,
-                                    node,
-                                    Flag.merge(
-                                        addToFlag,
-                                        Flag.add(Flag.width, has)
-                                    ),
-                                    transform,
-                                    [...newStyles, ...styles],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-                            }
-                        }
-
-                    case Attributes.Height:
-                        if (Flag.present(Flag.height, has)) {
-                            return gatherAttrRecursive(
-                                classes,
-                                node,
-                                has,
-                                transform,
-                                styles,
-                                attrs,
-                                children,
-                                elementAttrs.filter(
-                                    (attr_) => attr_.type !== attr.type
-                                )
-                            );
-                        }
-
-                        switch (attr.height.type) {
-                            case Lengths.Px:
-                                return gatherAttrRecursive(
-                                    `${cls.heightExact} height-px-${attr.height.px} ${classes}`,
-                                    node,
-                                    Flag.add(Flag.height, has),
-                                    transform,
-                                    [
-                                        Single(
-                                            `height-px-${attr.height.px}`,
-                                            'height',
-                                            `${attr.height.px}px`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Rem:
-                                return gatherAttrRecursive(
-                                    `${cls.heightExact} height-rem-${attr.height.rem} ${classes}`,
-                                    node,
-                                    Flag.add(Flag.height, has),
-                                    transform,
-                                    [
-                                        Single(
-                                            `height-rem-${attr.height.rem}`,
-                                            'height',
-                                            `${attr.height.rem}rem`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Content:
-                                return gatherAttrRecursive(
-                                    `${classes} ${cls.heightContent}`,
-                                    node,
-                                    Flag.add(
-                                        Flag.heightContent,
-                                        Flag.add(Flag.height, has)
-                                    ),
-                                    transform,
-                                    styles,
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            case Lengths.Fill:
-                                if (attr.height.i === 1) {
-                                    return gatherAttrRecursive(
-                                        `${classes} ${cls.heightFill}`,
-                                        node,
-                                        Flag.add(
-                                            Flag.heightFill,
-                                            Flag.add(Flag.height, has)
-                                        ),
-                                        transform,
-                                        styles,
-                                        attrs,
-                                        children,
-                                        elementAttrs.filter(
-                                            (attr_) => attr_.type !== attr.type
-                                        )
-                                    );
-                                }
-
-                                return gatherAttrRecursive(
-                                    `${classes} ${cls.heightFillPortion} height-fill-${attr.height.i}`,
-                                    node,
-                                    Flag.add(
-                                        Flag.heightFill,
-                                        Flag.add(Flag.height, has)
-                                    ),
-                                    transform,
-                                    [
-                                        Single(
-                                            `${cls.any}.${cls.row} > ${dot(
-                                                `height-fill-${attr.height.i}`
-                                            )}`,
-                                            'flex-grow',
-                                            `${attr.height.i * 100000}`
-                                        ),
-                                        ...styles,
-                                    ],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-
-                            default: {
-                                const [addToFlag, newClass, newStyles] =
-                                    renderHeight(attr.height);
-                                return gatherAttrRecursive(
-                                    `${classes} ${newClass}`,
-                                    node,
-                                    Flag.merge(
-                                        addToFlag,
-                                        Flag.add(Flag.width, has)
-                                    ),
-                                    transform,
-                                    [...newStyles, ...styles],
-                                    attrs,
-                                    children,
-                                    elementAttrs.filter(
-                                        (attr_) => attr_.type !== attr.type
-                                    )
-                                );
-                            }
-                        }
-
-                    case Attributes.Nearby:
-                        return gatherAttrRecursive(
-                            classes,
-                            node,
-                            has,
-                            transform,
-                            styles,
-                            attrs,
-                            addNearbyElement(
-                                attr.location,
-                                attr.element,
-                                children
+            switch (attribute_.height.type) {
+                case Lengths.Px:
+                    return gatherAttrRecursive(
+                        `${cls.heightExact} height-px-${attribute_.height.px} ${classes}`,
+                        node,
+                        Flag.add(Flag.height, has),
+                        transform,
+                        [
+                            Single(
+                                `height-px-${attribute_.height.px}`,
+                                'height',
+                                `${attribute_.height.px}px`
                             ),
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
+                    );
 
-                    case Attributes.TransformComponent:
-                        return gatherAttrRecursive(
-                            classes,
-                            node,
-                            Flag.add(attr.flag, has),
-                            composeTransformation(transform, attr.component),
-                            styles,
-                            attrs,
-                            children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
-                        );
+                case Lengths.Rem:
+                    return gatherAttrRecursive(
+                        `${cls.heightExact} height-rem-${attribute_.height.rem} ${classes}`,
+                        node,
+                        Flag.add(Flag.height, has),
+                        transform,
+                        [
+                            Single(
+                                `height-rem-${attribute_.height.rem}`,
+                                'height',
+                                `${attribute_.height.rem}rem`
+                            ),
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
+                    );
 
-                    case Attributes.Event:
+                case Lengths.Content:
+                    return gatherAttrRecursive(
+                        `${classes} ${cls.heightContent}`,
+                        node,
+                        Flag.add(
+                            Flag.heightContent,
+                            Flag.add(Flag.height, has)
+                        ),
+                        transform,
+                        styles,
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                case Lengths.Fill:
+                    if (attribute_.height.i === 1) {
                         return gatherAttrRecursive(
-                            classes,
+                            `${classes} ${cls.heightFill}`,
                             node,
-                            has,
+                            Flag.add(
+                                Flag.heightFill,
+                                Flag.add(Flag.height, has)
+                            ),
                             transform,
                             styles,
                             attrs,
                             children,
-                            elementAttrs.filter(
-                                (attr_) => attr_.type !== attr.type
-                            )
+                            remaining
                         );
+                    }
+
+                    return gatherAttrRecursive(
+                        `${classes} ${cls.heightFillPortion} height-fill-${attribute_.height.i}`,
+                        node,
+                        Flag.add(Flag.heightFill, Flag.add(Flag.height, has)),
+                        transform,
+                        [
+                            Single(
+                                `${cls.any}.${cls.row} > ${dot(
+                                    `height-fill-${attribute_.height.i}`
+                                )}`,
+                                'flex-grow',
+                                `${attribute_.height.i * 100000}`
+                            ),
+                            ...styles,
+                        ],
+                        attrs,
+                        children,
+                        remaining
+                    );
+
+                default: {
+                    const [addToFlag, newClass, newStyles] = renderHeight(
+                        attribute_.height
+                    );
+                    return gatherAttrRecursive(
+                        `${classes} ${newClass}`,
+                        node,
+                        Flag.merge(addToFlag, Flag.add(Flag.width, has)),
+                        transform,
+                        [...newStyles, ...styles],
+                        attrs,
+                        children,
+                        remaining
+                    );
                 }
             }
+
+        case Attributes.Nearby:
+            return gatherAttrRecursive(
+                classes,
+                node,
+                has,
+                transform,
+                styles,
+                attrs,
+                addNearbyElement(
+                    attribute_.location,
+                    attribute_.element,
+                    children
+                ),
+                remaining
+            );
+
+        case Attributes.TransformComponent:
+            return gatherAttrRecursive(
+                classes,
+                node,
+                Flag.add(attribute_.flag, has),
+                composeTransformation(transform, attribute_.component),
+                styles,
+                attrs,
+                children,
+                remaining
+            );
+
+        case Attributes.Event:
+            return gatherAttrRecursive(
+                classes,
+                node,
+                has,
+                transform,
+                styles,
+                attrs,
+                children,
+                remaining
+            );
     }
+
     return Gathered(
         node,
-        [attribute('class', classes), ...attributes(attrs)],
+        [attribute('class', classes), ...attrs],
         styles,
         children,
         has
@@ -1620,7 +1504,7 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
     }
 
     const el = domElement('div', [['class', classes_(location)]]);
-    el.append(child(element_));
+    el.appendChild(child(element_));
 
     return el;
 }
@@ -1828,13 +1712,13 @@ function contextClasses(context: LayoutContext) {
 
 const untransformed = Untransformed();
 
-function element(
+async function element(
     context: LayoutContext,
     node: NodeName,
     attributes: Attribute[],
     children: Children<Element>
-): Element {
-    return createElement(
+): Promise<Element> {
+    return await createElement(
         context,
         children,
         gatherAttrRecursive(
@@ -1850,11 +1734,11 @@ function element(
     );
 }
 
-function createElement(
+async function createElement(
     context: LayoutContext,
     children: Children<Element>,
     rendered: Gathered
-): Element {
+): Promise<Element> {
     function gather(
         child: Element,
         [htmls, existingStyles]: [Unkeyed<DOM.Node>, Style[]]
@@ -1993,43 +1877,24 @@ function createElement(
                     const newStyles: Style[] = isEmpty(gathered[1])
                         ? rendered.styles
                         : rendered.styles.concat(gathered[1]);
-                    switch (newStyles) {
-                        case []:
-                            return Unstyled(() =>
-                                finalizeNode(
-                                    rendered.has,
-                                    rendered.node,
-                                    rendered.attributes,
-                                    Keyed(
-                                        addKeyedChildren(
-                                            'nearby-element-pls',
-                                            gathered[0],
-                                            rendered.children
-                                        )
-                                    ),
-                                    NoStyleSheet(),
-                                    context
-                                )
-                            );
-
-                        default:
-                            return Styled(newStyles, () =>
-                                finalizeNode(
-                                    rendered.has,
-                                    rendered.node,
-                                    rendered.attributes,
-                                    Keyed(
-                                        addKeyedChildren(
-                                            'nearby-element-pls',
-                                            gathered[0],
-                                            rendered.children
-                                        )
-                                    ),
-                                    NoStyleSheet(),
-                                    context
-                                )
-                            );
+                    const node = await finalizeNode(
+                        rendered.has,
+                        rendered.node,
+                        rendered.attributes,
+                        Keyed(
+                            addKeyedChildren(
+                                'nearby-element-pls',
+                                gathered[0],
+                                rendered.children
+                            )
+                        ),
+                        NoStyleSheet(),
+                        context
+                    );
+                    if (isEmpty(newStyles)) {
+                        return Unstyled(() => node);
                     }
+                    return Styled(newStyles, () => node);
                 }
             }
         }
@@ -2046,41 +1911,18 @@ function createElement(
                     const newStyles: Style[] = isEmpty(gathered[1])
                         ? rendered.styles
                         : rendered.styles.concat(gathered[1]);
-                    switch (newStyles) {
-                        case []:
-                            return Unstyled(() =>
-                                finalizeNode(
-                                    rendered.has,
-                                    rendered.node,
-                                    rendered.attributes,
-                                    Unkeyed(
-                                        addChildren(
-                                            gathered[0],
-                                            rendered.children
-                                        )
-                                    ),
-                                    NoStyleSheet(),
-                                    context
-                                )
-                            );
-
-                        default:
-                            return Styled(newStyles, () =>
-                                finalizeNode(
-                                    rendered.has,
-                                    rendered.node,
-                                    rendered.attributes,
-                                    Unkeyed(
-                                        addChildren(
-                                            gathered[0],
-                                            rendered.children
-                                        )
-                                    ),
-                                    NoStyleSheet(),
-                                    context
-                                )
-                            );
+                    const node = await finalizeNode(
+                        rendered.has,
+                        rendered.node,
+                        rendered.attributes,
+                        Unkeyed(addChildren(gathered[0], rendered.children)),
+                        NoStyleSheet(),
+                        context
+                    );
+                    if (isEmpty(newStyles)) {
+                        return Unstyled(() => node);
                     }
+                    return Styled(newStyles, () => node);
                 }
             }
         }
@@ -2143,7 +1985,7 @@ function addKeyedChildren(
 
 const focusDefaultStyle = FocusStyle(
     Nothing(),
-    Just(Shadow(Rgba(155 / 255, 203 / 255, 1, 1, Notation.Rgba), [0, 0], 0, 3)),
+    Just(Shadow(rgba(155 / 255, 203 / 255, 1, 1), [0, 0], 0, 3)),
     Nothing()
 );
 
@@ -2153,8 +1995,8 @@ function staticRoot(options: OptionObject): DOM.Node {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             const div = domElement('div', []),
                 style = domElement('style', [], div);
-            style.append(new DOM.Text(rules()));
-            div.append(style);
+            style.innerHTML = rules();
+            div.appendChild(style);
             return div;
         }
 
@@ -2165,7 +2007,7 @@ function staticRoot(options: OptionObject): DOM.Node {
         case RenderMode.WithVirtualCss: {
             const staticRules = domElement('espectro-static-rules', []),
                 rules_ = attribute('rules', JSON.stringify(rules()));
-            staticRules.append(rules_);
+            staticRules.appendChild(rules_);
             return staticRules;
         }
     }
@@ -2426,7 +2268,7 @@ function textElement(type: TextElement, str: string): DOM.Element {
     }
 
     const element_ = domElement('div', [['class', classes_(type)]]);
-    element_.append(new DOM.Text(str));
+    element_.appendChild(new DOM.Text(str));
 
     return element_;
 }
@@ -2447,11 +2289,11 @@ function toHtml(mode: (a: Style[]) => EmbedStyle, element: Element): DOM.Node {
     }
 }
 
-function renderRoot(
+async function renderRoot(
     optionList: Option[],
     attributes: Attribute[],
     child: Element
-): DOM.Node {
+): Promise<DOM.Node> {
     const options: OptionObject = optionsToObject(optionList);
 
     function embedStyle(styles: Style[]): EmbedStyle {
@@ -2466,7 +2308,7 @@ function renderRoot(
 
     return toHtml(
         (a: Style[]) => embedStyle(a),
-        element(asEl, div, attributes, Unkeyed([child]))
+        await element(asEl, div, attributes, Unkeyed([child]))
     );
 }
 
@@ -2535,7 +2377,7 @@ function renderFontClassName(font: Font, current: string): string {
     }
 }
 
-function renderFocusStyle(focus: FocusStyle): Style[] {
+async function renderFocusStyle(focus: FocusStyle): Promise<Style[]> {
     function withDefault_(prop: Maybe<Property>) {
         return withDefault(Property('', ''), prop);
     }
@@ -2556,9 +2398,13 @@ function renderFocusStyle(focus: FocusStyle): Style[] {
                     );
                 }, focus.backgroundColor)
             ),
-            withDefault_(
-                map((shadow: Shadow): Property => {
-                    return Property('box-shadow', formatBoxShadow(shadow));
+            await withDefault(
+                new Promise<Property>((resolve, _reject) => {
+                    resolve(Property('', ''));
+                }),
+                map(async (shadow: Shadow): Promise<Property> => {
+                    const val = await formatBoxShadow(shadow);
+                    return Property('box-shadow', val);
                 }, focus.shadow)
             ),
             Property('outline', 'none'),
@@ -2586,15 +2432,18 @@ function renderFocusStyle(focus: FocusStyle): Style[] {
                         );
                     }, focus.backgroundColor)
                 ),
-                withDefault_(
-                    map((shadow: Shadow): Property => {
+                await withDefault(
+                    new Promise<Property>((resolve, _reject) => {
+                        resolve(Property('', ''));
+                    }),
+                    map(async (shadow: Shadow): Promise<Property> => {
                         if (shadow) {
-                            return Property(
-                                'box-shadow',
-                                formatBoxShadow(shadow)
-                            );
+                            const val = await formatBoxShadow(shadow);
+                            return Property('box-shadow', val);
                         }
-                        return Property('', '');
+                        return new Promise<Property>((resolve, _reject) => {
+                            resolve(Property('', ''));
+                        });
                     }, focus.shadow)
                 ),
                 Property('outline', 'none'),
@@ -2718,8 +2567,10 @@ function toStyleSheet(options: OptionObject, stylesheet: Style[]): DOM.Node {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             const div = domElement('div', []),
                 style = domElement('style', [], div);
-            style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
-            div.append(style);
+            style.appendChild(
+                new DOM.Text(toStyleSheetString(options, stylesheet))
+            );
+            div.appendChild(style);
             return div;
         }
 
@@ -2727,15 +2578,17 @@ function toStyleSheet(options: OptionObject, stylesheet: Style[]): DOM.Node {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             const div = domElement('div', []),
                 style = domElement('style', [], div);
-            style.append(new DOM.Text(toStyleSheetString(options, stylesheet)));
-            div.append(style);
+            style.appendChild(
+                new DOM.Text(toStyleSheetString(options, stylesheet))
+            );
+            div.appendChild(style);
             return div;
         }
 
         case RenderMode.WithVirtualCss: {
             const rules = domElement('espectro-rules', []),
                 rules_ = attribute('rules', encodeStyles(options, stylesheet));
-            rules.append(rules_);
+            rules.appendChild(rules_);
             return rules;
         }
     }
@@ -3305,36 +3158,26 @@ function renderStyleRule(
                         return x.rem.toString() + 'rem';
 
                     case Lengths.Content:
-                        switch ([minimum, maximum]) {
-                            case [Nothing(), Nothing()]:
-                                return 'max-content';
-
-                            case [minimum, Nothing()]:
-                                return `minmax(${minimum.toString()}px, max-content)`;
-
-                            case [Nothing(), maximum]:
-                                return `minmax(max-content, ${maximum.toString()}px)`;
-
-                            case [minimum, maximum]:
-                                return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
-                        }
+                        if (minimum === Nothing() && maximum === Nothing())
+                            return 'max-content';
+                        if (minimum !== Nothing() && maximum === Nothing())
+                            return `minmax(${minimum.toString()}px, max-content)`;
+                        if (minimum === Nothing() && maximum !== Nothing())
+                            return `minmax(max-content, ${maximum.toString()}px)`;
+                        if (minimum !== Nothing() && maximum !== Nothing())
+                            return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
                         break;
 
                     case Lengths.Fill:
-                        switch ([minimum, maximum]) {
-                            case [Nothing(), Nothing()]:
-                                return x.i.toString() + 'fr';
-
-                            case [minimum, Nothing()]:
-                                // TODO: Check frfr
-                                return `minmax(${minimum.toString()}px, ${x.i.toString()}frfr)`;
-
-                            case [Nothing(), maximum]:
-                                return `minmax(max-content, ${maximum.toString()}px)`;
-
-                            case [minimum, maximum]:
-                                return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
-                        }
+                        if (minimum === Nothing() && maximum === Nothing())
+                            return x.i.toString() + 'fr';
+                        if (minimum !== Nothing() && maximum === Nothing())
+                            // TODO: Check frfr
+                            return `minmax(${minimum.toString()}px, ${x.i.toString()}frfr)`;
+                        if (minimum === Nothing() && maximum !== Nothing())
+                            return `minmax(max-content, ${maximum.toString()}px)`;
+                        if (minimum !== Nothing() && maximum !== Nothing())
+                            return `minmax(${minimum.toString()}px, ${maximum.toString()}px)`;
                         break;
 
                     case Lengths.Min:
@@ -3430,22 +3273,13 @@ function renderStyleRule(
         case Styles.Transform: {
             const value: Maybe<string> = transformValue(rule.transform);
             const class_: Maybe<string> = transformClass(rule.transform);
-
-            switch ([class_, value]) {
-                case [class_, value]:
-                    if (
-                        typeof class_ === 'string' &&
-                        typeof value === 'string'
-                    ) {
-                        return renderStyle(options, pseudo, '.' + class_, [
-                            Property('transform', value),
-                        ]);
-                    }
-                    break;
-
-                default:
-                    return [];
-            }
+            const cls_: string = withDefault('', class_);
+            const v: string = withDefault('', value);
+            if (class_ !== Nothing() && value !== Nothing())
+                return renderStyle(options, pseudo, '.' + cls_, [
+                    Property('transform', v),
+                ]);
+            return [];
         }
     }
     return [];
@@ -3479,29 +3313,33 @@ function lengthClassName(x: Length): string {
     }
 }
 
-function formatDropShadow(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
+async function formatDropShadow(shadow: Shadow): Promise<string> {
+    const color: Hsla | Rgba = await shadow.color;
+    const [a, b, c, d, e] = Object.values(color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-function formatTextShadow(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
+async function formatTextShadow(shadow: Shadow): Promise<string> {
+    const color: Hsla | Rgba = await shadow.color;
+    const [a, b, c, d, e] = Object.values(color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-function textShadowClass(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
+async function textShadowClass(shadow: Shadow): Promise<string> {
+    const color: Hsla | Rgba = await shadow.color;
+    const [a, b, c, d, e] = Object.values(color);
     return `txt${floatClass(shadow.offset[0])}px${floatClass(
         shadow.offset[1]
     )}px${floatClass(shadow.blur)}px${formatColorClass(a, b, c, d, e)}`;
 }
 
-function formatBoxShadow(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
+async function formatBoxShadow(shadow: Shadow): Promise<string> {
+    const color: Hsla | Rgba = await shadow.color;
+    const [a, b, c, d, e] = Object.values(color);
     return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
         shadow.offset[1]
     }px ${floatClass(shadow.blur)}px ${floatClass(shadow.size)}px ${formatColor(
@@ -3513,8 +3351,9 @@ function formatBoxShadow(shadow: Shadow): string {
     )}`;
 }
 
-function boxShadowClass(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
+async function boxShadowClass(shadow: Shadow): Promise<string> {
+    const color: Hsla | Rgba = await shadow.color;
+    const [a, b, c, d, e] = Object.values(color);
     return `${shadow.inset ? 'box-inset' : 'box-'}${floatClass(
         shadow.offset[0]
     )}px${floatClass(shadow.offset[1])}px${floatClass(
@@ -3532,7 +3371,7 @@ function formatColor(
     b: number,
     c: number,
     d: number,
-    type: Notation = Notation.Hsla
+    type: Notation = Notation.Hsl
 ): string {
     switch (type) {
         case Notation.Hsl:
@@ -3562,28 +3401,28 @@ function formatColorClass(
     b: number,
     c: number,
     d: number,
-    type: Notation = Notation.Hsla
+    type: Notation = Notation.Hsl
 ): string {
     switch (type) {
         case Notation.Hsl:
             return `${a}-${b * 100}-${c * 100}`;
 
         case Notation.Hsla:
-            return `${a}-${b * 100}-${c * 100}-${d * 100})`;
+            return `${a}-${b * 100}-${c * 100}-${d * 100}`;
 
         case Notation.Rgb:
             return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}`;
 
         case Notation.Rgba:
-            return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}-${
-                d * 100
-            }`;
+            return `${floatClass(a)}-${floatClass(b)}-${floatClass(
+                c
+            )}-${floatClass(d)}`;
 
         case Notation.Rgb255:
-            return `${a}-${b}-${c})`;
+            return `${a}-${b}-${c}`;
 
         case Notation.Rgba255:
-            return `${a}-${b}-${c}-${d * 100})`;
+            return `${a}-${b}-${c}-${d * 100}`;
     }
 }
 

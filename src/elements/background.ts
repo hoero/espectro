@@ -20,6 +20,7 @@ import {
 } from '../internal/data.ts';
 import * as Flag from '../internal/flag.ts';
 import * as Internal from '../internal/model.ts';
+import { isEmpty } from '../utils/utils.ts';
 import { style } from './attributes.ts';
 
 /**
@@ -27,8 +28,11 @@ import { style } from './attributes.ts';
  * @param clr
  * @returns
  */
-function color(backgroundColor: Promise<Hsla | Rgba>): Attribute {
-    const [a, b, c, d, e] = Object.values(backgroundColor);
+async function color(
+    backgroundColor: Promise<Hsla | Rgba>
+): Promise<Attribute> {
+    const val = await backgroundColor;
+    const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
         Flag.bgColor,
         Colored(
@@ -84,38 +88,36 @@ function tiledY(src: string): Attribute {
     return style('background', `url('${src}') repeat-y`);
 }
 
-function gradient(angle: number, steps: Promise<Hsla | Rgba>[]): Attribute {
-    switch (steps) {
-        case []:
-            return NoAttribute();
-
-        case [steps[0]]:
-            return color(steps[0]);
-
-        default:
-            return StyleClass(
-                Flag.bgGradient,
-                Single(
-                    `bg-grad-${[Internal.floatClass(angle)]
-                        .concat(
-                            steps.map((clr: Promise<Hsla | Rgba>) => {
-                                const [a, b, c, d, e] = Object.values(clr);
-                                return Internal.formatColorClass(a, b, c, d, e);
-                            })
-                        )
-                        .join('-')}`,
-                    'background-image',
-                    `linear-gradient(${[angle + 'rad']
-                        .concat(
-                            steps.map((clr: Promise<Hsla | Rgba>) => {
-                                const [a, b, c, d, e] = Object.values(clr);
-                                return Internal.formatColor(a, b, c, d, e);
-                            })
-                        )
-                        .join(', ')}`
-                )
-            );
-    }
+async function gradient(
+    angle: number,
+    steps: Promise<Hsla | Rgba>[]
+): Promise<Attribute> {
+    if (isEmpty(steps)) return NoAttribute();
+    if (steps.length === 1) return await color(steps[0]);
+    const [stepsCls] = steps.map(async (clr: Promise<Hsla | Rgba>) => {
+        const val = await clr;
+        const [a, b, c, d, e] = Object.values(val);
+        return Internal.formatColorClass(a, b, c, d, e);
+    });
+    const [stepsColor] = steps.map(async (clr: Promise<Hsla | Rgba>) => {
+        const val = await clr;
+        const [a, b, c, d, e] = Object.values(val);
+        return Internal.formatColor(a, b, c, d, e);
+    });
+    return (async () => {
+        return StyleClass(
+            Flag.bgGradient,
+            Single(
+                `bg-grad-${[Internal.floatClass(angle)]
+                    .concat(await stepsCls)
+                    .join('-')}`,
+                'background-image',
+                `linear-gradient(${[angle + 'rad']
+                    .concat(await stepsColor)
+                    .join(', ')}`
+            )
+        );
+    })();
 }
 
 export { color, gradient, image, uncropped, tiled, tiledX, tiledY };

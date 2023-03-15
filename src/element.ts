@@ -182,8 +182,7 @@ You'll also need to retrieve the initial window size. You can either use [`Brows
 
 @docs html, htmlAttribute
 */
-import { DOM } from '../deps.ts';
-import { elmish } from '../deps.ts';
+import { DOM, elmish } from '../deps.ts';
 import {
     Length,
     Px,
@@ -489,16 +488,19 @@ function fillPortion(value: number): Length {
 }
 
 // This is your top level node where you can turn `Element` into `Html`.
-function layout(attributes: Attribute[], child: Element): DOM.Node {
-    return layoutWith([], attributes, child);
+async function layout(
+    attributes: Attribute[],
+    child: Element
+): Promise<DOM.Node> {
+    return await layoutWith([], attributes, child);
 }
 
-function layoutWith(
+async function layoutWith(
     options: Option[],
     attributes: Attribute[],
     child: Element
-): DOM.Node {
-    return Internal.renderRoot(
+): Promise<DOM.Node> {
+    return await Internal.renderRoot(
         options,
         [
             Internal.htmlClass(
@@ -544,8 +546,8 @@ If you want multiple children, you'll need to use something like `row` or `colum
             ]
             (Element.text "You've made a stylish element!")
  */
-function el(attributes: Attribute[], child: Element): Element {
-    return Internal.element(
+async function el(attributes: Attribute[], child: Element): Promise<Element> {
+    return await Internal.element(
         asEl,
         Internal.div,
         [width(shrink), height(shrink), ...attributes],
@@ -553,8 +555,11 @@ function el(attributes: Attribute[], child: Element): Element {
     );
 }
 
-function row(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function row(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asRow,
         Internal.div,
         [
@@ -569,8 +574,11 @@ function row(attributes: Attribute[], children: Element[]): Element {
     );
 }
 
-function column(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function column(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asColumn,
         Internal.div,
         [
@@ -584,13 +592,16 @@ function column(attributes: Attribute[], children: Element[]): Element {
 }
 
 // Same as `row`, but will wrap if it takes up too much horizontal space.
-function wrappedRow(attributes: Attribute[], children: Element[]): Element {
+async function wrappedRow(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
     const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
         Internal.extractSpacingAndPadding(attributes);
 
     switch (spaced) {
         case Nothing():
-            return Internal.element(
+            return await Internal.element(
                 asRow,
                 Internal.div,
                 [
@@ -653,12 +664,12 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                     // Not enough space in padding to compensate for spacing
                     const halfX = (x / 2) * -1,
                         halfY = (y / 2) * -1;
-                    return Internal.element(
+                    return await Internal.element(
                         asEl,
                         Internal.div,
                         attributes,
                         Unkeyed([
-                            Internal.element(
+                            await Internal.element(
                                 asRow,
                                 Internal.div,
                                 [
@@ -697,7 +708,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                         StyleClass(Flag.padding, PaddingStyle('', 0, 0, 0, 0)),
                         newPadding
                     );
-                    return Internal.element(
+                    return await Internal.element(
                         asRow,
                         Internal.div,
                         [
@@ -773,14 +784,14 @@ We could render it using
 
 **Note:** Sometimes you might not have a list of records directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of records before feeding it into `Element.table`.
  */
-function table(
+async function table(
     attributes: Attribute[],
     config: {
         data: Record<string, unknown>[];
         columns: Column<Record<string, unknown>>[];
     }
-): Element {
-    return tableHelper(attributes, {
+): Promise<Element> {
+    return await tableHelper(attributes, {
         data: config.data,
         columns: config.columns.map(InternalColumn),
     });
@@ -789,33 +800,33 @@ function table(
 /** TODO:
  * Same as `Element.table` except the `view` for each column will also receive the row index as well as the record.
  */
-function indexedTable(
+async function indexedTable(
     attributes: Attribute[],
     config: {
         data: Record<string, unknown>[];
         columns: IndexedColumn<Record<string, unknown>>[];
     }
-): Element {
-    return tableHelper(attributes, {
+): Promise<Element> {
+    return await tableHelper(attributes, {
         data: config.data,
         columns: config.columns.map(InternalIndexedColumn),
     });
 }
 
-function tableHelper(
+async function tableHelper(
     attributes: Attribute[],
     config: InternalTable<Record<string, unknown>>
-): Element {
+): Promise<Element> {
     const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
 
-    const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
-        return headers.every((value: Element) => value === Empty())
+    const maybeHeaders: Maybe<Promise<Element>> = ((headers: Element[]) => {
+        const [headers_] = headers.map(
+            async (header: Element, col: number) =>
+                await onGrid(1, col + 1, header)
+        );
+        return headers.some((value: Element) => value === Empty())
             ? Nothing()
-            : Just(
-                  headers.map((header: Element, col: number) =>
-                      onGrid(1, col + 1, header)
-                  )
-              );
+            : Just(headers_);
     })(config.columns.map(columnHeader));
 
     const template: Attribute = StyleClass(
@@ -827,18 +838,33 @@ function tableHelper(
         )
     );
 
-    const children: { elements: Element[]; column: number; row: number } =
-        config.data.reduce(
-            (
-                acc: { elements: Element[]; column: number; row: number },
-                data: Record<string, unknown>
-            ) => build(config.columns, data, acc),
-            {
+    const children: Promise<{
+        elements: Element[];
+        column: number;
+        row: number;
+    }> = config.data.reduce(
+        async (
+            acc: Promise<{
+                elements: Element[];
+                column: number;
+                row: number;
+            }>,
+            data: Record<string, unknown>
+        ) => await build(config.columns, data, acc),
+        new Promise<{
+            elements: Element[];
+            column: number;
+            row: number;
+        }>((resolve, _reject) => {
+            resolve({
                 elements: [],
                 row: maybeHeaders === Nothing() ? 1 : 2,
                 column: 1,
-            }
-        );
+            });
+        })
+    );
+
+    const children_ = await children;
 
     function columnHeader(col: InternalTableColumn): Element {
         switch (col.type) {
@@ -860,12 +886,12 @@ function tableHelper(
         }
     }
 
-    function onGrid(
+    async function onGrid(
         rowLevel: number,
         columnLevel: number,
         elem: Element
-    ): Element {
-        return Internal.element(
+    ): Promise<Element> {
+        return await Internal.element(
             asEl,
             Internal.div,
             [
@@ -878,84 +904,106 @@ function tableHelper(
         );
     }
 
-    function add(
+    async function add(
         cell: Record<string, unknown>,
         columnConfig: InternalTableColumn,
-        cursor: { elements: Element[]; row: number; column: number }
-    ): { elements: Element[]; row: number; column: number } {
+        cursor: Promise<{ elements: Element[]; row: number; column: number }>
+    ): Promise<{ elements: Element[]; row: number; column: number }> {
+        const cursor_ = await cursor;
         switch (columnConfig.type) {
             case InternalTableColumns.InternalIndexedColumn: {
-                cursor.elements = [
-                    onGrid(
-                        cursor.row,
-                        cursor.column,
+                cursor_.elements = [
+                    await onGrid(
+                        cursor_.row,
+                        cursor_.column,
                         columnConfig.column.view(
                             maybeHeaders === Nothing()
-                                ? cursor.row - 1
-                                : cursor.row - 2,
+                                ? cursor_.row - 1
+                                : cursor_.row - 2,
                             cell
                         )
                     ),
-                    ...cursor.elements,
+                    ...cursor_.elements,
                 ];
-                cursor.column = cursor.column + 1;
+                cursor_.column = cursor_.column + 1;
                 return cursor;
             }
 
             case InternalTableColumns.InternalColumn:
                 return {
                     elements: [
-                        onGrid(
-                            cursor.row,
-                            cursor.column,
+                        await onGrid(
+                            cursor_.row,
+                            cursor_.column,
                             columnConfig.column.view(cell)
                         ),
-                        ...cursor.elements,
+                        ...cursor_.elements,
                     ],
-                    row: cursor.row,
-                    column: cursor.column + 1,
+                    row: cursor_.row,
+                    column: cursor_.column + 1,
                 };
         }
     }
 
-    function build(
+    async function build(
         columns: InternalTableColumn[],
         rowData: Record<string, unknown>,
-        cursor: { elements: Element[]; row: number; column: number }
-    ): { elements: Element[]; column: number; row: number } {
-        const newCursor: { elements: Element[]; column: number; row: number } =
-            columns.reduce(
-                (
-                    acc: { elements: Element[]; column: number; row: number },
-                    column: InternalTableColumn
-                ) => add(rowData, column, acc),
-                cursor
-            );
+        cursor: Promise<{
+            elements: Element[];
+            column: number;
+            row: number;
+        }>
+    ): Promise<{
+        elements: Element[];
+        column: number;
+        row: number;
+    }> {
+        const newCursor: Promise<{
+            elements: Element[];
+            column: number;
+            row: number;
+        }> = columns.reduce(
+            async (
+                acc: Promise<{
+                    elements: Element[];
+                    column: number;
+                    row: number;
+                }>,
+                column: InternalTableColumn
+            ) => await add(rowData, column, acc),
+            cursor
+        );
+        const cursor_ = await cursor;
+        const newCursor_ = await newCursor;
+
         return {
-            elements: newCursor.elements,
-            row: cursor.row + 1,
+            elements: newCursor_.elements,
+            row: cursor_.row + 1,
             column: 1,
         };
     }
 
-    return Internal.element(
+    return await Internal.element(
         asGrid,
         Internal.div,
         [width(fill), template, ...attributes],
         Unkeyed(
-            (() => {
+            await (async () => {
+                const renderedHeaders = await withDefault(
+                    new Promise<Element>((resolve, _reject) => {
+                        resolve(Empty());
+                    }),
+                    maybeHeaders
+                );
                 switch (maybeHeaders) {
                     case Nothing():
-                        return children.elements;
+                        return children_.elements;
 
                     default: {
-                        const renderedHeaders: Element[] = withDefault(
-                            [],
-                            maybeHeaders
-                        );
-                        return renderedHeaders.concat(
-                            children.elements.reverse()
-                        );
+                        return [
+                            renderedHeaders,
+                            ...children_.elements.reverse(),
+                        ];
                     }
                 }
             })()
@@ -1002,8 +1050,11 @@ Which will look something like
 **Note** `spacing` on a paragraph will set the pixel spacing between lines.
 
  */
-function paragraph(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function paragraph(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asParagraph,
         Internal.div,
         [Describe(Paragraph()), width(fill), spacing(5), ...attributes],
@@ -1030,8 +1081,11 @@ Which will result in something like:
 
 ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
  */
-function textColumn(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function textColumn(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asTextColumn,
         Internal.div,
         [width(maximum(750, minimum(500, fill))), ...attributes],
@@ -1048,10 +1102,10 @@ Leaving the description blank will cause the image to be ignored by assistive te
 
 So, take a moment to describe your image as you would to someone who has a harder time seeing.
  */
-function image(
+async function image(
     attributes: Attribute[],
     { src, description }: { src: string; description: string }
-): Element {
+): Promise<Element> {
     const imageAttributes: Attribute[] = attributes.filter((a: Attribute) => {
         switch (a.type) {
             case Attributes.Width:
@@ -1064,12 +1118,12 @@ function image(
                 return false;
         }
     });
-    return Internal.element(
+    return await Internal.element(
         asEl,
         Internal.div,
         [Internal.htmlClass(classes.imageContainer), ...attributes],
         Unkeyed([
-            Internal.element(
+            await Internal.element(
                 asEl,
                 NodeName('img'),
                 [
@@ -1089,11 +1143,11 @@ function image(
         , label = text "A link to my favorite fruit provider."
         }
  */
-function link(
+async function link(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
-): Element {
-    return linkCore(attributes, { url, label });
+): Promise<Element> {
+    return await linkCore(attributes, { url, label });
 }
 
 /**TODO:
@@ -1102,21 +1156,24 @@ function link(
  * @param param1
  * @returns
  */
-function newTabLink(
+async function newTabLink(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
-): Element {
-    return linkCore([Attr(attribute('target', '_blank')), ...attributes], {
-        url,
-        label,
-    });
+): Promise<Element> {
+    return await linkCore(
+        [Attr(attribute('target', '_blank')), ...attributes],
+        {
+            url,
+            label,
+        }
+    );
 }
 
-function linkCore(
+async function linkCore(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
-): Element {
-    return Internal.element(
+): Promise<Element> {
+    return await Internal.element(
         asEl,
         NodeName('a'),
         [
@@ -1139,11 +1196,11 @@ function linkCore(
  * @param param1
  * @returns
  */
-function download(
+async function download(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
-): Element {
-    return downloadCore(attributes, { url, filename: '', label });
+): Promise<Element> {
+    return await downloadCore(attributes, { url, filename: '', label });
 }
 
 /**TODO:
@@ -1152,18 +1209,18 @@ function download(
  * @param param1
  * @returns
  */
-function downloadAs(
+async function downloadAs(
     attributes: Attribute[],
     { label, filename, url }: { label: Element; filename: string; url: string }
-): Element {
-    return downloadCore(attributes, { url, filename, label });
+): Promise<Element> {
+    return await downloadCore(attributes, { url, filename, label });
 }
 
-function downloadCore(
+async function downloadCore(
     attributes: Attribute[],
     { url, filename, label }: { url: string; filename: string; label: Element }
-): Element {
-    return Internal.element(
+): Promise<Element> {
+    return await Internal.element(
         asEl,
         NodeName('a'),
         [

@@ -1,4 +1,4 @@
-import { range } from '../utils/utils.ts';
+import { isEmpty, range } from '../utils/utils.ts';
 
 interface Class {
     name: string;
@@ -494,294 +494,6 @@ const _single = {
     textRight: 'text-right',
     textLeft: 'text-left',
 };
-
-function selfName(desc: SelfDescriptor): string {
-    switch (desc.align) {
-        case Alignment.Top:
-            return dot(classes.alignTop);
-
-        case Alignment.Bottom:
-            return dot(classes.alignBottom);
-
-        case Alignment.Left:
-            return dot(classes.alignLeft);
-
-        case Alignment.Right:
-            return dot(classes.alignRight);
-
-        case Alignment.CenterX:
-            return dot(classes.alignCenterX);
-
-        case Alignment.CenterY:
-            return dot(classes.alignCenterY);
-    }
-}
-
-function contentName(desc: ContentDescriptor): string {
-    switch (desc.align) {
-        case Alignment.Top:
-            return dot(classes.contentTop);
-
-        case Alignment.Bottom:
-            return dot(classes.contentBottom);
-
-        case Alignment.Left:
-            return dot(classes.contentLeft);
-
-        case Alignment.Right:
-            return dot(classes.contentRight);
-
-        case Alignment.CenterX:
-            return dot(classes.contentCenterX);
-
-        case Alignment.CenterY:
-            return dot(classes.contentCenterY);
-    }
-}
-
-function describeAlignment(
-    values: (alignment: Alignment) => [Rule[], Rule[]]
-): Batch {
-    function createDescription(alignment: Alignment): Rule[] {
-        const [content, indiv] = values(alignment);
-        return [
-            Descriptor(contentName({ align: alignment }), content),
-            Child(dot(classes.any), [
-                Descriptor(selfName({ align: alignment }), indiv),
-            ]),
-        ];
-    }
-    return Batch(
-        alignments.flatMap((value: Alignment) => createDescription(value))
-    );
-}
-
-function gridAlignment(values: (alignment: Alignment) => Rule[]): Batch {
-    function createDescription(alignment: Alignment): Rule[] {
-        return [
-            Child(dot(classes.any), [
-                Descriptor(selfName({ align: alignment }), values(alignment)),
-            ]),
-        ];
-    }
-    return Batch(
-        alignments.flatMap((value: Alignment) => createDescription(value))
-    );
-}
-
-function emptyIntermediate(selector: string, closing: string): Intermediate {
-    return Intermediate(selector, [], closing, []);
-}
-
-function renderRules(
-    parent: Intermediate,
-    rulesToRender: Rule[]
-): Intermediate {
-    function generateIntermediates(
-        rule: Rule,
-        rendered: Intermediate
-    ): Intermediate {
-        switch (rule.type) {
-            case Rules.Prop: {
-                rendered.props = [[rule.key, rule.value], ...rendered.props];
-                return rendered;
-            }
-
-            case Rules.Supports: {
-                rendered.others = [
-                    Intermediate(
-                        `@supports (${rule.support[0]}:${rule.support[1]}) {${parent.selector}`,
-                        rule.props,
-                        `\n}`,
-                        []
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-
-            case Rules.Adjacent: {
-                rendered.others = [
-                    renderRules(
-                        emptyIntermediate(
-                            parent.selector + ' + ' + rule.selector,
-                            ''
-                        ),
-                        rule.rules
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-
-            case Rules.Child: {
-                rendered.others = [
-                    renderRules(
-                        emptyIntermediate(
-                            parent.selector + ' > ' + rule.child,
-                            ''
-                        ),
-                        rule.rules
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-
-            case Rules.AllChildren: {
-                rendered.others = [
-                    renderRules(
-                        emptyIntermediate(
-                            parent.selector + ' ' + rule.child,
-                            ''
-                        ),
-                        rule.rules
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-
-            case Rules.Descriptor: {
-                rendered.others = [
-                    renderRules(
-                        emptyIntermediate(
-                            parent.selector + rule.descriptor,
-                            ''
-                        ),
-                        rule.rules
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-
-            case Rules.Batch: {
-                rendered.others = [
-                    renderRules(
-                        emptyIntermediate(parent.selector, ''),
-                        rule.batched
-                    ),
-                    ...rendered.others,
-                ];
-                return rendered;
-            }
-        }
-    }
-    return rulesToRender.reduceRight(
-        (_acc: Intermediate, rule: Rule): Intermediate =>
-            generateIntermediates(rule, parent),
-        Intermediate('', [], '', [])
-    );
-}
-
-function _render(classNames: Class[]): string {
-    function renderValues(values: [string, string][]): string {
-        return values.map(([x, y]) => ` ${x}: ${y};`).join('\n');
-    }
-
-    function renderClass(rule: Intermediate): string {
-        switch (rule.props) {
-            case []:
-                return '';
-
-            default:
-                return `${rule.selector} {\n${renderValues(rule.props)}${
-                    rule.closing
-                }\n}`;
-        }
-    }
-
-    function renderIntermediate(rule: Intermediate): string {
-        return (
-            renderClass(rule) +
-            rule.others
-                .map((value: Intermediate): string => renderIntermediate(value))
-                .join('\n')
-        );
-    }
-
-    return classNames
-        .reduceRight(
-            (existing: Intermediate[], Class: Class): Intermediate[] => [
-                renderRules(emptyIntermediate(Class.name, ''), Class.rules),
-                ...existing,
-            ],
-            []
-        )
-        .map((rule: Intermediate) => renderIntermediate(rule))
-        .join('\n');
-}
-
-function renderCompact(classNames: Class[]): string {
-    function renderValues(values: [string, string][]): string {
-        return values.map(([x, y]) => ` ${x}: ${y};`).join('');
-    }
-
-    function renderClass(rule: Intermediate): string {
-        switch (rule.props) {
-            case []:
-                return '';
-
-            default:
-                return `${rule.selector}{${renderValues(rule.props)}${
-                    rule.closing
-                }}`;
-        }
-    }
-
-    function renderIntermediate(rule: Intermediate): string {
-        return (
-            renderClass(rule) +
-            rule.others
-                .map((value: Intermediate): string => renderIntermediate(value))
-                .join('')
-        );
-    }
-
-    return classNames
-        .reduceRight(
-            (existing: Intermediate[], Class: Class): Intermediate[] => [
-                renderRules(emptyIntermediate(Class.name, ''), Class.rules),
-                ...existing,
-            ],
-            []
-        )
-        .map((rule: Intermediate) => renderIntermediate(rule))
-        .join('');
-}
-
-const _viewportRules = `html, body {\n
-    height: 100%;\n
-    width: 100%;\n
-}\n${rules()}`;
-
-function _describeText(cls: string, props: Rule[]): Rule {
-    return Descriptor(
-        cls,
-        props
-            .map((rule: Rule) => makeImportant(rule))
-            .concat([
-                Child('.text', props),
-                Child('.el', props),
-                Child('.el > .text', props),
-            ])
-    );
-}
-
-function makeImportant(rule: Rule): Rule {
-    switch (rule.type) {
-        case Rules.Prop:
-            return Prop(rule.key, rule.value + ' !important');
-
-        default:
-            return rule;
-    }
-}
-
-function dot(c: string): string {
-    return `.${c}`;
-}
 
 const inputTextReset = `\n
 input[type="search"],
@@ -1729,6 +1441,282 @@ const commonValues: Class[] = [
     fontVariant('frac'),
 ].flat();
 
+// For some reason this gives an error with the function syntax
+const rules = (): string => {
+    return overrides + renderCompact(baseSheet.concat(commonValues));
+};
+
+function selfName(desc: SelfDescriptor): string {
+    switch (desc.align) {
+        case Alignment.Top:
+            return dot(classes.alignTop);
+
+        case Alignment.Bottom:
+            return dot(classes.alignBottom);
+
+        case Alignment.Left:
+            return dot(classes.alignLeft);
+
+        case Alignment.Right:
+            return dot(classes.alignRight);
+
+        case Alignment.CenterX:
+            return dot(classes.alignCenterX);
+
+        case Alignment.CenterY:
+            return dot(classes.alignCenterY);
+    }
+}
+
+function contentName(desc: ContentDescriptor): string {
+    switch (desc.align) {
+        case Alignment.Top:
+            return dot(classes.contentTop);
+
+        case Alignment.Bottom:
+            return dot(classes.contentBottom);
+
+        case Alignment.Left:
+            return dot(classes.contentLeft);
+
+        case Alignment.Right:
+            return dot(classes.contentRight);
+
+        case Alignment.CenterX:
+            return dot(classes.contentCenterX);
+
+        case Alignment.CenterY:
+            return dot(classes.contentCenterY);
+    }
+}
+
+function describeAlignment(
+    values: (alignment: Alignment) => [Rule[], Rule[]]
+): Batch {
+    function createDescription(alignment: Alignment): Rule[] {
+        const [content, indiv] = values(alignment);
+        return [
+            Descriptor(contentName({ align: alignment }), content),
+            Child(dot(classes.any), [
+                Descriptor(selfName({ align: alignment }), indiv),
+            ]),
+        ];
+    }
+    return Batch(
+        alignments.flatMap((value: Alignment) => createDescription(value))
+    );
+}
+
+function gridAlignment(values: (alignment: Alignment) => Rule[]): Batch {
+    function createDescription(alignment: Alignment): Rule[] {
+        return [
+            Child(dot(classes.any), [
+                Descriptor(selfName({ align: alignment }), values(alignment)),
+            ]),
+        ];
+    }
+    return Batch(
+        alignments.flatMap((value: Alignment) => createDescription(value))
+    );
+}
+
+function emptyIntermediate(selector: string, closing: string): Intermediate {
+    return Intermediate(selector, [], closing, []);
+}
+
+function renderRules(
+    parent: Intermediate,
+    rulesToRender: Rule[]
+): Intermediate {
+    function generateIntermediates(
+        rule: Rule,
+        rendered: Intermediate
+    ): Intermediate {
+        switch (rule.type) {
+            case Rules.Prop: {
+                rendered.props = [[rule.key, rule.value], ...rendered.props];
+                return rendered;
+            }
+
+            case Rules.Supports: {
+                rendered.others = [
+                    Intermediate(
+                        `@supports (${rule.support[0]}:${rule.support[1]}) {${parent.selector}`,
+                        rule.props,
+                        `\n}`,
+                        []
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+
+            case Rules.Adjacent: {
+                rendered.others = [
+                    renderRules(
+                        emptyIntermediate(
+                            parent.selector + ' + ' + rule.selector,
+                            ''
+                        ),
+                        rule.rules
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+
+            case Rules.Child: {
+                rendered.others = [
+                    renderRules(
+                        emptyIntermediate(
+                            parent.selector + ' > ' + rule.child,
+                            ''
+                        ),
+                        rule.rules
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+
+            case Rules.AllChildren: {
+                rendered.others = [
+                    renderRules(
+                        emptyIntermediate(
+                            parent.selector + ' ' + rule.child,
+                            ''
+                        ),
+                        rule.rules
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+
+            case Rules.Descriptor: {
+                rendered.others = [
+                    renderRules(
+                        emptyIntermediate(
+                            parent.selector + rule.descriptor,
+                            ''
+                        ),
+                        rule.rules
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+
+            case Rules.Batch: {
+                rendered.others = [
+                    renderRules(
+                        emptyIntermediate(parent.selector, ''),
+                        rule.batched
+                    ),
+                    ...rendered.others,
+                ];
+                return rendered;
+            }
+        }
+    }
+    return rulesToRender.reduceRight(
+        (_acc: Intermediate, rule: Rule): Intermediate =>
+            generateIntermediates(rule, parent),
+        Intermediate('', [], '', [])
+    );
+}
+
+function _render(classNames: Class[]): string {
+    function renderValues(values: [string, string][]): string {
+        return values.map(([x, y]) => ` ${x}: ${y};`).join('\n');
+    }
+
+    function renderClass(rule: Intermediate): string {
+        if (isEmpty(rule.props)) return '';
+        return `${rule.selector} {\n${renderValues(rule.props)}${
+            rule.closing
+        }\n}`;
+    }
+
+    function renderIntermediate(rule: Intermediate): string {
+        return (
+            renderClass(rule) +
+            rule.others
+                .map((value: Intermediate): string => renderIntermediate(value))
+                .join('\n')
+        );
+    }
+
+    return classNames
+        .reduceRight(
+            (existing: Intermediate[], Class: Class): Intermediate[] => [
+                renderRules(emptyIntermediate(Class.name, ''), Class.rules),
+                ...existing,
+            ],
+            []
+        )
+        .map((rule: Intermediate) => renderIntermediate(rule))
+        .join('\n');
+}
+
+function renderCompact(classNames: Class[]): string {
+    function renderValues(values: [string, string][]): string {
+        return values.map(([x, y]) => ` ${x}: ${y};`).join('');
+    }
+
+    function renderClass(rule: Intermediate): string {
+        if (isEmpty(rule.props)) return '';
+        return `${rule.selector}{${renderValues(rule.props)}${rule.closing}}`;
+    }
+
+    function renderIntermediate(rule: Intermediate): string {
+        return (
+            renderClass(rule) +
+            rule.others
+                .map((value: Intermediate): string => renderIntermediate(value))
+                .join('')
+        );
+    }
+
+    return classNames
+        .reduceRight(
+            (existing: Intermediate[], Class: Class): Intermediate[] => [
+                renderRules(emptyIntermediate(Class.name, ''), Class.rules),
+                ...existing,
+            ],
+            []
+        )
+        .map((rule: Intermediate) => renderIntermediate(rule))
+        .join('');
+}
+
+function _describeText(cls: string, props: Rule[]): Rule {
+    return Descriptor(
+        cls,
+        props
+            .map((rule: Rule) => makeImportant(rule))
+            .concat([
+                Child('.text', props),
+                Child('.el', props),
+                Child('.el > .text', props),
+            ])
+    );
+}
+
+function makeImportant(rule: Rule): Rule {
+    switch (rule.type) {
+        case Rules.Prop:
+            return Prop(rule.key, rule.value + ' !important');
+
+        default:
+            return rule;
+    }
+}
+
+function dot(c: string): string {
+    return `.${c}`;
+}
+
 function fontVariant(variant: string): Class[] {
     return [
         Class(`.v-${variant}`, [Prop('font-feature-settings', `"${variant}"`)]),
@@ -1736,10 +1724,6 @@ function fontVariant(variant: string): Class[] {
             Prop('font-feature-settings', `"${variant}" 0`),
         ]),
     ];
-}
-
-function rules(): string {
-    return overrides + renderCompact(baseSheet.concat(commonValues));
 }
 
 export { classes, dot, rules };

@@ -1,5 +1,4 @@
-import { DOM } from '../../deps.ts';
-import { elmish } from '../../deps.ts';
+import { DOM, elmish } from '../../deps.ts';
 import { EventHandler } from '../dom/event.ts';
 import { Flag_, Second, Field } from './flag.ts';
 
@@ -1104,7 +1103,7 @@ export interface Hsla {
     saturation: number;
     lightness: number;
     alpha: number;
-    type?: Notation.Hsl | Notation.Hsla;
+    type: Notation.Hsl | Notation.Hsla;
 }
 
 export function Hsla(
@@ -1112,7 +1111,7 @@ export function Hsla(
     saturation: number,
     lightness: number,
     alpha: number,
-    type?: Notation.Hsl | Notation.Hsla
+    type: Notation.Hsl | Notation.Hsla
 ): Hsla {
     return { hue, saturation, lightness, alpha, type };
 }
@@ -1122,7 +1121,7 @@ export interface Rgba {
     green: number;
     blue: number;
     alpha: number;
-    type?: Notation.Rgb | Notation.Rgba | Notation.Rgb255 | Notation.Rgba255;
+    type: Notation.Rgb | Notation.Rgba | Notation.Rgb255 | Notation.Rgba255;
 }
 
 export function Rgba(
@@ -1130,7 +1129,7 @@ export function Rgba(
     green: number,
     blue: number,
     alpha: number,
-    type?: Notation.Rgb | Notation.Rgba | Notation.Rgb255 | Notation.Rgba255
+    type: Notation.Rgb | Notation.Rgba | Notation.Rgb255 | Notation.Rgba255
 ): Rgba {
     return { red, green, blue, alpha, type };
 }
@@ -1416,7 +1415,7 @@ export function FocusStyle(
 }
 
 export interface Shadow {
-    color: Hsla | Rgba | Promise<Hsla | Rgba>;
+    color: Promise<Hsla | Rgba>;
     offset: [number, number];
     inset?: boolean;
     blur: number;
@@ -1424,7 +1423,7 @@ export interface Shadow {
 }
 
 export function Shadow(
-    color: Hsla | Rgba | Promise<Hsla | Rgba>,
+    color: Promise<Hsla | Rgba>,
     offset: [number, number],
     blur: number,
     size: number,

@@ -225,7 +225,6 @@ import {
     Rgba,
     Length,
     Px,
-    Fill,
     Rem,
     Property,
     StyleClass,
@@ -236,6 +235,8 @@ import {
     asParagraph,
     Class,
     asRow,
+    MinContent,
+    Empty,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
 import * as Internal from '../internal/model.ts';
@@ -262,6 +263,7 @@ import {
     type,
     value,
 } from './attributes.ts';
+import { isEmpty } from '../utils/utils.ts';
 
 const { Just, Nothing, map, withDefault } = elmish.Maybe;
 
@@ -377,10 +379,13 @@ enum OptionState {
 
 interface Option_ {
     value: any;
-    view: (x: OptionState) => Element;
+    view: (x: OptionState) => Promise<Element>;
 }
 
-function Option(value: any, view: (x: OptionState) => Element): Option {
+function Option(
+    value: any,
+    view: (x: OptionState) => Promise<Element>
+): Option {
     return { value, view };
 }
 
@@ -407,8 +412,8 @@ const defaultThumb: Thumb = Thumb([
     height(px(16)),
     Border.rounded(8),
     Border.width(1),
-    Border.color(hsl(0, 0, 0.5)),
-    Background.color(white),
+    await Border.color(hsl(0, 0, 0.5)),
+    await Background.color(white),
 ]);
 
 // Style Defaults
@@ -416,7 +421,7 @@ const defaultTextPadding: Attribute = paddingXY(12, 12),
     defaultTextBoxStyle: Attribute[] = [
         defaultTextPadding,
         Border.rounded(3),
-        Border.color(white),
+        await Border.color(white),
         Border.width(1),
         spacing(5),
         width(fill),
@@ -561,7 +566,7 @@ The `onPress` handler will be fired either `onClick` or when the element is focu
  * @param param1
  * @returns
  */
-function button(
+async function button(
     attributes: Attribute[],
     {
         onPress,
@@ -570,8 +575,8 @@ function button(
         onPress: { componentClass: string; handler: Maybe<EventHandler> };
         label: Element;
     }
-): Element {
-    return Internal.element(
+): Promise<Element> {
+    return await Internal.element(
         asEl,
         Internal.div,
         [
@@ -619,7 +624,7 @@ function button(
 }
 
 function focusDefault(attributes: Attribute[]): Attribute {
-    if (attributes.every(hasFocusStyle)) return NoAttribute();
+    if (attributes.some(hasFocusStyle)) return NoAttribute();
     return Internal.htmlClass('focusable');
 }
 
@@ -648,7 +653,7 @@ function hasFocusStyle(attribute: Attribute): boolean {
  * @param param1 
  * @returns 
  */
-function checkbox(
+async function checkbox(
     attributes: Attribute[],
     {
         label,
@@ -667,7 +672,7 @@ function checkbox(
         checked: boolean;
         label: Label;
     }
-): Element {
+): Promise<Element> {
     const attrs: Attribute[] = [
         isHiddenLabel(label) ? NoAttribute() : spacing(6),
         Events.onClick(onChange.componentClass, (ctx) =>
@@ -699,7 +704,7 @@ function checkbox(
             ...attrs,
         ],
         label,
-        Internal.element(
+        await Internal.element(
             asEl,
             Internal.div,
             [centerY, height(fill), width(shrink)],
@@ -759,7 +764,7 @@ The slider can be vertical or horizontal depending on the width/height of the sl
  * @param input 
  * @returns 
  */
-function slider(
+async function slider(
     attributes: Attribute[],
     input: {
         onChange: {
@@ -776,29 +781,30 @@ function slider(
         thumb: Thumb;
         step: Maybe<number>;
     }
-): Element {
+): Promise<Element> {
     const thumbAttributes: Attribute[] = input.thumb.attributes,
         width_: Maybe<Length> = Internal.getWidth(thumbAttributes),
         height_: Maybe<Length> = Internal.getHeight(thumbAttributes),
         trackWidth: Maybe<Length> = Internal.getWidth(attributes),
         trackHeight: Maybe<Length> = Internal.getHeight(attributes),
         vertical: boolean = (() => {
+            const trackWidth_: Length = withDefault(MinContent(), trackWidth);
+            const trackHeight_: Length = withDefault(MinContent(), trackHeight);
             const w: number = withDefault(0, Internal.getLength(trackWidth));
             const h: number = withDefault(0, Internal.getLength(trackHeight));
-            switch ([trackWidth, trackHeight]) {
-                case [Nothing(), Nothing()]:
-                    return false;
-
-                case [Just(Px(w)), Just(Px(h))]:
-                    return h > w;
-
-                // TODO: Test because is different than source
-                case [Just(Px(0)), Just(Fill(0))]:
-                    return true;
-
-                default:
-                    return false;
-            }
+            if (trackWidth === Nothing() && trackHeight === Nothing())
+                return false;
+            if (
+                trackWidth_.type === Lengths.Px &&
+                trackHeight_.type === Lengths.Px
+            )
+                return h > w;
+            if (
+                trackWidth_.type === Lengths.Px &&
+                trackHeight_.type === Lengths.Fill
+            )
+                return true;
+            return false;
         })(),
         [spacingX, spacingY]: [number, number] = Internal.getSpacing(
             attributes,
@@ -902,13 +908,13 @@ function slider(
             ),
         ],
         input.label,
-        row_(
+        await row_(
             [
                 width(withDefault(fill, trackWidth)),
                 height(withDefault(px(20), trackHeight)),
             ],
             [
-                Internal.element(
+                await Internal.element(
                     asEl,
                     NodeName('input'),
                     [
@@ -971,7 +977,7 @@ function slider(
                     ],
                     Unkeyed([])
                 ),
-                el(
+                await el(
                     [
                         width(withDefault(fill, trackWidth)),
                         height(withDefault(px(20), trackHeight)),
@@ -979,7 +985,7 @@ function slider(
                         // This is after `attributes` because the thumb should be in front of everything.
                         behindContent(
                             vertical
-                                ? viewVerticalThumb(
+                                ? await viewVerticalThumb(
                                       factor,
                                       [
                                           Internal.htmlClass('focusable-thumb'),
@@ -987,7 +993,7 @@ function slider(
                                       ],
                                       trackWidth
                                   )
-                                : viewHorizontalThumb(
+                                : await viewHorizontalThumb(
                                       factor,
                                       [
                                           Internal.htmlClass('focusable-thumb'),
@@ -1004,17 +1010,17 @@ function slider(
     );
 }
 
-function viewHorizontalThumb(
+async function viewHorizontalThumb(
     factor: number,
     attributes: Attribute[],
     trackHeight: Maybe<Length>
-): Element {
+): Promise<Element> {
     return row_(
         [width(fill), height(withDefault(fill, trackHeight)), centerY],
         [
-            el([width(fillPortion(Math.round(factor * 10000)))], none),
-            el([centerY, ...attributes], none),
-            el(
+            await el([width(fillPortion(Math.round(factor * 10000)))], none),
+            await el([centerY, ...attributes], none),
+            await el(
                 [width(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
                 none
             ),
@@ -1022,29 +1028,29 @@ function viewHorizontalThumb(
     );
 }
 
-function viewVerticalThumb(
+async function viewVerticalThumb(
     factor: number,
     attributes: Attribute[],
     trackWidth: Maybe<Length>
-): Element {
+): Promise<Element> {
     return row_(
         [height(fill), width(withDefault(fill, trackWidth)), centerX],
         [
-            el(
+            await el(
                 [height(fillPortion(Math.round(Math.abs(1 - factor) * 10000)))],
                 none
             ),
-            el([centerX, ...attributes], none),
-            el([height(fillPortion(Math.round(factor * 10000)))], none),
+            await el([centerX, ...attributes], none),
+            await el([height(fillPortion(Math.round(factor * 10000)))], none),
         ]
     );
 }
 
-function textHelper(
+async function textHelper(
     textInput: TextInput,
     attributes: Attribute[],
     textOptions: Text
-): Element {
+): Promise<Element> {
     const withDefaults: Attribute[] = defaultTextBoxStyle.concat(attributes),
         redistributed: {
             fullParent: Attribute[];
@@ -1081,7 +1087,7 @@ function textHelper(
             { top: 0, right: 0, bottom: 0, left: 0 },
             withDefaults.flatMap(getPadding).reverse()[0]
         ),
-        inputElement: Element = Internal.element(
+        inputElement: Element = await Internal.element(
             asEl,
             (() => {
                 switch (textInput.input.type) {
@@ -1133,7 +1139,7 @@ function textHelper(
             ]),
             Unkeyed([])
         ),
-        wrappedInput: Element = (() => {
+        wrappedInput: Promise<Element> = (async () => {
             switch (textInput.input.type) {
                 case TextKinds.TextArea:
                     // textarea with height-content means that
@@ -1144,7 +1150,7 @@ function textHelper(
                         Internal.div,
                         (heightConstrained ? [scrollbarY] : []).concat([
                             width(fill),
-                            withDefaults.every(hasFocusStyle)
+                            withDefaults.some(hasFocusStyle)
                                 ? NoAttribute()
                                 : Internal.htmlClass(classes.focusedWithin),
                             Internal.htmlClass(classes.inputMultilineWrapper),
@@ -1164,7 +1170,7 @@ function textHelper(
                                     ...redistributed.wrapper,
                                 ],
                                 Unkeyed(
-                                    (() => {
+                                    await (async () => {
                                         if (textOptions.text === '') {
                                             switch (textOptions.placeholder) {
                                                 case Nothing():
@@ -1178,7 +1184,7 @@ function textHelper(
                                                         textOptions.placeholder
                                                     );
                                                     return [
-                                                        renderPlaceholder(
+                                                        await renderPlaceholder(
                                                             place,
                                                             [],
                                                             textOptions.text ===
@@ -1206,41 +1212,43 @@ function textHelper(
                         ])
                     );
 
-                case TextKinds.TextInputNode:
+                case TextKinds.TextInputNode: {
+                    const attr = await (async () => {
+                        switch (textOptions.placeholder) {
+                            case Nothing():
+                                return [];
+
+                            default: {
+                                const place = withDefault(
+                                    placeholder([], none),
+                                    textOptions.placeholder
+                                );
+                                return [
+                                    behindContent(
+                                        await renderPlaceholder(
+                                            place,
+                                            redistributed.cover,
+                                            textOptions.text === ''
+                                        )
+                                    ),
+                                ];
+                            }
+                        }
+                    })();
                     return Internal.element(
                         asEl,
                         Internal.div,
                         [
                             width(fill),
-                            withDefaults.every(hasFocusStyle)
+                            withDefaults.some(hasFocusStyle)
                                 ? NoAttribute()
                                 : Internal.htmlClass(classes.focusedWithin),
                             ...redistributed.parent,
-                            ...(() => {
-                                switch (textOptions.placeholder) {
-                                    case Nothing():
-                                        return [];
-
-                                    default: {
-                                        const place = withDefault(
-                                            placeholder([], none),
-                                            textOptions.placeholder
-                                        );
-                                        return [
-                                            behindContent(
-                                                renderPlaceholder(
-                                                    place,
-                                                    redistributed.cover,
-                                                    textOptions.text === ''
-                                                )
-                                            ),
-                                        ];
-                                    }
-                                }
-                            })(),
+                            ...attr,
                         ],
                         Unkeyed([inputElement])
                     );
+                }
             }
         })();
 
@@ -1284,7 +1292,7 @@ function textHelper(
             ...redistributed.fullParent,
         ],
         textOptions.label,
-        wrappedInput
+        await wrappedInput
     );
 }
 
@@ -1326,28 +1334,32 @@ function renderBox({
     return `${top}px ${right}px ${bottom}px ${left}px`;
 }
 
-function renderPlaceholder(
+async function renderPlaceholder(
     placeholder: Placeholder,
     forPlaceholder: Attribute[],
     on: boolean
-): Element {
-    return el(
-        [
-            ...forPlaceholder,
-            Internal.htmlClass(
-                `${classes.noTextSelection} ${classes.passPointerEvents}`
-            ),
-            height(fill),
-            width(fill),
-            alpha(on ? 1 : 0),
-            clip,
-            Font.color(charcoal),
-            Background.color(hsla(0, 0, 0, 0)),
-            Border.color(hsla(0, 0, 0, 0)),
-            ...placeholder.attributes,
-        ],
-        placeholder.element
-    );
+): Promise<Element> {
+    try {
+        return el(
+            [
+                ...forPlaceholder,
+                Internal.htmlClass(
+                    `${classes.noTextSelection} ${classes.passPointerEvents}`
+                ),
+                height(fill),
+                width(fill),
+                alpha(on ? 1 : 0),
+                clip,
+                await Font.color(charcoal),
+                await Background.color(hsla(0, 0, 0, 0)),
+                await Border.color(hsla(0, 0, 0, 0)),
+                ...placeholder.attributes,
+            ],
+            placeholder.element
+        );
+    } catch (error) {
+        throw new Error(error);
+    }
 }
 
 /**
@@ -1731,16 +1743,24 @@ function redistributeOver(
  * @param textOptions
  * @returns
  */
-function text(attributes: Attribute[], textOptions: Text): Element {
-    return textHelper(
-        {
-            input: TextInputNode('text'),
-            spellchecked: false,
-            autofill: Nothing(),
-        },
-        attributes,
-        textOptions
-    );
+async function text(
+    attributes: Attribute[],
+    textOptions: Text
+): Promise<Element> {
+    try {
+        return await textHelper(
+            {
+                input: TextInputNode('text'),
+                spellchecked: false,
+                autofill: Nothing(),
+            },
+            attributes,
+            textOptions
+        );
+    } catch (error) {
+        console.log(error);
+        return Empty();
+    }
 }
 
 /**
@@ -1749,16 +1769,24 @@ function text(attributes: Attribute[], textOptions: Text): Element {
  * @param textOptions
  * @returns
  */
-function spellChecked(attributes: Attribute[], textOptions: Text): Element {
-    return textHelper(
-        {
-            input: TextInputNode('text'),
-            spellchecked: true,
-            autofill: Nothing(),
-        },
-        attributes,
-        textOptions
-    );
+async function spellChecked(
+    attributes: Attribute[],
+    textOptions: Text
+): Promise<Element> {
+    try {
+        return await textHelper(
+            {
+                input: TextInputNode('text'),
+                spellchecked: true,
+                autofill: Nothing(),
+            },
+            attributes,
+            textOptions
+        );
+    } catch (error) {
+        console.log(error);
+        return Empty();
+    }
 }
 
 /**
@@ -1767,8 +1795,11 @@ function spellChecked(attributes: Attribute[], textOptions: Text): Element {
  * @param textOptions
  * @returns
  */
-function search(attributes: Attribute[], textOptions: Text): Element {
-    return textHelper(
+async function search(
+    attributes: Attribute[],
+    textOptions: Text
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextInputNode('search'),
             spellchecked: false,
@@ -1785,7 +1816,7 @@ function search(attributes: Attribute[], textOptions: Text): Element {
  * @param pass
  * @returns
  */
-function newPassword(
+async function newPassword(
     attributes: Attribute[],
     pass: {
         onChange: {
@@ -1797,8 +1828,8 @@ function newPassword(
         label: Label;
         show: boolean;
     }
-): Element {
-    return textHelper(
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextInputNode(pass.show ? 'text' : 'password'),
             spellchecked: false,
@@ -1820,7 +1851,7 @@ function newPassword(
  * @param pass
  * @returns
  */
-function currentPassword(
+async function currentPassword(
     attributes: Attribute[],
     pass: {
         onChange: {
@@ -1832,8 +1863,8 @@ function currentPassword(
         label: Label;
         show: boolean;
     }
-): Element {
-    return textHelper(
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextInputNode(pass.show ? 'text' : 'password'),
             spellchecked: false,
@@ -1855,8 +1886,11 @@ function currentPassword(
  * @param textOptions
  * @returns
  */
-function username(attributes: Attribute[], textOptions: Text): Element {
-    return textHelper(
+async function username(
+    attributes: Attribute[],
+    textOptions: Text
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextInputNode('text'),
             spellchecked: false,
@@ -1873,8 +1907,11 @@ function username(attributes: Attribute[], textOptions: Text): Element {
  * @param textOptions
  * @returns
  */
-function email(attributes: Attribute[], textOptions: Text): Element {
-    return textHelper(
+async function email(
+    attributes: Attribute[],
+    textOptions: Text
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextInputNode('email'),
             spellchecked: false,
@@ -1891,7 +1928,7 @@ function email(attributes: Attribute[], textOptions: Text): Element {
  * @param multi
  * @returns
  */
-function multiline(
+async function multiline(
     attributes: Attribute[],
     multi: {
         onChange: {
@@ -1903,8 +1940,8 @@ function multiline(
         label: Label;
         spellcheck: boolean;
     }
-): Element {
-    return textHelper(
+): Promise<Element> {
+    return await textHelper(
         {
             input: TextArea(),
             spellchecked: multi.spellcheck,
@@ -1942,16 +1979,16 @@ function isHiddenLabel(label: Label): boolean {
  * @param input
  * @returns
  */
-function applyLabel(
+async function applyLabel(
     attributes: Attribute[],
     label: Label,
     input: Element
-): Element {
+): Promise<Element> {
     switch (label.type) {
         case Labels.HiddenLabel:
             // NOTE: This means that the label is applied outside of this function!
             // It would be nice to unify this logic, but it's a little tricky
-            return Internal.element(
+            return await Internal.element(
                 asColumn,
                 NodeName('label'),
                 attributes,
@@ -2014,7 +2051,10 @@ function option(value: any, text: Element): Option {
 /**
  * Customize exactly what your radio option should look like in different states.
  */
-function optionWith(value: any, view: (x: OptionState) => Element): Option {
+function optionWith(
+    value: any,
+    view: (x: OptionState) => Promise<Element>
+): Option {
     return Option(value, view);
 }
 
@@ -2024,7 +2064,7 @@ function optionWith(value: any, view: (x: OptionState) => Element): Option {
  * @param input
  * @returns
  */
-function radio(
+async function radio(
     attributes: Attribute[],
     input: {
         onChange: {
@@ -2035,8 +2075,8 @@ function radio(
         selected: Maybe<any>;
         label: Label;
     }
-): Element {
-    return radioHelper(Orientation.Column, attributes, input);
+): Promise<Element> {
+    return await radioHelper(Orientation.Column, attributes, input);
 }
 
 /**TODO:
@@ -2045,7 +2085,7 @@ function radio(
  * @param input
  * @returns
  */
-function radioRow(
+async function radioRow(
     attributes: Attribute[],
     input: {
         onChange: {
@@ -2056,25 +2096,25 @@ function radioRow(
         selected: Maybe<any>;
         label: Label;
     }
-): Element {
-    return radioHelper(Orientation.Row, attributes, input);
+): Promise<Element> {
+    return await radioHelper(Orientation.Row, attributes, input);
 }
 
-function defaultRadioOption(
+async function defaultRadioOption(
     optionLabel: Element,
     status: OptionState
-): Element {
+): Promise<Element> {
     return row_(
         [spacing(10), alignLeft, width(shrink)],
         [
-            el(
+            await el(
                 [
                     status === OptionState.Selected
                         ? Internal.htmlClass('unfocusable')
                         : NoAttribute(),
                     width(px(14)),
                     height(px(14)),
-                    Background.color(white),
+                    await Background.color(white),
                     Border.rounded(7),
                     Border.width(
                         (() => {
@@ -2090,7 +2130,7 @@ function defaultRadioOption(
                             }
                         })()
                     ),
-                    Border.color(
+                    await Border.color(
                         (() => {
                             switch (status) {
                                 case OptionState.Idle:
@@ -2107,12 +2147,15 @@ function defaultRadioOption(
                 ],
                 none
             ),
-            el([width(fill), Internal.htmlClass('unfocusable')], optionLabel),
+            await el(
+                [width(fill), Internal.htmlClass('unfocusable')],
+                optionLabel
+            ),
         ]
     );
 }
 
-function radioHelper(
+async function radioHelper(
     orientation: Orientation,
     attributes: Attribute[],
     input: {
@@ -2124,51 +2167,54 @@ function radioHelper(
         selected: Maybe<any>;
         label: Label;
     }
-): Element {
-    const optionArea: Element = (() => {
+): Promise<Element> {
+    const optionArea: Promise<Element> = (async () => {
             switch (orientation) {
-                case Orientation.Row:
+                case Orientation.Row: {
+                    const [children] = input.options.map(
+                        async (x: Option) => await renderOption(x)
+                    );
                     return row(
                         [hiddenLabelAttribute(input.label), ...attributes],
-                        input.options.map(renderOption)
+                        [await children]
                     );
+                }
 
-                case Orientation.Column:
+                case Orientation.Column: {
+                    const [children] = input.options.map(
+                        async (x: Option) => await renderOption(x)
+                    );
                     return column(
                         [hiddenLabelAttribute(input.label), ...attributes],
-                        input.options.map(renderOption)
-                    );
-            }
-        })(),
-        prevNext: Maybe<[any, any]> = (() => {
-            switch (input.options) {
-                case []:
-                    return Nothing();
-
-                default: {
-                    const val: any = input.options[0].value;
-                    return (([found, b, a]) => {
-                        switch (found) {
-                            case Found.NotFound:
-                                return Just([b, val]);
-
-                            case Found.BeforeFound:
-                                return Just([b, val]);
-
-                            case Found.AfterFound:
-                                return Just([b, a]);
-                        }
-                    })(
-                        input.options.reduce(
-                            (
-                                acc: [Found, any, any],
-                                option: Option
-                            ): [Found, any, any] => track(option, acc),
-                            [Found.NotFound, val, val]
-                        )
+                        [await children]
                     );
                 }
             }
+        })(),
+        prevNext: Maybe<[any, any]> = (() => {
+            if (isEmpty(input.options)) return Nothing();
+
+            const val: any = input.options[0].value;
+            return (([found, b, a]) => {
+                switch (found) {
+                    case Found.NotFound:
+                        return Just([b, val]);
+
+                    case Found.BeforeFound:
+                        return Just([b, val]);
+
+                    case Found.AfterFound:
+                        return Just([b, a]);
+                }
+            })(
+                input.options.reduce(
+                    (
+                        acc: [Found, any, any],
+                        option: Option
+                    ): [Found, any, any] => track(option, acc),
+                    [Found.NotFound, val, val]
+                )
+            );
         })(),
         events: Attribute[] = Internal.get(attributes, (attr) => {
             switch (attr.type) {
@@ -2188,7 +2234,7 @@ function radioHelper(
             }
         });
 
-    function renderOption({ value, view }: Option) {
+    async function renderOption({ value, view }: Option): Promise<Element> {
         const status =
             Just(value) === input.selected
                 ? OptionState.Selected
@@ -2219,7 +2265,7 @@ function radioHelper(
                     input.onChange.handler(value, ctx)
                 ),
             ],
-            view(status)
+            await view(status)
         );
     }
 
@@ -2285,12 +2331,15 @@ function radioHelper(
             ...events,
         ],
         input.label,
-        optionArea
+        await optionArea
     );
 }
 
-function column(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function column(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asColumn,
         Internal.div,
         [height(shrink), width(fill), ...attributes],
@@ -2298,8 +2347,11 @@ function column(attributes: Attribute[], children: Element[]): Element {
     );
 }
 
-function row(attributes: Attribute[], children: Element[]): Element {
-    return Internal.element(
+async function row(
+    attributes: Attribute[],
+    children: Element[]
+): Promise<Element> {
+    return await Internal.element(
         asRow,
         Internal.div,
         [width(fill), ...attributes],
@@ -2316,20 +2368,22 @@ You'll likely want to make your own checkbox at some point that fits your design
  * @param checked 
  * @returns 
  */
-function defaultCheckbox(checked: boolean): Element {
+async function defaultCheckbox(checked: boolean): Promise<Element> {
     return el(
         [
             Internal.htmlClass('focusable'),
             width(px(14)),
             height(px(14)),
             centerY,
-            Font.color(white),
+            await Font.color(white),
             Font.size(9),
             Font.center,
             Border.width(checked ? 0 : 1),
             Border.rounded(3),
-            Border.color(checked ? hsl(211, 0.97, 0.61) : hsl(0, 0, 0.83)),
-            Border.shadow(
+            await Border.color(
+                checked ? hsl(211, 0.97, 0.61) : hsl(0, 0, 0.83)
+            ),
+            await Border.shadow(
                 Shadow(
                     checked ? hsla(0, 0, 0.93, 0) : hsl(0, 0, 0.93),
                     [0, 0],
@@ -2337,9 +2391,9 @@ function defaultCheckbox(checked: boolean): Element {
                     1
                 )
             ),
-            Background.color(checked ? hsl(211, 0.97, 0.61) : white),
+            await Background.color(checked ? hsl(211, 0.97, 0.61) : white),
             inFront(
-                el(
+                await el(
                     [
                         height(px(6)),
                         width(px(9)),
@@ -2348,7 +2402,7 @@ function defaultCheckbox(checked: boolean): Element {
                         centerY,
                         moveUp(1),
                         transparent(!checked),
-                        Border.color(white),
+                        await Border.color(white),
                         Border.widthEach({
                             top: 0,
                             left: 2,

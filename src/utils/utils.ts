@@ -7,14 +7,6 @@ export function isNumber(val: any) {
     return typeof val === 'number' && val === val;
 }
 
-export function isArray(arr: any): boolean {
-    return isArrayLike(arr) && !isString(arr);
-}
-
-function isArrayLike(obj: any): boolean {
-    return obj != null && typeof obj[Symbol.iterator] === 'function';
-}
-
 export function isPlainObject(val: any): boolean {
     return !!val && typeof val === 'object' && val.constructor === Object;
 }

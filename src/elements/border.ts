@@ -46,8 +46,9 @@ const solid: Attribute = Class(Flag.borderStyle, classes.borderSolid),
  * @param clr
  * @returns
  */
-function color(borderColor: Promise<Hsla | Rgba>): Attribute {
-    const [a, b, c, d, e] = Object.values(borderColor);
+async function color(borderColor: Promise<Hsla | Rgba>): Promise<Attribute> {
+    const val = await borderColor;
+    const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
         Flag.borderColor,
         Colored(
@@ -157,11 +158,11 @@ function roundEach({
  * @param size
  * @returns
  */
-function glow(
-    clr: Hsla | Rgba | Promise<Hsla | Rgba>,
+async function glow(
+    clr: Promise<Hsla | Rgba>,
     size: number
-): Attribute {
-    return shadow(Shadow(clr, [0, 0], size * 2, size));
+): Promise<Attribute> {
+    return await shadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
 /**
@@ -170,11 +171,11 @@ function glow(
  * @param size
  * @returns
  */
-function innerGlow(
-    clr: Hsla | Rgba | Promise<Hsla | Rgba>,
+async function innerGlow(
+    clr: Promise<Hsla | Rgba>,
     size: number
-): Attribute {
-    return innerShadow(Shadow(clr, [0, 0], size * 2, size));
+): Promise<Attribute> {
+    return await innerShadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
 /**
@@ -182,7 +183,7 @@ function innerGlow(
  * @param param0
  * @returns
  */
-function shadow({
+async function shadow({
     offset,
     size,
     blur,
@@ -191,15 +192,15 @@ function shadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Hsla | Rgba | Promise<Hsla | Rgba>;
-}): Attribute {
+    color: Promise<Hsla | Rgba>;
+}): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, size, false);
     return StyleClass(
         Flag.shadows,
         Single(
-            Internal.boxShadowClass(shade),
+            await Internal.boxShadowClass(shade),
             'box-shadow',
-            Internal.formatBoxShadow(shade)
+            await Internal.formatBoxShadow(shade)
         )
     );
 }
@@ -209,7 +210,7 @@ function shadow({
  * @param param0
  * @returns
  */
-function innerShadow({
+async function innerShadow({
     offset,
     size,
     blur,
@@ -218,15 +219,15 @@ function innerShadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Hsla | Rgba | Promise<Hsla | Rgba>;
-}): Attribute {
+    color: Promise<Hsla | Rgba>;
+}): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, size, true);
     return StyleClass(
         Flag.shadows,
         Single(
-            Internal.boxShadowClass(shade),
+            await Internal.boxShadowClass(shade),
             'box-shadow',
-            Internal.formatBoxShadow(shade)
+            await Internal.formatBoxShadow(shade)
         )
     );
 }

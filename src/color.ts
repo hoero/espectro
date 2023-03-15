@@ -12,6 +12,7 @@ const max = {
 };
 
 class ChannelsColor {
+    private _notation: Notation;
     @classValidator.Min(0, min)
     // TODO:
     private a: number;
@@ -23,12 +24,13 @@ class ChannelsColor {
     private d: number;
 
     constructor(
-        private notation: Notation,
+        notation: Notation,
         a: number,
         b: number,
         c: number,
         d: number
     ) {
+        this._notation = notation;
         this.a = a;
         this.b = b;
         this.c = c;
@@ -36,11 +38,24 @@ class ChannelsColor {
     }
 
     get color(): Hsla | Rgba {
-        switch (this.notation) {
+        switch (this._notation) {
+            case Notation.Hsl:
+                return Hsla(this.a, this.b, this.c, 1, this._notation);
+
             case Notation.Hsla:
-                return Hsla(this.a, this.b, this.c, this.d);
+                return Hsla(this.a, this.b, this.c, this.d, this._notation);
+
+            case Notation.Rgb:
+                return Rgba(this.a, this.b, this.c, 1, this._notation);
+
             case Notation.Rgba:
-                return Rgba(this.a, this.b, this.c, this.d);
+                return Rgba(this.a, this.b, this.c, this.d, this._notation);
+
+            case Notation.Rgb255:
+                return Rgba(this.a, this.b, this.c, 1, this._notation);
+
+            case Notation.Rgba255:
+                return Rgba(this.a, this.b, this.c, this.d, this._notation);
 
             default:
                 throw new Error('Use Hsla or Rgba notation.');
@@ -49,6 +64,7 @@ class ChannelsColor {
 }
 
 class HslaColor extends ChannelsColor {
+    notation: Notation.Hsl | Notation.Hsla;
     @classValidator.Max(360, max)
     hue: number;
     @classValidator.Max(1, max)
@@ -58,8 +74,15 @@ class HslaColor extends ChannelsColor {
     @classValidator.Max(1, max)
     alpha: number;
 
-    constructor(h: number, s: number, l: number, a: number) {
-        super(Notation.Hsla, h, s, l, a);
+    constructor(
+        n: Notation.Hsl | Notation.Hsla,
+        h: number,
+        s: number,
+        l: number,
+        a: number
+    ) {
+        super(n, h, s, l, a);
+        this.notation = n;
         this.hue = h;
         this.saturation = s;
         this.lightness = l;
@@ -68,6 +91,7 @@ class HslaColor extends ChannelsColor {
 }
 
 class RgbaColor extends ChannelsColor {
+    notation: Notation.Rgb | Notation.Rgba;
     @classValidator.Max(1, max)
     red: number;
     @classValidator.Max(1, max)
@@ -77,16 +101,24 @@ class RgbaColor extends ChannelsColor {
     @classValidator.Max(1, max)
     alpha: number;
 
-    constructor(red: number, green: number, blue: number, alpha: number) {
-        super(Notation.Rgba, red, green, blue, alpha);
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        this.alpha = alpha;
+    constructor(
+        n: Notation.Rgb | Notation.Rgba,
+        r: number,
+        g: number,
+        b: number,
+        a: number
+    ) {
+        super(n, r, g, b, a);
+        this.notation = n;
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
     }
 }
 
 class Rgba255Color extends ChannelsColor {
+    notation: Notation.Rgb255 | Notation.Rgba255;
     @classValidator.Max(255)
     red: number;
     @classValidator.Max(255)
@@ -96,12 +128,19 @@ class Rgba255Color extends ChannelsColor {
     @classValidator.Max(1, max)
     alpha: number;
 
-    constructor(red: number, green: number, blue: number, alpha: number) {
-        super(Notation.Rgba, red, green, blue, alpha);
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        this.alpha = alpha;
+    constructor(
+        n: Notation.Rgb255 | Notation.Rgba255,
+        r: number,
+        g: number,
+        b: number,
+        a: number
+    ) {
+        super(n, r, g, b, a);
+        this.notation = n;
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
     }
 }
 
@@ -117,7 +156,7 @@ function hsl(
     saturation: number,
     lightness: number
 ): Promise<Hsla | Rgba> {
-    const color = new HslaColor(hue, saturation, lightness, 1);
+    const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
     return validateColor(color);
 }
 
@@ -135,7 +174,13 @@ function hsla(
     lightness: number,
     alpha: number
 ): Promise<Hsla | Rgba> {
-    const color = new HslaColor(hue, saturation, lightness, alpha);
+    const color = new HslaColor(
+        Notation.Hsla,
+        hue,
+        saturation,
+        lightness,
+        alpha
+    );
     return validateColor(color);
 }
 
@@ -166,7 +211,13 @@ function fromHsla({ hue, saturation, lightness, alpha }: Hsla): Colour {
  */
 function toHsl(colour: Colour): Promise<Hsla | Rgba> {
     const [hue, saturation, lightness, alpha] = colour;
-    const color = new HslaColor(hue, saturation, lightness, alpha);
+    const color = new HslaColor(
+        Notation.Hsl,
+        hue,
+        saturation,
+        lightness,
+        alpha
+    );
     return validateColor(color);
 }
 
@@ -178,7 +229,7 @@ function toHsl(colour: Colour): Promise<Hsla | Rgba> {
  * @returns a Promise that resolves on Rgba.
  */
 function rgb(red: number, green: number, blue: number): Promise<Hsla | Rgba> {
-    const color = new RgbaColor(red, green, blue, 1);
+    const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
     return validateColor(color);
 }
 
@@ -196,7 +247,7 @@ function rgba(
     blue: number,
     alpha: number
 ): Promise<Hsla | Rgba> {
-    const color = new RgbaColor(red, green, blue, alpha);
+    const color = new RgbaColor(Notation.Rgba, red, green, blue, alpha);
     return validateColor(color);
 }
 
@@ -212,7 +263,7 @@ function rgb255(
     green: number,
     blue: number
 ): Promise<Hsla | Rgba> {
-    const color = new Rgba255Color(red, green, blue, 1);
+    const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
     return validateColor(color);
 }
 
@@ -230,7 +281,7 @@ function rgba255(
     blue: number,
     alpha: number
 ): Promise<Hsla | Rgba> {
-    const color = new Rgba255Color(red, green, blue, alpha);
+    const color = new Rgba255Color(Notation.Rgba255, red, green, blue, alpha);
     return validateColor(color);
 }
 
@@ -261,7 +312,7 @@ function fromRgba({ red, green, blue, alpha }: Rgba): Colour {
  */
 function toRgb(colour: Colour): Promise<Hsla | Rgba> {
     const [red, green, blue, alpha] = colour;
-    const color = new RgbaColor(red, green, blue, alpha);
+    const color = new RgbaColor(Notation.Rgb, red, green, blue, alpha);
     return validateColor(color);
 }
 
