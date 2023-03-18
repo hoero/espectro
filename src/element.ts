@@ -214,8 +214,6 @@ import {
     Padding_,
     Spaced,
     Maybe,
-    Padding,
-    Spacing,
     PaddingStyle,
     StyleClass,
     SpacingStyle,
@@ -348,7 +346,7 @@ function Device(class_: DeviceClass, orientation: Orientation): Device {
     return { class_, orientation };
 }
 
-const { Just, Nothing, withDefault } = elmish.Maybe;
+const { Just, Nothing, MaybeType } = elmish.Maybe;
 
 /**
  * Shrink an element to fit its contents.
@@ -599,8 +597,8 @@ async function wrappedRow(
     const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
         Internal.extractSpacingAndPadding(attributes);
 
-    switch (spaced) {
-        case Nothing():
+    switch (spaced.type) {
+        case MaybeType.Nothing:
             return await Internal.element(
                 asRow,
                 Internal.div,
@@ -619,18 +617,12 @@ async function wrappedRow(
                 Unkeyed(children)
             );
 
-        default: {
-            const { name, x, y } = withDefault(Spacing('', 0, 0), spaced),
+        case MaybeType.Just: {
+            const { name, x, y } = spaced.value,
                 newPadding: Maybe<StyleClass> = (() => {
-                    switch (padded) {
-                        case Nothing():
-                            return Nothing();
-
-                        default: {
-                            const { top, right, bottom, left } = withDefault(
-                                Padding('', 0, 0, 0, 0),
-                                padded
-                            );
+                    switch (padded.type) {
+                        case MaybeType.Just: {
+                            const { top, right, bottom, left } = padded.value;
                             if (right >= x / 2 && bottom >= y / 2) {
                                 const newTop = top - y / 2,
                                     newRight = right - x / 2,
@@ -656,11 +648,34 @@ async function wrappedRow(
                             }
                             return Nothing();
                         }
+
+                        case MaybeType.Nothing:
+                            return Nothing();
                     }
                 })();
 
-            switch (newPadding) {
-                case Nothing(): {
+            switch (newPadding.type) {
+                case MaybeType.Just:
+                    return await Internal.element(
+                        asRow,
+                        Internal.div,
+                        [
+                            Internal.htmlClass(
+                                classes.contentLeft +
+                                    ' ' +
+                                    classes.contentCenterY +
+                                    ' ' +
+                                    classes.wrapped
+                            ),
+                            width(shrink),
+                            height(shrink),
+                            ...attributes,
+                            newPadding.value,
+                        ],
+                        Unkeyed(children)
+                    );
+
+                case MaybeType.Nothing: {
                     // Not enough space in padding to compensate for spacing
                     const halfX = (x / 2) * -1,
                         halfY = (y / 2) * -1;
@@ -700,31 +715,6 @@ async function wrappedRow(
                                 Unkeyed(children)
                             ),
                         ])
-                    );
-                }
-
-                default: {
-                    const pad = withDefault(
-                        StyleClass(Flag.padding, PaddingStyle('', 0, 0, 0, 0)),
-                        newPadding
-                    );
-                    return await Internal.element(
-                        asRow,
-                        Internal.div,
-                        [
-                            Internal.htmlClass(
-                                classes.contentLeft +
-                                    ' ' +
-                                    classes.contentCenterY +
-                                    ' ' +
-                                    classes.wrapped
-                            ),
-                            width(shrink),
-                            height(shrink),
-                            ...attributes,
-                            pad,
-                        ],
-                        Unkeyed(children)
                     );
                 }
             }
@@ -988,23 +978,16 @@ async function tableHelper(
         Internal.div,
         [width(fill), template, ...attributes],
         Unkeyed(
-            await (async () => {
-                const renderedHeaders = await withDefault(
-                    new Promise<Element>((resolve, _reject) => {
-                        resolve(Empty());
-                    }),
-                    maybeHeaders
-                );
-                switch (maybeHeaders) {
-                    case Nothing():
+            await (() => {
+                switch (maybeHeaders.type) {
+                    case MaybeType.Nothing:
                         return children_.elements;
 
-                    default: {
+                    case MaybeType.Just:
                         return [
-                            renderedHeaders,
+                            maybeHeaders.value,
                             ...children_.elements.reverse(),
                         ];
-                    }
                 }
             })()
         )

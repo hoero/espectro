@@ -221,11 +221,7 @@ import {
     Button,
     asColumn,
     NodeName,
-    Hsla,
-    Rgba,
     Length,
-    Px,
-    Rem,
     Property,
     StyleClass,
     Style_,
@@ -237,6 +233,7 @@ import {
     asRow,
     MinContent,
     Empty,
+    Color,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
 import * as Internal from '../internal/model.ts';
@@ -265,7 +262,7 @@ import {
 } from './attributes.ts';
 import { isEmpty } from '../utils/utils.ts';
 
-const { Just, Nothing, map, withDefault } = elmish.Maybe;
+const { Just, Nothing, map, withDefault, MaybeType } = elmish.Maybe;
 
 interface Placeholder_ {
     attributes: Attribute[];
@@ -403,8 +400,8 @@ enum Orientation {
 }
 
 // Colors
-const white: Promise<Hsla | Rgba> = hsl(0, 0, 1),
-    charcoal: Promise<Hsla | Rgba> = hsl(84, 0.02, 0.53);
+const white: Promise<Color> = hsl(0, 0, 1),
+    charcoal: Promise<Color> = hsl(84, 0.02, 0.53);
 
 // Thumb
 const defaultThumb: Thumb = Thumb([
@@ -591,12 +588,12 @@ async function button(
             tabindex(0),
         ].concat(
             (() => {
-                switch (onPress.handler) {
-                    case Nothing():
+                switch (onPress.handler.type) {
+                    case MaybeType.Nothing:
                         return [disabled(true), ...attributes];
 
-                    default: {
-                        const handler = withDefault(() => {}, onPress.handler);
+                    case MaybeType.Just: {
+                        const handler = onPress.handler.value;
                         return [
                             Events.onClick(onPress.componentClass, handler),
                             Events.onKeyLookUp(
@@ -813,34 +810,40 @@ async function slider(
         factor = (input.value - input.min) / (input.max - input.min),
         thumbWidthString: string = (() => {
             const w: number = withDefault(0, Internal.getLength(width_));
-            switch (width_) {
-                case Nothing():
+            switch (width_.type) {
+                case MaybeType.Nothing:
                     return '20px';
 
-                case Just(Px(w)):
-                    return w + 'px';
+                case MaybeType.Just:
+                    switch (width_.value.type) {
+                        case Lengths.Px:
+                            return w + 'px';
 
-                case Just(Rem(w)):
-                    return w + 'rem';
+                        case Lengths.Rem:
+                            return w + 'rem';
 
-                default:
-                    return '100%';
+                        default:
+                            return '100%';
+                    }
             }
         })(),
         thumbHeightString: string = (() => {
             const h: number = withDefault(0, Internal.getLength(height_));
-            switch (height_) {
-                case Nothing():
+            switch (height_.type) {
+                case MaybeType.Nothing:
                     return '20px';
 
-                case Just(Px(h)):
-                    return h + 'px';
+                case MaybeType.Just:
+                    switch (height_.value.type) {
+                        case Lengths.Px:
+                            return h + 'px';
 
-                case Just(Rem(h)):
-                    return h + 'rem';
+                        case Lengths.Rem:
+                            return h + 'rem';
 
-                default:
-                    return '100%';
+                        default:
+                            return '100%';
+                    }
             }
         })(),
         /**TODO:
@@ -878,31 +881,37 @@ async function slider(
             tabindex(0),
             width(
                 (() => {
-                    const w: Length = withDefault(Px(0), trackWidth);
-                    switch (trackWidth) {
-                        case Just(Px(0)):
-                            return shrink;
-
-                        case Just(w):
-                            return w;
-
-                        default:
+                    switch (trackWidth.type) {
+                        case MaybeType.Nothing:
                             return fill;
+
+                        case MaybeType.Just:
+                            switch (trackWidth.value.type) {
+                                case Lengths.Px:
+                                case Lengths.Rem:
+                                    return shrink;
+
+                                default:
+                                    return trackWidth.value;
+                            }
                     }
                 })()
             ),
             height(
                 (() => {
-                    const h: Length = withDefault(Px(0), trackHeight);
-                    switch (trackHeight) {
-                        case Just(Px(0)):
+                    switch (trackHeight.type) {
+                        case MaybeType.Nothing:
                             return shrink;
 
-                        case Just(h):
-                            return h;
+                        case MaybeType.Just:
+                            switch (trackHeight.value.type) {
+                                case Lengths.Px:
+                                case Lengths.Rem:
+                                    return shrink;
 
-                        default:
-                            return shrink;
+                                default:
+                                    return trackHeight.value;
+                            }
                     }
                 })()
             ),
@@ -950,7 +959,7 @@ async function slider(
                         }),
                         type('range'),
                         step(
-                            input.step === Nothing()
+                            input.step.type === MaybeType.Nothing
                                 ? // Note: If we set `any` here,
                                   // Firefox makes a single press of the arrows keys equal to 1
                                   // We could set the step manually to the effective range / 100
@@ -958,7 +967,7 @@ async function slider(
                                   // Which matches Chrome's default behavior
                                   // HOWEVER, that means manually moving a slider with the mouse will snap to that interval.
                                   'any'
-                                : withDefault(0, input.step)
+                                : input.step.value
                         ),
                         min(input.min),
                         max(input.max),
@@ -1172,26 +1181,25 @@ async function textHelper(
                                 Unkeyed(
                                     await (async () => {
                                         if (textOptions.text === '') {
-                                            switch (textOptions.placeholder) {
-                                                case Nothing():
+                                            switch (
+                                                textOptions.placeholder.type
+                                            ) {
+                                                case MaybeType.Nothing:
                                                     // Without this, firefox will make the text area lose focus
                                                     // if the input is empty and you mash the keyboard
                                                     return [text_('\u{00A0}')];
 
-                                                default: {
-                                                    const place = withDefault(
-                                                        placeholder([], none),
-                                                        textOptions.placeholder
-                                                    );
+                                                case MaybeType.Just:
                                                     return [
                                                         await renderPlaceholder(
-                                                            place,
+                                                            textOptions
+                                                                .placeholder
+                                                                .value,
                                                             [],
                                                             textOptions.text ===
                                                                 ''
                                                         ),
                                                     ];
-                                                }
                                             }
                                         } else {
                                             const el = domElement('span', [
@@ -1214,25 +1222,20 @@ async function textHelper(
 
                 case TextKinds.TextInputNode: {
                     const attr = await (async () => {
-                        switch (textOptions.placeholder) {
-                            case Nothing():
+                        switch (textOptions.placeholder.type) {
+                            case MaybeType.Nothing:
                                 return [];
 
-                            default: {
-                                const place = withDefault(
-                                    placeholder([], none),
-                                    textOptions.placeholder
-                                );
+                            case MaybeType.Just:
                                 return [
                                     behindContent(
                                         await renderPlaceholder(
-                                            place,
+                                            textOptions.placeholder.value,
                                             redistributed.cover,
                                             textOptions.text === ''
                                         )
                                     ),
                                 ];
-                            }
                         }
                     })();
                     return Internal.element(
@@ -1381,8 +1384,8 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
             case Attributes.StyleClass:
                 switch (attr.style.type) {
                     case Styles.SpacingStyle:
-                        switch (found) {
-                            case Nothing():
+                        switch (found.type) {
+                            case MaybeType.Nothing:
                                 return Just(attr.style.y);
 
                             default:
@@ -1397,14 +1400,12 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
                 return found;
         }
     }
-    switch (gathered) {
-        case Nothing():
+    switch (gathered.type) {
+        case MaybeType.Nothing:
             return NoAttribute();
 
-        default: {
-            const vSpace: number = withDefault(0, gathered);
-            return moveUp(Math.floor(vSpace / 2));
-        }
+        case MaybeType.Just:
+            return moveUp(Math.floor(gathered.value / 2));
     }
 }
 
@@ -2301,31 +2302,38 @@ async function radioHelper(
             role('radiogroup'),
             Events.onKeyLookUp(input.onChange.componentClass, (ctx) => {
                 const { key } = <KeyboardEvent>ctx.e;
-                const [prev, next] = withDefault(['', ''], prevNext);
-                switch (key) {
-                    case Events.leftArrow:
-                    case Events.leftArrow_:
-                    case Events.upArrow:
-                    case Events.upArrow_:
-                        input.onChange.handler(prev, ctx);
+                switch (prevNext.type) {
+                    case MaybeType.Nothing:
                         break;
-                    case Events.rightArrow:
-                    case Events.rightArrow_:
-                    case Events.downArrow:
-                    case Events.downArrow_:
-                        input.onChange.handler(next, ctx);
-                        break;
-                    case Events.space:
-                        switch (input.selected) {
-                            case Nothing():
+
+                    case MaybeType.Just: {
+                        const [prev, next] = prevNext.value;
+                        switch (key) {
+                            case Events.leftArrow:
+                            case Events.leftArrow_:
+                            case Events.upArrow:
+                            case Events.upArrow_:
                                 input.onChange.handler(prev, ctx);
+                                break;
+                            case Events.rightArrow:
+                            case Events.rightArrow_:
+                            case Events.downArrow:
+                            case Events.downArrow_:
+                                input.onChange.handler(next, ctx);
+                                break;
+                            case Events.space:
+                                switch (input.selected.type) {
+                                    case MaybeType.Nothing:
+                                        input.onChange.handler(prev, ctx);
+                                        break;
+                                    default:
+                                        break;
+                                }
                                 break;
                             default:
                                 break;
                         }
-                        break;
-                    default:
-                        break;
+                    }
                 }
             }),
             ...events,

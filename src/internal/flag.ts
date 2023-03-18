@@ -78,9 +78,7 @@ function merge(a: Field, b: Field): Field {
 }
 
 function flag(i: number): Second | Flag {
-    if (i > 31) {
-        return Second((i - 32) << 1);
-    }
+    if (i > 31) return Second((i - 32) << 1);
     return Flag(i << 1);
 }
 

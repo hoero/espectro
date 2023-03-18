@@ -57,17 +57,16 @@ import {
     Adjustment,
     Attribute,
     Class,
+    Color,
     Colored,
     Font,
     FontFamily,
     FontSize,
     FontWith,
-    Hsla,
     ImportFont,
     Maybe,
     Monospace,
     Property,
-    Rgba,
     SansSerif,
     Serif,
     Shadow,
@@ -184,16 +183,12 @@ const swash: Variant = VariantActive('swsh');
  * @param clr
  * @returns
  */
-async function color(fontColor: Promise<Hsla | Rgba>): Promise<Attribute> {
+async function color(fontColor: Promise<Color>): Promise<Attribute> {
     const val = await fontColor;
     const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
         Flag.fontColor,
-        Colored(
-            `fc-${Internal.formatColorClass(a, b, c, d, e)}`,
-            'color',
-            fontColor
-        )
+        Colored(`fc-${Internal.formatColorClass(a, b, c, d, e)}`, 'color', val)
     );
 }
 
@@ -335,7 +330,7 @@ async function shadow({
 }: {
     offset: [number, number];
     blur: number;
-    color: Promise<Hsla | Rgba>;
+    color: Promise<Color>;
 }): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, 0, false);
     return StyleClass(
@@ -354,10 +349,7 @@ async function shadow({
  * @param param0
  * @returns
  */
-async function glow(
-    color: Promise<Hsla | Rgba>,
-    i: number
-): Promise<Attribute> {
+async function glow(color: Promise<Color>, i: number): Promise<Attribute> {
     const shade = Shadow(color, [0, 0], i * 2, 0, false);
     return StyleClass(
         Flag.txtShadows,

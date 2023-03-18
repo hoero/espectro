@@ -11,10 +11,9 @@
 
 import {
     Attribute,
+    Color,
     Colored,
-    Hsla,
     NoAttribute,
-    Rgba,
     Single,
     StyleClass,
 } from '../internal/data.ts';
@@ -28,9 +27,7 @@ import { style } from './attributes.ts';
  * @param clr
  * @returns
  */
-async function color(
-    backgroundColor: Promise<Hsla | Rgba>
-): Promise<Attribute> {
+async function color(backgroundColor: Promise<Color>): Promise<Attribute> {
     const val = await backgroundColor;
     const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
@@ -38,7 +35,7 @@ async function color(
         Colored(
             `bg-${Internal.formatColorClass(a, b, c, d, e)}`,
             'background-color',
-            backgroundColor
+            val
         )
     );
 }
@@ -90,16 +87,16 @@ function tiledY(src: string): Attribute {
 
 async function gradient(
     angle: number,
-    steps: Promise<Hsla | Rgba>[]
+    steps: Promise<Color>[]
 ): Promise<Attribute> {
     if (isEmpty(steps)) return NoAttribute();
     if (steps.length === 1) return await color(steps[0]);
-    const [stepsCls] = steps.map(async (clr: Promise<Hsla | Rgba>) => {
+    const [stepsCls] = steps.map(async (clr: Promise<Color>) => {
         const val = await clr;
         const [a, b, c, d, e] = Object.values(val);
         return Internal.formatColorClass(a, b, c, d, e);
     });
-    const [stepsColor] = steps.map(async (clr: Promise<Hsla | Rgba>) => {
+    const [stepsColor] = steps.map(async (clr: Promise<Color>) => {
         const val = await clr;
         const [a, b, c, d, e] = Object.values(val);
         return Internal.formatColor(a, b, c, d, e);

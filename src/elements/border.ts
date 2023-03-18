@@ -26,9 +26,8 @@ import {
     Attribute,
     BorderWidth,
     Class,
+    Color,
     Colored,
-    Hsla,
-    Rgba,
     Shadow,
     Single,
     StyleClass,
@@ -46,7 +45,7 @@ const solid: Attribute = Class(Flag.borderStyle, classes.borderSolid),
  * @param clr
  * @returns
  */
-async function color(borderColor: Promise<Hsla | Rgba>): Promise<Attribute> {
+async function color(borderColor: Promise<Color>): Promise<Attribute> {
     const val = await borderColor;
     const [a, b, c, d, e] = Object.values(val);
     return StyleClass(
@@ -54,7 +53,7 @@ async function color(borderColor: Promise<Hsla | Rgba>): Promise<Attribute> {
         Colored(
             `bc-${Internal.formatColorClass(a, b, c, d, e)}`,
             'border-color',
-            borderColor
+            val
         )
     );
 }
@@ -158,10 +157,7 @@ function roundEach({
  * @param size
  * @returns
  */
-async function glow(
-    clr: Promise<Hsla | Rgba>,
-    size: number
-): Promise<Attribute> {
+async function glow(clr: Promise<Color>, size: number): Promise<Attribute> {
     return await shadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
@@ -172,7 +168,7 @@ async function glow(
  * @returns
  */
 async function innerGlow(
-    clr: Promise<Hsla | Rgba>,
+    clr: Promise<Color>,
     size: number
 ): Promise<Attribute> {
     return await innerShadow(Shadow(clr, [0, 0], size * 2, size));
@@ -192,7 +188,7 @@ async function shadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Promise<Hsla | Rgba>;
+    color: Promise<Color>;
 }): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, size, false);
     return StyleClass(
@@ -219,7 +215,7 @@ async function innerShadow({
     offset: [number, number];
     size: number;
     blur: number;
-    color: Promise<Hsla | Rgba>;
+    color: Promise<Color>;
 }): Promise<Attribute> {
     const shade = Shadow(color, offset, blur, size, true);
     return StyleClass(

@@ -1,6 +1,6 @@
 import { classValidator } from '../deps.ts';
 import validate from './validation.ts';
-import { Colour, Hsla, Rgba, Notation } from './internal/data.ts';
+import { Colour, Hsla, Rgba, Notation, Color } from './internal/data.ts';
 
 const min = {
     message:
@@ -37,7 +37,7 @@ class ChannelsColor {
         this.d = d;
     }
 
-    get color(): Hsla | Rgba {
+    get color(): Color {
         switch (this._notation) {
             case Notation.Hsl:
                 return Hsla(this.a, this.b, this.c, 1, this._notation);
@@ -155,7 +155,7 @@ function hsl(
     hue: number,
     saturation: number,
     lightness: number
-): Promise<Hsla | Rgba> {
+): Promise<Color> {
     const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
     return validateColor(color);
 }
@@ -173,7 +173,7 @@ function hsla(
     saturation: number,
     lightness: number,
     alpha: number
-): Promise<Hsla | Rgba> {
+): Promise<Color> {
     const color = new HslaColor(
         Notation.Hsla,
         hue,
@@ -209,7 +209,7 @@ function fromHsla({ hue, saturation, lightness, alpha }: Hsla): Colour {
  * @param colour an array with each channel.
  * @returns a Promise that resolves on Hsla.
  */
-function toHsl(colour: Colour): Promise<Hsla | Rgba> {
+function toHsl(colour: Colour): Promise<Color> {
     const [hue, saturation, lightness, alpha] = colour;
     const color = new HslaColor(
         Notation.Hsl,
@@ -228,7 +228,7 @@ function toHsl(colour: Colour): Promise<Hsla | Rgba> {
  * @param blue takes a value between 0 and 1.
  * @returns a Promise that resolves on Rgba.
  */
-function rgb(red: number, green: number, blue: number): Promise<Hsla | Rgba> {
+function rgb(red: number, green: number, blue: number): Promise<Color> {
     const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
     return validateColor(color);
 }
@@ -246,7 +246,7 @@ function rgba(
     green: number,
     blue: number,
     alpha: number
-): Promise<Hsla | Rgba> {
+): Promise<Color> {
     const color = new RgbaColor(Notation.Rgba, red, green, blue, alpha);
     return validateColor(color);
 }
@@ -258,11 +258,7 @@ function rgba(
  * @param blue takes a value between 0 and 255.
  * @returns a Promise that resolves on Rgba.
  */
-function rgb255(
-    red: number,
-    green: number,
-    blue: number
-): Promise<Hsla | Rgba> {
+function rgb255(red: number, green: number, blue: number): Promise<Color> {
     const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
     return validateColor(color);
 }
@@ -280,7 +276,7 @@ function rgba255(
     green: number,
     blue: number,
     alpha: number
-): Promise<Hsla | Rgba> {
+): Promise<Color> {
     const color = new Rgba255Color(Notation.Rgba255, red, green, blue, alpha);
     return validateColor(color);
 }
@@ -310,13 +306,13 @@ function fromRgba({ red, green, blue, alpha }: Rgba): Colour {
  * @param colour an array with each channel.
  * @returns a Promise that resolves on Rgba.
  */
-function toRgb(colour: Colour): Promise<Hsla | Rgba> {
+function toRgb(colour: Colour): Promise<Color> {
     const [red, green, blue, alpha] = colour;
     const color = new RgbaColor(Notation.Rgb, red, green, blue, alpha);
     return validateColor(color);
 }
 
-async function validateColor(color: ChannelsColor): Promise<Hsla | Rgba> {
+async function validateColor(color: ChannelsColor): Promise<Color> {
     const result = await validate(color);
     if (result === undefined) {
         throw new Error('Color is undefined!');
