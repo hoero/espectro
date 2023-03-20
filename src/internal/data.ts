@@ -1248,7 +1248,7 @@ export interface Gathered {
     attributes: DOM.Attr[];
     styles: Style[];
     children: NearbyChildren;
-    has: Field;
+    has: Field[];
 }
 
 export function Gathered(
@@ -1256,7 +1256,7 @@ export function Gathered(
     attributes: DOM.Attr[],
     styles: Style[],
     children: NearbyChildren,
-    has: Field
+    has: Field[]
 ): Gathered {
     return { node, attributes, styles, children, has };
 }

@@ -37,49 +37,35 @@ export type Flag = Flag_ | Second;
 
 const none = Field(0, 0);
 
-function value(myFlag: Flag): number {
-    switch (myFlag.type) {
-        case Flags.Flag:
-            return Math.round(Math.log2(myFlag.first));
-
-        case Flags.Second:
-            return Math.round(Math.log2(myFlag.second)) + 32;
-    }
-}
-
 // If the query is in the truth, return true
-function present(myFlag: Flag, field: Field): boolean {
+function present(myFlag: Flag, fields: Field[]): boolean {
     switch (myFlag.type) {
         case Flags.Flag:
-            return (myFlag.first & field[0]) === myFlag.first;
+            return (
+                fields.find((value) => value[0] === myFlag.first) !== undefined
+            );
 
         case Flags.Second:
-            return (myFlag.second & field[1]) === myFlag.second;
+            return (
+                fields.find((value) => value[1] === myFlag.second) !== undefined
+            );
     }
 }
 
 // Add a flag to a field.
-function add(myFlag: Flag, field: Field): Field {
+function add(myFlag: Flag, fields: Field[]): Field[] {
     switch (myFlag.type) {
         case Flags.Flag:
-            return Field(myFlag.first | field[0], field[1]);
+            return [Field(myFlag.first, 0), ...fields];
 
         case Flags.Second:
-            return Field(field[0], myFlag.second | field[1]);
+            return [Field(0, myFlag.second), ...fields];
     }
 }
 
-/** Generally you want to use `add`, which keeps a distinction between Fields and Flags.
-
-Merging will combine two fields
-*/
-function merge(a: Field, b: Field): Field {
-    return Field(a[0] | b[0], a[1] | b[1]);
-}
-
-function flag(i: number): Second | Flag {
-    if (i > 31) return Second((i - 32) << 1);
-    return Flag(i << 1);
+function flag(i: number): Flag {
+    if (i > 31) return Second(i - 32);
+    return Flag(i);
 }
 
 // Used for Style invalidation
@@ -213,7 +199,6 @@ export {
     heightTextAreaContent,
     hover,
     letterSpacing,
-    merge,
     moveX,
     moveY,
     none,
@@ -226,7 +211,6 @@ export {
     spacing,
     transparency,
     txtShadows,
-    value,
     width,
     widthBetween,
     widthContent,

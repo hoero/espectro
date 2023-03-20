@@ -185,7 +185,7 @@ function unstyled(node: DOM.Node): Element {
 }
 
 async function finalizeNode(
-    has: Flag.Field,
+    has: Flag.Field[],
     node: NodeName,
     attributes: DOM.Attr[],
     children: Children<DOM.Node>,
@@ -251,13 +251,8 @@ async function finalizeNode(
                     }
                 };
                 const child_ = await child(embedMode);
-
                 // TODO: Review this logic, where to put the key
-                child_.map((value: [string, DOM.Node]) => {
-                    // const html = domElement(value[0], [], keyedNode);
-                    // html.appendChild(value[1]);
-                    keyedNode.appendChild(value[1]);
-                });
+                keyedNode.append(...child_[1]);
                 return keyedNode;
             }
 
@@ -299,8 +294,7 @@ async function finalizeNode(
                     }
                 };
                 const child_ = await child(embedMode);
-
-                child_.map((value: DOM.Node) => unkeyedNode.appendChild(value));
+                unkeyedNode.append(...child_);
                 return unkeyedNode;
             }
         }
@@ -314,7 +308,7 @@ async function finalizeNode(
             ) {
                 return await html;
             } else if (Flag.present(Flag.alignRight, has)) {
-                const el = domElement('u', [
+                const u = domElement('u', [
                     [
                         'class',
                         [
@@ -326,10 +320,10 @@ async function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.appendChild(await html);
-                return el;
+                u.appendChild(await html);
+                return u;
             } else if (Flag.present(Flag.centerX, has)) {
-                const el = domElement('s', [
+                const s = domElement('s', [
                     [
                         'class',
                         [
@@ -341,8 +335,8 @@ async function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.appendChild(await html);
-                return el;
+                s.appendChild(await html);
+                return s;
             } else {
                 return await html;
             }
@@ -354,7 +348,7 @@ async function finalizeNode(
             ) {
                 return await html;
             } else if (Flag.present(Flag.centerY, has)) {
-                const el = domElement('s', [
+                const s = domElement('s', [
                     [
                         'class',
                         [
@@ -365,10 +359,10 @@ async function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.appendChild(await html);
-                return el;
+                s.appendChild(await html);
+                return s;
             } else if (Flag.present(Flag.alignBottom, has)) {
-                const el = domElement('u', [
+                const u = domElement('u', [
                     [
                         'class',
                         [
@@ -379,8 +373,49 @@ async function finalizeNode(
                         ].join(' '),
                     ],
                 ]);
-                el.appendChild(await html);
-                return el;
+                u.appendChild(await html);
+                return u;
+            } else {
+                return await html;
+            }
+
+        case LayoutContext.AsEl:
+            if (
+                Flag.present(Flag.alignRight, has) ||
+                Flag.present(Flag.alignBottom, has)
+            ) {
+                const u = domElement('u', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.contentCenterY,
+                            cls.alignContainerRight,
+                        ].join(' '),
+                    ],
+                ]);
+                u.appendChild(await html);
+                return u;
+            } else if (
+                Flag.present(Flag.centerX, has) ||
+                Flag.present(Flag.centerY, has)
+            ) {
+                const s = domElement('s', [
+                    [
+                        'class',
+                        [
+                            cls.any,
+                            cls.single,
+                            cls.container,
+                            cls.contentCenterY,
+                            cls.alignContainerCenterX,
+                        ].join(' '),
+                    ],
+                ]);
+                s.appendChild(await html);
+                return s;
             } else {
                 return await html;
             }
@@ -748,7 +783,7 @@ function skippable(flag: Flag.Flag, style: Style) {
 function gatherAttrRecursive(
     classes: string,
     node: NodeName,
-    has: Flag.Field,
+    has: Flag.Field[],
     transform: Transformation,
     styles: Style[],
     attrs: DOM.Attr[],
@@ -757,11 +792,18 @@ function gatherAttrRecursive(
 ): Gathered {
     if (isEmpty(elementAttrs)) {
         const class_ = transformClass(transform);
+
         switch (class_.type) {
             case MaybeType.Nothing:
                 return Gathered(
                     node,
-                    [attribute('class', classes), ...attrs],
+                    [
+                        attribute(
+                            'class',
+                            [classes, ...classes_(attrs)].join(' ')
+                        ),
+                        ...attrs.filter((attr) => attr.name !== 'class'),
+                    ],
                     styles,
                     children,
                     has
@@ -771,14 +813,25 @@ function gatherAttrRecursive(
                 return Gathered(
                     node,
                     [
-                        attribute('class', `${classes} ${class_.value}`),
-                        ...attrs,
+                        attribute(
+                            'class',
+                            [classes, class_.value, ...classes_(attrs)].join(
+                                ' '
+                            )
+                        ),
+                        ...attrs.filter((attr) => attr.name !== 'class'),
                     ],
                     [Transform(transform), ...styles],
                     children,
                     has
                 );
         }
+    }
+
+    function classes_(attrs: DOM.Attr[]): string[] {
+        return attrs
+            .filter((attr) => attr.name === 'class')
+            .map((attr) => attr.value);
     }
 
     const [attribute_, ...remaining] = elementAttrs;
@@ -1042,26 +1095,24 @@ function gatherAttrRecursive(
                     remaining
                 );
 
-            const flags: Flag.Field = Flag.add(Flag.yAlign, has);
+            const flags: Flag.Field[] = Flag.add(Flag.yAlign, has);
             const align: VAlign = attribute_.y;
-
-            const has_ = (): Flag.Field => {
-                switch (align) {
-                    case VAlign.CenterY:
-                        return Flag.add(Flag.centerY, flags);
-
-                    case VAlign.Bottom:
-                        return Flag.add(Flag.alignBottom, flags);
-
-                    default:
-                        return flags;
-                }
-            };
 
             return gatherAttrRecursive(
                 `${alignYName(align)} ${classes}`,
                 node,
-                has_(),
+                (() => {
+                    switch (align) {
+                        case VAlign.CenterY:
+                            return Flag.add(Flag.centerY, flags);
+
+                        case VAlign.Bottom:
+                            return Flag.add(Flag.alignBottom, flags);
+
+                        default:
+                            return flags;
+                    }
+                })(),
                 transform,
                 styles,
                 attrs,
@@ -1083,26 +1134,24 @@ function gatherAttrRecursive(
                     remaining
                 );
 
-            const flags: Flag.Field = Flag.add(Flag.xAlign, has);
+            const flags: Flag.Field[] = Flag.add(Flag.xAlign, has);
             const align: HAlign = attribute_.x;
-
-            const has_ = (): Flag.Field => {
-                switch (align) {
-                    case HAlign.CenterX:
-                        return Flag.add(Flag.centerX, flags);
-
-                    case HAlign.Right:
-                        return Flag.add(Flag.alignRight, flags);
-
-                    default:
-                        return flags;
-                }
-            };
 
             return gatherAttrRecursive(
                 `${alignXName(align)} ${classes}`,
                 node,
-                has_(),
+                (() => {
+                    switch (align) {
+                        case HAlign.CenterX:
+                            return Flag.add(Flag.centerX, flags);
+
+                        case HAlign.Right:
+                            return Flag.add(Flag.alignRight, flags);
+
+                        default:
+                            return flags;
+                    }
+                })(),
                 transform,
                 styles,
                 attrs,
@@ -1208,7 +1257,7 @@ function gatherAttrRecursive(
                     return gatherAttrRecursive(
                         `${classes} ${newClass}`,
                         node,
-                        Flag.merge(addToFlags, Flag.add(Flag.width, has)),
+                        [...addToFlags, ...Flag.add(Flag.width, has)],
                         transform,
                         [...newStyles, ...styles],
                         attrs,
@@ -1219,7 +1268,7 @@ function gatherAttrRecursive(
             }
 
         case Attributes.Height:
-            if (Flag.present(Flag.height, has)) {
+            if (Flag.present(Flag.height, has))
                 return gatherAttrRecursive(
                     classes,
                     node,
@@ -1230,7 +1279,6 @@ function gatherAttrRecursive(
                     children,
                     remaining
                 );
-            }
 
             switch (attribute_.height.type) {
                 case Lengths.Px: {
@@ -1323,7 +1371,7 @@ function gatherAttrRecursive(
                     return gatherAttrRecursive(
                         `${classes} ${newClass}`,
                         node,
-                        Flag.merge(addToFlags, Flag.add(Flag.width, has)),
+                        [...addToFlags, ...Flag.add(Flag.height, has)],
                         transform,
                         [...newStyles, ...styles],
                         attrs,
@@ -1488,17 +1536,16 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
 
     const el = domElement('div', [['class', classes_(location)]]);
     el.appendChild(child(element_));
-
     return el;
 }
 
-function renderWidth(w: Length): [Flag.Field, string, Style[]] {
+function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
     switch (w.type) {
         case Lengths.Px: {
             const val = w.px;
             const name = `width-px-${val}`;
             return [
-                Flag.none,
+                [Flag.none],
                 `${cls.widthExact} ${name}`,
                 [Single(name, 'width', `${val}px`)],
             ];
@@ -1508,7 +1555,7 @@ function renderWidth(w: Length): [Flag.Field, string, Style[]] {
             const val = w.rem;
             const name = `width-px-${val}`;
             return [
-                Flag.none,
+                [Flag.none],
                 `${cls.widthExact} ${name}`,
                 [Single(name, 'width', `${val}rem`)],
             ];
@@ -1516,19 +1563,23 @@ function renderWidth(w: Length): [Flag.Field, string, Style[]] {
 
         case Lengths.Content:
             return [
-                Flag.add(Flag.widthContent, Flag.none),
+                Flag.add(Flag.widthContent, [Flag.none]),
                 cls.widthContent,
                 [],
             ];
 
         case Lengths.Fill: {
             if (w.i === 1)
-                return [Flag.add(Flag.widthFill, Flag.none), cls.widthFill, []];
+                return [
+                    Flag.add(Flag.widthFill, [Flag.none]),
+                    cls.widthFill,
+                    [],
+                ];
 
             const val = w.i;
             const name = `width-fill-${val}`;
             return [
-                Flag.add(Flag.widthFill, Flag.none),
+                Flag.add(Flag.widthFill, [Flag.none]),
                 `${cls.widthFillPortion} ${name}`,
                 [
                     Single(
@@ -1568,23 +1619,23 @@ function renderWidth(w: Length): [Flag.Field, string, Style[]] {
 
         case Lengths.MinContent: {
             const name = 'min-width';
-            return [Flag.none, name, [Single(name, name, 'min-content')]];
+            return [[Flag.none], name, [Single(name, name, 'min-content')]];
         }
 
         case Lengths.MaxContent: {
             const name = 'max-width';
-            return [Flag.none, name, [Single(name, name, 'max-content')]];
+            return [[Flag.none], name, [Single(name, name, 'max-content')]];
         }
     }
 }
 
-function renderHeight(h: Length): [Flag.Field, string, Style[]] {
+function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
     switch (h.type) {
         case Lengths.Px: {
             const val = h.px;
             const name = `height-px-${val}`;
             return [
-                Flag.none,
+                [Flag.none],
                 `${cls.heightExact} ${name}`,
                 [Single(name, 'height', `${val}px`)],
             ];
@@ -1594,7 +1645,7 @@ function renderHeight(h: Length): [Flag.Field, string, Style[]] {
             const val = h.rem;
             const name = `height-px-${val}`;
             return [
-                Flag.none,
+                [Flag.none],
                 `${cls.heightExact} ${name}`,
                 [Single(name, 'height', `${val}rem`)],
             ];
@@ -1602,7 +1653,7 @@ function renderHeight(h: Length): [Flag.Field, string, Style[]] {
 
         case Lengths.Content:
             return [
-                Flag.add(Flag.heightContent, Flag.none),
+                Flag.add(Flag.heightContent, [Flag.none]),
                 cls.heightContent,
                 [],
             ];
@@ -1610,7 +1661,7 @@ function renderHeight(h: Length): [Flag.Field, string, Style[]] {
         case Lengths.Fill: {
             if (h.i === 1)
                 return [
-                    Flag.add(Flag.heightFill, Flag.none),
+                    Flag.add(Flag.heightFill, [Flag.none]),
                     cls.heightFill,
                     [],
                 ];
@@ -1618,7 +1669,7 @@ function renderHeight(h: Length): [Flag.Field, string, Style[]] {
             const val = h.i;
             const name = `height-fill-${val}`;
             return [
-                Flag.add(Flag.heightFill, Flag.none),
+                Flag.add(Flag.heightFill, [Flag.none]),
                 `${cls.heightFillPortion} ${name}`,
                 [
                     Single(
@@ -1664,12 +1715,12 @@ function renderHeight(h: Length): [Flag.Field, string, Style[]] {
 
         case Lengths.MinContent: {
             const name = 'min-height';
-            return [Flag.none, name, [Single(name, name, 'min-content')]];
+            return [[Flag.none], name, [Single(name, name, 'min-content')]];
         }
 
         case Lengths.MaxContent: {
             const name = 'max-height';
-            return [Flag.none, name, [Single(name, name, 'max-content')]];
+            return [[Flag.none], name, [Single(name, name, 'max-content')]];
         }
     }
 }
@@ -1711,26 +1762,38 @@ async function element(
     attributes: Attribute[],
     children: Children<Element>
 ): Promise<Element> {
+    return await elementCore(context, node, attributes, children);
+}
+
+async function elementCore(
+    context: LayoutContext,
+    node: NodeName,
+    attributes: Attribute[],
+    children: Children<Element>,
+    options?: OptionObject
+): Promise<Element> {
     return await createElement(
         context,
         children,
         gatherAttrRecursive(
             contextClasses(context),
             node,
-            Flag.none,
+            [Flag.none],
             untransformed,
             [],
             [],
             NoNearbyChildren(),
             attributes.reverse()
-        )
+        ),
+        options
     );
 }
 
 async function createElement(
     context: LayoutContext,
     children: Children<Element>,
-    rendered: Gathered
+    rendered: Gathered,
+    options?: OptionObject
 ): Promise<Element> {
     function gather(
         child: Element,
@@ -1842,6 +1905,23 @@ async function createElement(
                 const newStyles: Style[] = isEmpty(gathered[1])
                     ? rendered.styles
                     : rendered.styles.concat(gathered[1]);
+                if (isEmpty(newStyles)) {
+                    const node = await finalizeNode(
+                        rendered.has,
+                        rendered.node,
+                        rendered.attributes,
+                        Keyed(
+                            addKeyedChildren(
+                                'nearby-element-pls',
+                                gathered[0],
+                                rendered.children
+                            )
+                        ),
+                        NoStyleSheet(),
+                        context
+                    );
+                    return Unstyled(() => node);
+                }
                 const node = await finalizeNode(
                     rendered.has,
                     rendered.node,
@@ -1853,12 +1933,11 @@ async function createElement(
                             rendered.children
                         )
                     ),
-                    NoStyleSheet(),
+                    typeof options === 'undefined'
+                        ? NoStyleSheet()
+                        : embedStyle(options, newStyles),
                     context
                 );
-                if (isEmpty(newStyles)) {
-                    return Unstyled(() => node);
-                }
                 return Styled(newStyles, () => node);
             }
             return Empty();
@@ -1875,17 +1954,27 @@ async function createElement(
                 const newStyles: Style[] = isEmpty(gathered[1])
                     ? rendered.styles
                     : rendered.styles.concat(gathered[1]);
+                if (isEmpty(newStyles)) {
+                    const node = await finalizeNode(
+                        rendered.has,
+                        rendered.node,
+                        rendered.attributes,
+                        Unkeyed(addChildren(gathered[0], rendered.children)),
+                        NoStyleSheet(),
+                        context
+                    );
+                    return Unstyled(() => node);
+                }
                 const node = await finalizeNode(
                     rendered.has,
                     rendered.node,
                     rendered.attributes,
                     Unkeyed(addChildren(gathered[0], rendered.children)),
-                    NoStyleSheet(),
+                    typeof options === 'undefined'
+                        ? NoStyleSheet()
+                        : embedStyle(options, newStyles),
                     context
                 );
-                if (isEmpty(newStyles)) {
-                    return Unstyled(() => node);
-                }
                 return Styled(newStyles, () => node);
             }
             return Empty();
@@ -2259,20 +2348,20 @@ async function renderRoot(
 ): Promise<DOM.Node> {
     const options: OptionObject = optionsToObject(optionList);
 
-    function embedStyle(styles: Style[]): EmbedStyle {
-        switch (options.mode) {
-            case RenderMode.NoStaticStyleSheet:
-                return OnlyDynamic(options, styles);
-
-            default:
-                return StaticRootAndDynamic(options, styles);
-        }
-    }
-
     return toHtml(
-        (s: Style[]) => embedStyle(s),
-        await element(asEl, div, attributes, Unkeyed([child]))
+        (s: Style[]) => embedStyle(options, s),
+        await elementCore(asEl, div, attributes, Unkeyed([child]), options)
     );
+}
+
+function embedStyle(options: OptionObject, styles: Style[]): EmbedStyle {
+    switch (options.mode) {
+        case RenderMode.NoStaticStyleSheet:
+            return OnlyDynamic(options, styles);
+
+        default:
+            return StaticRootAndDynamic(options, styles);
+    }
 }
 
 const families: Font[] = [
