@@ -310,10 +310,10 @@ const shrink: Length = Content();
 const fill: Length = Fill(1);
 
 /** Set supported CSS property to min-content */
-const minContent: Length = MinContent();
+const minContent: MinContent = MinContent();
 
 /** Set supported CSS property to max-content */
-const maxContent: Length = MaxContent();
+const maxContent: MaxContent = MaxContent();
 
 /**
  * Elm UI embeds two StyleSheets, one that is constant, and one that changes dynamically based on styles collected from the elements being rendered.
@@ -376,11 +376,11 @@ function htmlAttribute(attribute: DOM.Attr): Attribute {
     return Attr(attribute);
 }
 
-function px(value: number): Length {
+function px(value: number): Px {
     return Px(Math.round(value));
 }
 
-function rem(value: number): Length {
+function rem(value: number): Rem {
     return Rem(value);
 }
 
@@ -393,7 +393,7 @@ function rem(value: number): Length {
  * )
  * ```
  */
-function minimum(value: number, length: Length): Length {
+function minimum(value: number, length: Length): Min {
     return Min(value, length);
 }
 
@@ -406,7 +406,7 @@ function minimum(value: number, length: Length): Length {
  * )
  * ```
  */
-function maximum(value: number, length: Length): Length {
+function maximum(value: number, length: Length): Max {
     return Max(value, length);
 }
 
@@ -417,7 +417,7 @@ function maximum(value: number, length: Length): Length {
  *
  * **Also:** `fill === fillPortion(1)`
  */
-function fillPortion(value: number): Length {
+function fillPortion(value: number): Fill {
     return Fill(value);
 }
 
@@ -772,7 +772,7 @@ async function tableHelper(
         }>((resolve, _reject) => {
             resolve({
                 elements: [],
-                row: maybeHeaders === Nothing() ? 1 : 2,
+                row: maybeHeaders.type === MaybeType.Nothing ? 1 : 2,
                 column: 1,
             });
         })
@@ -831,7 +831,7 @@ async function tableHelper(
                         cursor_.row,
                         cursor_.column,
                         columnConfig.column.view(
-                            maybeHeaders === Nothing()
+                            maybeHeaders.type === MaybeType.Nothing
                                 ? cursor_.row - 1
                                 : cursor_.row - 2,
                             cell

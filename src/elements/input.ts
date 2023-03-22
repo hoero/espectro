@@ -705,7 +705,10 @@ async function slider(
             const trackHeight_: Length = withDefault(MinContent(), trackHeight);
             const w: number = withDefault(0, Internal.getLength(trackWidth));
             const h: number = withDefault(0, Internal.getLength(trackHeight));
-            if (trackWidth === Nothing() && trackHeight === Nothing())
+            if (
+                trackWidth.type === MaybeType.Nothing &&
+                trackHeight.type === MaybeType.Nothing
+            )
                 return false;
             if (
                 trackWidth_.type === Lengths.Px &&

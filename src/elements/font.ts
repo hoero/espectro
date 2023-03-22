@@ -217,12 +217,12 @@ function external({ url, name }: { url: string; name: string }): Font {
     return ImportFont(name, url);
 }
 
-/** TODO: Rem version. Font sizes are always given as `px`. */
+/** Font sizes are always given as `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/
 function size(i: number): Attribute {
     return StyleClass(Flag.fontSize, FontSize(i));
 }
 
-/**TODO: Rem version. In `px`. */
+/** In `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/
 function letterSpacing(offset: number): Attribute {
     return StyleClass(
         Flag.letterSpacing,
@@ -234,7 +234,7 @@ function letterSpacing(offset: number): Attribute {
     );
 }
 
-/**TODO: Rem version. In `px`. */
+/** In `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/
 function wordSpacing(offset: number): Attribute {
     return StyleClass(
         Flag.wordSpacing,

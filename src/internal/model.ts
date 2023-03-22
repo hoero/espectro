@@ -1589,10 +1589,17 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
         }
 
         case Lengths.Min: {
-            // TODO: Rem version
             const minCls = `min-width-${w.min}`,
-                minStyle = Single(minCls, 'min-width', `${w.min}px`),
-                [newFlag, newAttrs, newStyle] = renderWidth(w.length);
+                [newFlag, newAttrs, newStyle] = renderWidth(w.length),
+                minStyle = (() => {
+                    switch (w.length.type) {
+                        case Lengths.Rem:
+                            return Single(minCls, 'min-width', `${w.min}rem`);
+
+                        default:
+                            return Single(minCls, 'min-width', `${w.min}px`);
+                    }
+                })();
 
             return [
                 Flag.add(Flag.widthBetween, newFlag),
@@ -1602,10 +1609,17 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
         }
 
         case Lengths.Max: {
-            // TODO: Rem version
             const max = `max-width-${w.max}`,
-                maxStyle = Single(max, 'max-width', `${w.max}px`),
-                [newFlag, newAttrs, newStyle] = renderWidth(w.length);
+                [newFlag, newAttrs, newStyle] = renderWidth(w.length),
+                maxStyle = (() => {
+                    switch (w.length.type) {
+                        case Lengths.Rem:
+                            return Single(max, 'max-width', `${w.max}rem`);
+
+                        default:
+                            return Single(max, 'max-width', `${w.max}px`);
+                    }
+                })();
 
             return [
                 Flag.add(Flag.widthBetween, newFlag),
@@ -1679,16 +1693,27 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
         }
 
         case Lengths.Min: {
-            // TODO: Rem version
             const minCls = `min-height-${h.min}`,
-                minStyle = Single(
-                    minCls,
-                    'min-height',
-                    // This needs to be !important because we're using `min-height: min-content`
-                    // to correct for safari's incorrect implementation of flexbox.
-                    `${h.min}px !important`
-                ),
-                [newFlag, newAttrs, newStyle] = renderHeight(h.length);
+                [newFlag, newAttrs, newStyle] = renderHeight(h.length),
+                minStyle = (() => {
+                    switch (h.length.type) {
+                        case Lengths.Rem:
+                            return Single(
+                                minCls,
+                                'min-height',
+                                // This needs to be !important because we're using `min-height: min-content`
+                                // to correct for safari's incorrect implementation of flexbox.
+                                `${h.min}rem !important`
+                            );
+
+                        default:
+                            return Single(
+                                minCls,
+                                'min-height',
+                                `${h.min}px !important`
+                            );
+                    }
+                })();
 
             return [
                 Flag.add(Flag.heightBetween, newFlag),
@@ -1698,10 +1723,17 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
         }
 
         case Lengths.Max: {
-            // TODO: Rem version
             const max = `max-height-${h.max}`,
-                maxStyle = Single(max, 'max-height', `${h.max}px`),
-                [newFlag, newAttrs, newStyle] = renderHeight(h.length);
+                [newFlag, newAttrs, newStyle] = renderHeight(h.length),
+                maxStyle = (() => {
+                    switch (h.length.type) {
+                        case Lengths.Rem:
+                            return Single(max, 'max-height', `${h.max}rem`);
+
+                        default:
+                            return Single(max, 'max-height', `${h.max}px`);
+                    }
+                })();
 
             return [
                 Flag.add(Flag.heightBetween, newFlag),
@@ -3177,27 +3209,49 @@ function renderStyleRule(
                         return x.rem + 'rem';
 
                     case Lengths.Content:
-                        // TODO:Rem version
-                        if (minimum === Nothing() && maximum === Nothing())
+                        if (
+                            minimum.type === MaybeType.Nothing &&
+                            maximum.type === MaybeType.Nothing
+                        )
                             return 'max-content';
-                        if (minimum !== Nothing() && maximum === Nothing())
+                        if (
+                            minimum.type === MaybeType.Just &&
+                            maximum.type === MaybeType.Nothing
+                        )
                             return `minmax(${minimum}px, max-content)`;
-                        if (minimum === Nothing() && maximum !== Nothing())
+                        if (
+                            minimum.type === MaybeType.Nothing &&
+                            maximum.type === MaybeType.Just
+                        )
                             return `minmax(max-content, ${maximum}px)`;
-                        if (minimum !== Nothing() && maximum !== Nothing())
+                        if (
+                            minimum.type === MaybeType.Just &&
+                            maximum.type === MaybeType.Just
+                        )
                             return `minmax(${minimum}px, ${maximum}px)`;
                         break;
 
                     case Lengths.Fill:
-                        // TODO:Rem version
-                        if (minimum === Nothing() && maximum === Nothing())
+                        if (
+                            minimum.type === MaybeType.Nothing &&
+                            maximum.type === MaybeType.Nothing
+                        )
                             return x.i + 'fr';
-                        if (minimum !== Nothing() && maximum === Nothing())
+                        if (
+                            minimum.type === MaybeType.Just &&
+                            maximum.type === MaybeType.Nothing
+                        )
                             // TODO: Check frfr
                             return `minmax(${minimum}px, ${x.i}frfr)`;
-                        if (minimum === Nothing() && maximum !== Nothing())
+                        if (
+                            minimum.type === MaybeType.Nothing &&
+                            maximum.type === MaybeType.Just
+                        )
                             return `minmax(max-content, ${maximum}px)`;
-                        if (minimum !== Nothing() && maximum !== Nothing())
+                        if (
+                            minimum.type === MaybeType.Just &&
+                            maximum.type === MaybeType.Just
+                        )
                             return `minmax(${minimum}px, ${maximum}px)`;
                         break;
 
@@ -3292,7 +3346,7 @@ function renderStyleRule(
             const class_: Maybe<string> = transformClass(rule.transform);
             const cls_: string = withDefault('', class_);
             const v: string = withDefault('', value);
-            if (class_ !== Nothing() && value !== Nothing())
+            if (class_.type === MaybeType.Just && value.type === MaybeType.Just)
                 return renderStyle(options, pseudo, '.' + cls_, [
                     Property('transform', v),
                 ]);
