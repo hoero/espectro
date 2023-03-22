@@ -79,7 +79,6 @@ import {
     StaticRootAndDynamic,
     Px,
     Hsla,
-    Empty,
 } from './data.ts';
 import { attribute } from '../dom/attribute.ts';
 import domElement from '../dom/element.ts';
@@ -212,9 +211,7 @@ async function finalizeNode(
                     el
                 );
                 el.appendChild(child);
-                return new Promise<DOM.Node>((resolve, _reject) => {
-                    resolve(el);
-                });
+                return el;
             }
         }
     })();
@@ -1901,27 +1898,11 @@ async function createElement(
                 [[], []]
             );
 
-            if (gathered[0].length > 0 || gathered[1].length > 0) {
-                const newStyles: Style[] = isEmpty(gathered[1])
-                    ? rendered.styles
-                    : rendered.styles.concat(gathered[1]);
-                if (isEmpty(newStyles)) {
-                    const node = await finalizeNode(
-                        rendered.has,
-                        rendered.node,
-                        rendered.attributes,
-                        Keyed(
-                            addKeyedChildren(
-                                'nearby-element-pls',
-                                gathered[0],
-                                rendered.children
-                            )
-                        ),
-                        NoStyleSheet(),
-                        context
-                    );
-                    return Unstyled(() => node);
-                }
+            const newStyles: Style[] = isEmpty(gathered[1])
+                ? rendered.styles
+                : rendered.styles.concat(gathered[1]);
+
+            if (isEmpty(newStyles)) {
                 const node = await finalizeNode(
                     rendered.has,
                     rendered.node,
@@ -1933,14 +1914,29 @@ async function createElement(
                             rendered.children
                         )
                     ),
-                    typeof options === 'undefined'
-                        ? NoStyleSheet()
-                        : embedStyle(options, newStyles),
+                    NoStyleSheet(),
                     context
                 );
-                return Styled(newStyles, () => node);
+                return Unstyled(() => node);
             }
-            return Empty();
+
+            const node = await finalizeNode(
+                rendered.has,
+                rendered.node,
+                rendered.attributes,
+                Keyed(
+                    addKeyedChildren(
+                        'nearby-element-pls',
+                        gathered[0],
+                        rendered.children
+                    )
+                ),
+                typeof options === 'undefined'
+                    ? NoStyleSheet()
+                    : embedStyle(options, newStyles),
+                context
+            );
+            return Styled(newStyles, () => node);
         }
 
         case Childrens.Unkeyed: {
@@ -1950,34 +1946,33 @@ async function createElement(
                 [[], []]
             );
 
-            if (gathered[0].length > 0 || gathered[1].length > 0) {
-                const newStyles: Style[] = isEmpty(gathered[1])
-                    ? rendered.styles
-                    : rendered.styles.concat(gathered[1]);
-                if (isEmpty(newStyles)) {
-                    const node = await finalizeNode(
-                        rendered.has,
-                        rendered.node,
-                        rendered.attributes,
-                        Unkeyed(addChildren(gathered[0], rendered.children)),
-                        NoStyleSheet(),
-                        context
-                    );
-                    return Unstyled(() => node);
-                }
+            const newStyles: Style[] = isEmpty(gathered[1])
+                ? rendered.styles
+                : rendered.styles.concat(gathered[1]);
+
+            if (isEmpty(newStyles)) {
                 const node = await finalizeNode(
                     rendered.has,
                     rendered.node,
                     rendered.attributes,
                     Unkeyed(addChildren(gathered[0], rendered.children)),
-                    typeof options === 'undefined'
-                        ? NoStyleSheet()
-                        : embedStyle(options, newStyles),
+                    NoStyleSheet(),
                     context
                 );
-                return Styled(newStyles, () => node);
+                return Unstyled(() => node);
             }
-            return Empty();
+
+            const node = await finalizeNode(
+                rendered.has,
+                rendered.node,
+                rendered.attributes,
+                Unkeyed(addChildren(gathered[0], rendered.children)),
+                typeof options === 'undefined'
+                    ? NoStyleSheet()
+                    : embedStyle(options, newStyles),
+                context
+            );
+            return Styled(newStyles, () => node);
         }
     }
 }
@@ -2497,9 +2492,7 @@ async function renderFocusStyle(focus: FocusStyle): Promise<Style[]> {
                             const val = await formatBoxShadow(shadow);
                             return Property('box-shadow', val);
                         }
-                        return new Promise<Property>((resolve, _reject) => {
-                            resolve(Property('', ''));
-                        });
+                        return Property('', '');
                     }, focus.shadow)
                 ),
                 Property('outline', 'none'),

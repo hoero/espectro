@@ -951,7 +951,7 @@ const baseSheet: Class[] = [
                 Prop('align-self', 'stretch !important'),
             ]),
 
-            // TODO:: This may be necessary..should it move to classes.heightFIll?
+            // This may be necessary..should it move to classes.heightFIll?
             // Child(dot(classes.heightFillBetween), [
             //     // alignTop, centerY, and alignBottom need to be disabled
             //     Prop('align-self', 'stretch'),
@@ -1082,7 +1082,7 @@ const baseSheet: Class[] = [
                 // Prop "align-self" "stretch !important"
                 Prop('width', '100%'),
             ]),
-            // TODO:: This may be necessary..should it move to widthFill?
+            // This may be necessary..should it move to widthFill?
             // Child(dot(classes.widthFill), [
             //     Prop('align-self', 'stretch'),
             //     Descriptor(dot(classes.alignedHorizontally), [Prop('width', '100%')]),

@@ -1,3 +1,11 @@
+/**
+ * # Color
+ *
+ * In order to use attributes like `Font.color` and `Background.color`, you'll need to make some colors!
+ *
+ * @docs Color, Colour, hsl, hsla, fromHsl, fromHsla, toHsl, rgba, rgb, rgb255, rgba255, fromRgb, fromRgba, toRgb
+ */
+
 import { classValidator } from '../deps.ts';
 import validate from './validation.ts';
 import { Colour, Hsla, Rgba, Notation, Color } from './internal/data.ts';
@@ -14,7 +22,6 @@ const max = {
 class ChannelsColor {
     private _notation: Notation;
     @classValidator.Min(0, min)
-    // TODO:
     private a: number;
     @classValidator.Min(0, min)
     private b: number;

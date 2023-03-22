@@ -1,176 +1,150 @@
 // deno-lint-ignore-file no-explicit-any
-/** TODO:
+/**
  * Input elements have a lot of constraints!
-
-We want all of our input elements to:
-
-  - _Always be accessible_
-  - _Behave intuitively_
-  - _Be completely restyleable_
-
-While these three goals may seem pretty obvious, Html and CSS have made it surprisingly difficult to achieve!
-
-And incredibly difficult for developers to remember all the tricks necessary to make things work. If you've every tried to make a `<textarea>` be the height of it's content or restyle a radio button while maintaining accessibility, you may be familiar.
-
-This module is intended to be accessible by default. You shouldn't have to wade through docs, articles, and books to find out [exactly how accessible your html actually is](https://www.powermapper.com/tests/screen-readers/aria/index.html).
-
-
-# Focus Styling
-
-All Elements can be styled on focus by using [`Element.focusStyle`](Element#focusStyle) to set a global focus style or [`Element.focused`](Element#focused) to set a focus style individually for an element.
-
-@docs focusedOnLoad
-
-
-# Buttons
-
-@docs button
-
-
-# Checkboxes
-
-A checkbox requires you to store a `Bool` in your model.
-
-This is also the first input element that has a [`required label`](#Label).
-
-    import Element exposing (text)
-    import Element.Input as Input
-
-    type Msg
-        = GuacamoleChecked Bool
-
-    view model =
-        Input.checkbox []
-            { onChange = GuacamoleChecked
-            , icon = Input.defaultCheckbox
-            , checked = model.guacamole
-            , label =
-                Input.labelRight []
-                    (text "Do you want Guacamole?")
-            }
-
-@docs checkbox, defaultCheckbox
-
-
-# Text
-
-@docs text, multiline
-
-@docs Placeholder, placeholder
-
-
-## Text with autofill
-
-If we want to play nicely with a browser's ability to autofill a form, we need to be able to give it a hint about what we're expecting.
-
-The following inputs are very similar to `Input.text`, but they give the browser a hint to allow autofill to work correctly.
-
-@docs username, newPassword, currentPassword, email, search, spellChecked
-
-
-# Sliders
-
-A slider is great for choosing between a range of numerical values.
-
-  - **thumb** - The icon that you click and drag to change the value.
-  - **track** - The line behind the thumb denoting where you can slide to.
-
-@docs slider, Thumb, thumb, defaultThumb
-
-
-# Radio Selection
-
-The fact that we still call this a radio selection is fascinating. I can't remember the last time I actually used an honest-to-goodness button on a radio. Chalk it up along with the floppy disk save icon or the word [Dashboard](https://en.wikipedia.org/wiki/Dashboard).
-
-Perhaps a better name would be `Input.chooseOne`, because this allows you to select one of a set of options!
-
-Nevertheless, here we are. Here's how you put one together
-
-    Input.radio
-        [ padding 10
-        , spacing 20
-        ]
-        { onChange = ChooseLunch
-        , selected = Just model.lunch
-        , label = Input.labelAbove [] (text "Lunch")
-        , options =
-            [ Input.option Burrito (text "Burrito")
-            , Input.option Taco (text "Taco!")
-            , Input.option Gyro (text "Gyro")
-            ]
-        }
-
-**Note** we're using `Input.option`, which will render the default radio icon you're probably used to. If you want compeltely custom styling, use `Input.optionWith`!
-
-@docs radio, radioRow, Option, option, optionWith, OptionState
-
-
-# Labels
-
-Every input has a required `Label`.
-
-@docs Label, labelAbove, labelBelow, labelLeft, labelRight, labelHidden
-
-
-# Form Elements
-
-You might be wondering where something like `<form>` is.
-
-What I've found is that most people who want `<form>` usually want it for the [implicit submission behavior](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission) or to be clearer, they want to do something when the `Enter` key is pressed.
-
-Instead of implicit submission behavior, [try making an `onEnter` event handler like in this Ellie Example](https://ellie-app.com/5X6jBKtxzdpa1). Then everything is explicit!
-
-And no one has to look up obtuse html documentation to understand the behavior of their code :).
-
-
-# File Inputs
-
-Presently, elm-ui does not expose a replacement for `<input type="file">`; in the meantime, an `Input.button` and `elm/file`'s `File.Select` may meet your needs.
-
-
-# Disabling Inputs
-
-You also might be wondering how to disable an input.
-
-Disabled inputs can be a little problematic for user experience, and doubly so for accessibility. This is because it's now your priority to inform the user _why_ some field is disabled.
-
-If an input is truly disabled, meaning it's not focusable or doesn't send off a `Msg`, you actually lose your ability to help the user out! For those wary about accessibility [this is a big problem.](https://ux.stackexchange.com/questions/103239/should-disabled-elements-be-focusable-for-accessibility-purposes)
-
-Here are some alternatives to think about that don't involve explicitly disabling an input.
-
-**Disabled Buttons** - Change the `Msg` it fires, the text that is rendered, and optionally set a `Region.description` which will be available to screen readers.
-
-    import Element.Input as Input
-    import Element.Region as Region
-
-    myButton ready =
-        if ready then
-            Input.button
-                [ Background.color blue
-                ]
-                { onPress =
-                    Just SaveButtonPressed
-                , label =
-                    text "Save blog post"
-                }
-
-        else
-            Input.button
-                [ Background.color grey
-                , Region.description
-                    "A publish date is required before saving a blogpost."
-                ]
-                { onPress =
-                    Just DisabledSaveButtonPressed
-                , label =
-                    text "Save Blog "
-                }
-
-Consider showing a hint if `DisabledSaveButtonPressed` is sent.
-
-For other inputs such as `Input.text`, consider simply rendering it in a normal `paragraph` or `el` if it's not editable.
-
-Alternatively, see if it's reasonable to _not_ display an input if you'd normally disable it. Is there an option where it's only visible when it's editable?
+ *
+ * We want all of our input elements to:
+ *
+ * - _Always be accessible_
+ * - _Behave intuitively_
+ * - _Be completely restyleable_
+ *
+ * While these three goals may seem pretty obvious, Html and CSS have made it surprisingly difficult to achieve!
+ *
+ * And incredibly difficult for developers to remember all the tricks necessary to make things work. If you've every tried to make a `<textarea>` be the height of it's content or restyle a radio button while maintaining accessibility, you may be familiar.
+ *
+ * This module is intended to be accessible by default. You shouldn't have to wade through docs, articles, and books to find out [exactly how accessible your html actually is](https://www.powermapper.com/tests/screen-readers/aria/index.html).
+ *
+ * # Focus Styling
+ *
+ * All Elements can be styled on focus by using [`Element.focusStyle`](Element#focusStyle) to set a global focus style or [`Element.focused`](Element#focused) to set a focus style individually for an element.
+ *
+ * @docs focusedOnLoad
+ *
+ * # Buttons
+ *
+ * @docs button
+ *
+ * # Checkboxes
+ *
+ * A checkbox requires you to store a `boolean` in your model.
+ *
+ * This is also the first input element that has a [`required label`](#Label).
+ *
+ * ```ts
+ * Input.checkbox([],
+ *  { onChange: guacamoleChecked,
+ *  icon: Input.defaultCheckbox,
+ *  checked: model.guacamole,
+ *  label: Input.labelRight([], text("Do you want Guacamole?"))
+ * })
+ * ```
+ *
+ * @docs checkbox, defaultCheckbox
+ *
+ * # Text
+ *
+ * @docs text, multiline
+ *
+ * @docs Placeholder, placeholder
+ *
+ * ## Text with autofill
+ *
+ * If we want to play nicely with a browser's ability to autofill a form, we need to be able to give it a hint about what we're expecting.
+ *
+ * The following inputs are very similar to `Input.text`, but they give the browser a hint to allow autofill to work correctly.
+ *
+ * @docs username, newPassword, currentPassword, email, search, spellChecked
+ *
+ * # Sliders
+ *
+ * A slider is great for choosing between a range of numerical values.
+ *
+ * - **thumb** - The icon that you click and drag to change the value.
+ * - **track** - The line behind the thumb denoting where you can slide to.
+ *
+ * @docs slider, Thumb, thumb, defaultThumb
+ *
+ * # Radio Selection
+ *
+ * The fact that we still call this a radio selection is fascinating. I can't remember the last time I actually used an honest-to-goodness button on a radio. Chalk it up along with the floppy disk save icon or the word [Dashboard](https://en.wikipedia.org/wiki/Dashboard).
+ *
+ * Perhaps a better name would be `Input.chooseOne`, because this allows you to select one of a set of options!
+ *
+ * Nevertheless, here we are. Here's how you put one together
+ *
+ * ```ts
+ * Input.radio(
+ *  [ padding 10,
+ *    spacing 20
+ *  ],
+ *  { onChange: ChooseLunch,
+ *    selected: Just model.lunch,
+ *    label: Input.labelAbove([], text("Lunch")),
+ *    options:
+ *      [ Input.option(Options.Burrito, text("Burrito")),
+ *        Input.option(Options.Taco, text("Taco!")),
+ *        Input.option(Options.Gyro, text("Gyro"))
+ *      ]
+ * })
+ * ```
+ *
+ * **Note** we're using `Input.option`, which will render the default radio icon you're probably used to. If you want completely custom styling, use `Input.optionWith`!
+ *
+ * @docs radio, radioRow, Option, option, optionWith, OptionState
+ *
+ * # Labels
+ *
+ * Every input has a required `Label`.
+ *
+ * @docs Label, labelAbove, labelBelow, labelLeft, labelRight, labelHidden
+ *
+ * # Form Elements
+ *
+ * You might be wondering where something like `<form>` is.
+ *
+ * What I've found is that most people who want `<form>` usually want it for the [implicit submission behavior](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission) or to be clearer, they want to do something when the `Enter` key is pressed.
+ *
+ * Instead of implicit submission behavior, [try making an `onEnter` event handler like in this Ellie Example](https://ellie-app.com/5X6jBKtxzdpa1). Then everything is explicit!
+ *
+ * And no one has to look up obtuse html documentation to understand the behavior of their code :).
+ *
+ * # Disabling Inputs
+ *
+ * You also might be wondering how to disable an input.
+ *
+ * Disabled inputs can be a little problematic for user experience, and doubly so for accessibility. This is because it's now your priority to inform the user _why_ some field is disabled.
+ *
+ * If an input is truly disabled, meaning it's not focusable or doesn't send off an `event`, you actually lose your ability to help the user out! For those wary about accessibility [this is a big problem.](https://ux.stackexchange.com/questions/103239/should-disabled-elements-be-focusable-for-accessibility-purposes)
+ *
+ * Here are some alternatives to think about that don't involve explicitly disabling an input.
+ *
+ * **Disabled Buttons** - Change the `event` it fires, the text that is rendered, and optionally set a `Region.description` which will be available to screen readers.
+ *
+ * ```ts
+ * function myButton(ready: boolean) {
+ *  if (ready) {
+ *      return Input.button(
+ *          [ Background.color(blue) ],
+ *          { onPress: saveButtonPressed,
+ *          label: text("Save blog post")
+ *          })
+ *  } else {
+ *      return Input.button(
+ *          [ Background.color(grey),
+ *            Region.description("A publish date is required before saving a blogpost.")
+ *          ],
+ *          { onPress: disabledSaveButtonPressed,
+ *            label: text("Save Blog")
+ *          })
+ *      }
+ * }
+ * ```
+ *
+ * Consider showing a hint if `DisabledSaveButtonPressed` is sent.
+ *
+ * For other inputs such as `Input.text`, consider simply rendering it in a normal `paragraph` or `el` if it's not editable.
+ *
+ * Alternatively, see if it's reasonable to _not_ display an input if you'd normally disable it. Is there an option where it's only visible when it's editable?
  */
 
 import { elmish } from '../../deps.ts';
@@ -425,21 +399,10 @@ const defaultTextPadding: Attribute = paddingXY(12, 12),
         height(shrink),
     ];
 
-/**
- * TODO:
- * @param attributes
- * @param element
- * @returns
- */
 function placeholder(attributes: Attribute[], element: Element): Placeholder {
     return Placeholder(attributes, element);
 }
 
-/**
- * TODO:
- * @param label
- * @returns
- */
 function isStacked(label: Label): boolean {
     switch (label.type) {
         case Labels.Label:
@@ -463,69 +426,37 @@ function isStacked(label: Label): boolean {
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @param element
- * @returns
- */
 function labelRight(attributes: Attribute[], element: Element): Label {
     return Label(LabelLocation.OnRight, attributes, element);
 }
 
-/**
- * TODO:
- * @param attributes
- * @param element
- * @returns
- */
 function labelLeft(attributes: Attribute[], element: Element): Label {
     return Label(LabelLocation.OnLeft, attributes, element);
 }
 
-/**
- * TODO:
- * @param attributes
- * @param element
- * @returns
- */
 function labelAbove(attributes: Attribute[], element: Element): Label {
     return Label(LabelLocation.Above, attributes, element);
 }
 
-/**
- * TODO:
- * @param attributes
- * @param element
- * @returns
- */
 function labelBelow(attributes: Attribute[], element: Element): Label {
     return Label(LabelLocation.Below, attributes, element);
 }
 
 /**
  * Sometimes you may need to have a label which is not visible, but is still accessible to screen readers.
-
-Seriously consider a visible label before using this.
-
-The situations where a hidden label makes sense:
-
-  - A searchbar with a `search` button right next to it.
-  - A `table` of inputs where the header gives the label.
-
-Basically, a hidden label works when there are other contextual clues that sighted people can pick up on.
- * @param label 
- * @returns 
+ *
+ * Seriously consider a visible label before using this.
+ *
+ * The situations where a hidden label makes sense:
+ *
+ * - A searchbar with a `search` button right next to it.
+ * - A `table` of inputs where the header gives the label.
+ * Basically, a hidden label works when there are other contextual clues that sighted people can pick up on.
  */
 function labelHidden(label: string): Label {
     return HiddenLabel(label);
 }
 
-/**
- * TODO:
- * @param label
- * @returns
- */
 function hiddenLabelAttribute(label: Label): Attribute {
     switch (label.type) {
         case Labels.Label:
@@ -536,32 +467,23 @@ function hiddenLabelAttribute(label: Label): Attribute {
     }
 }
 
-/**TODO:
- *A standard button.
-
-The `onPress` handler will be fired either `onClick` or when the element is focused and the `Enter` key has been pressed.
-
-    import Element exposing (rgb255, text)
-    import Element.Background as Background
-    import Element.Input as Input
-
-    blue =
-        Element.rgb255 238 238 238
-
-    myButton =
-        Input.button
-            [ Background.color blue
-            , Element.focused
-                [ Background.color purple ]
-            ]
-            { onPress = Just ClickMsg
-            , label = text "My Button"
-            }
-
-**Note** If you have an icon button but want it to be accessible, consider adding a [`Region.description`](Element-Region#description), which will describe the button to screen readers.
- * @param attributes
- * @param param1
- * @returns
+/**
+ * A standard button.
+ *
+ * The `onPress` handler will be fired either `onClick` or when the element is focused and the `Enter` key has been pressed.
+ *
+ * ```ts
+ * Input.button(
+ *  [ Background.color(blue),
+ *    Element.focused([ Background.color(purple) ])
+ *  ],
+ *  { onPress: clickHandler,
+ *    label: text("My Button")
+ *  }
+ * )
+ * ```
+ *
+ * **Note** If you have an icon button but want it to be accessible, consider adding a [`Region.description`](Element-Region#description), which will describe the button to screen readers.
  */
 async function button(
     attributes: Attribute[],
@@ -641,14 +563,11 @@ function hasFocusStyle(attribute: Attribute): boolean {
     }
 }
 
-/**TODO:
- * - **onChange** - The `Msg` to send.
-  - **icon** - The checkbox icon to show. This can be whatever you'd like, but `Input.defaultCheckbox` is included to get you started.
-  - **checked** - The current checked state.
-  - **label** - The [`Label`](#Label) for this checkbox
- * @param attributes 
- * @param param1 
- * @returns 
+/**
+ * - **onChange** - The `event` to send.
+ * - **icon** - The checkbox icon to show. This can be whatever you'd like, but `Input.defaultCheckbox` is included to get you started.
+ * - **checked** - The current checked state.
+ * - **label** - The [`Label`](#Label) for this checkbox
  */
 async function checkbox(
     attributes: Attribute[],
@@ -714,52 +633,49 @@ function thumb(attributes: Attribute[]): Thumb {
     return Thumb(attributes);
 }
 
-/**TODO:
+/**
  * A slider input, good for capturing float values.
-
-    Input.slider
-        [ Element.height (Element.px 30)
-
-        -- Here is where we're creating/styling the "track"
-        , Element.behindContent
-            (Element.el
-                [ Element.width Element.fill
-                , Element.height (Element.px 2)
-                , Element.centerY
-                , Background.color grey
-                , Border.rounded 2
-                ]
-                Element.none
-            )
-        ]
-        { onChange = AdjustValue
-        , label =
-            Input.labelAbove []
-                (text "My Slider Value")
-        , min = 0
-        , max = 75
-        , step = Nothing
-        , value = model.sliderValue
-        , thumb =
-            Input.defaultThumb
-        }
-
-`Element.behindContent` is used to render the track of the slider. Without it, no track would be rendered. The `thumb` is the icon that you can move around.
-
-The slider can be vertical or horizontal depending on the width/height of the slider.
-
-  - `height fill` and `width (px someWidth)` will cause the slider to be vertical.
-  - `height (px someHeight)` and `width (px someWidth)` where `someHeight` > `someWidth` will also do it.
-  - otherwise, the slider will be horizontal.
-
-**Note** If you want a slider for an `Int` value:
-
-  - set `step` to be `Just 1`, or some other whole value
-  - `value = toFloat model.myInt`
-  - And finally, round the value before making a message `onChange = round >> AdjustValue`
- * @param attributes 
- * @param input 
- * @returns 
+ *
+ * ```ts
+ * Input.slider(
+ *  [ Element.height(Element.px(30))
+ *
+ *  // Here is where we're creating/styling the "track"
+ *  , Element.behindContent(
+ *      Element.el(
+ *          [ Element.width(Element.fill),
+ *            Element.height(Element.px(2)),
+ *            Element.centerY,
+ *            Background.color(grey),
+ *            Border.rounded(2)
+ *          ],
+ *          Element.none
+ *      ))
+ *  ],
+ *  { onChange: adjustValue,
+ *    label: Input.labelAbove([], text("My Slider Value")),
+ *    min: 0,
+ *    max: 75,
+ *    step: Nothing,
+ *    value: model.sliderValue,
+ *    thumb: Input.defaultThumb
+ *  }
+ * )
+ * ```
+ *
+ * `Element.behindContent` is used to render the track of the slider. Without it, no track would be rendered. The `thumb` is the icon that you can move around.
+ *
+ * The slider can be vertical or horizontal depending on the width/height of the slider.
+ *
+ * - `height(fill)` and `width(px(someWidth))` will cause the slider to be vertical.
+ * - `height(px(someHeight))` and `width(px(someWidth))` where `someHeight` > `someWidth` will also do it.
+ * - otherwise, the slider will be horizontal.
+ *
+ * **Note** If you want a slider for an `Int` value:
+ *
+ * - set `step` to be `1`, or some other whole value
+ * - `value = model.myNumber`
+ * - And finally, round the value before making an event.
  */
 async function slider(
     attributes: Attribute[],
@@ -846,26 +762,21 @@ async function slider(
                     }
             }
         })(),
-        /**TODO:
+        /**
          * Needed attributes
-
-           Thumb Attributes
-              - Width/Height of thumb so that the input can shadow it.
-
-
-           Attributes
-
-               OnParent ->
-                   Spacing
-
-
-               On track ->
-                   Everything else
-
-
-
-
-            The `<input>`
+         *
+         * Thumb Attributes
+         *      - Width/Height of thumb so that the input can shadow it.
+         *
+         *      Attributes
+         *
+         *      OnParent ->
+         *          Spacing
+         *
+         *      On track ->
+         *          Everything else
+         *
+         * The `<input>`
          */
         className = `thmb-${thumbWidthString}-${thumbHeightString}`,
         thumbShadowStyle = [
@@ -963,7 +874,7 @@ async function slider(
                                 ? // Note: If we set `any` here,
                                   // Firefox makes a single press of the arrows keys equal to 1
                                   // We could set the step manually to the effective range / 100
-                                  // String.fromFloat ((input.max - input.min) / 100)
+                                  // ((input.max - input.min) / 100).toString()
                                   // Which matches Chrome's default behavior
                                   // HOWEVER, that means manually moving a slider with the mouse will snap to that interval.
                                   'any'
@@ -1365,9 +1276,7 @@ async function renderPlaceholder(
     }
 }
 
-/**
- * Because textareas are now shadowed, where they're rendered twice,
- * we to move the literal text area up because spacing is based on line height.
+/** Because textareas are now shadowed, where they're rendered twice, we need to move the literal text area up because spacing is based on line height.
  */
 function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
     const gathered: Maybe<number> = attributes.reduceRight(
@@ -1409,16 +1318,14 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
     }
 }
 
-/**TODO:
- * Given the list of attributes provided to `Input.multiline` or `Input.text`,
-
-redistribute them to the parent, the input, or the cover.
-
-  - fullParent -> Wrapper around label and input
-  - parent -> parent of wrapper
-  - wrapper -> the element that is here to take up space.
-  - cover -> things like placeholders or text areas which are layered on top of input.
-  - input -> actual input element
+/**
+ * Given the list of attributes provided to `Input.multiline` or `Input.text`, redistribute them to the parent, the input, or the cover.
+ *
+ * - fullParent -> Wrapper around label and input
+ * - parent -> parent of wrapper
+ * - wrapper -> the element that is here to take up space.
+ * - cover -> things like placeholders or text areas which are layered on top of input.
+ * - input -> actual input element
  */
 function redistribute(
     isMultiline: boolean,
@@ -1541,9 +1448,7 @@ function isRem(length: Length): boolean {
     }
 }
 
-/**
- * isStacked means that the label is above or below
- */
+/** isStacked means that the label is above or below */
 function redistributeOver(
     isMultiline: boolean,
     stacked: boolean,
@@ -1738,12 +1643,6 @@ function redistributeOver(
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @param textOptions
- * @returns
- */
 async function text(
     attributes: Attribute[],
     textOptions: Text
@@ -1764,12 +1663,6 @@ async function text(
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @param textOptions
- * @returns
- */
 async function spellChecked(
     attributes: Attribute[],
     textOptions: Text
@@ -1790,12 +1683,6 @@ async function spellChecked(
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @param textOptions
- * @returns
- */
 async function search(
     attributes: Attribute[],
     textOptions: Text
@@ -1811,12 +1698,6 @@ async function search(
     );
 }
 
-/**
- *
- * @param attributes
- * @param pass
- * @returns
- */
 async function newPassword(
     attributes: Attribute[],
     pass: {
@@ -1846,12 +1727,6 @@ async function newPassword(
     );
 }
 
-/**
- *
- * @param attributes
- * @param pass
- * @returns
- */
 async function currentPassword(
     attributes: Attribute[],
     pass: {
@@ -1881,12 +1756,6 @@ async function currentPassword(
     );
 }
 
-/**
- * TODO:
- * @param attributes
- * @param textOptions
- * @returns
- */
 async function username(
     attributes: Attribute[],
     textOptions: Text
@@ -1902,12 +1771,6 @@ async function username(
     );
 }
 
-/**
- * TODO:
- * @param attributes
- * @param textOptions
- * @returns
- */
 async function email(
     attributes: Attribute[],
     textOptions: Text
@@ -1923,12 +1786,6 @@ async function email(
     );
 }
 
-/**
- *
- * @param attributes
- * @param multi
- * @returns
- */
 async function multiline(
     attributes: Attribute[],
     multi: {
@@ -1958,11 +1815,6 @@ async function multiline(
     );
 }
 
-/**
- *TODO:
- * @param label
- * @returns
- */
 function isHiddenLabel(label: Label): boolean {
     switch (label.type) {
         case Labels.HiddenLabel:
@@ -1973,13 +1825,6 @@ function isHiddenLabel(label: Label): boolean {
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @param label
- * @param input
- * @returns
- */
 async function applyLabel(
     attributes: Attribute[],
     label: Label,
@@ -2040,31 +1885,20 @@ async function applyLabel(
     }
 }
 
-/**
- * Add a choice to your radio element. This will be rendered with the default radio icon.
- */
+/** Add a choice to your radio element. This will be rendered with the default radio icon. */
 function option(value: any, text: Element): Option {
     return Option(value, (status: OptionState) =>
         defaultRadioOption(text, status)
     );
 }
 
-/**
- * Customize exactly what your radio option should look like in different states.
- */
+/** Customize exactly what your radio option should look like in different states. */
 function optionWith(
     value: any,
     view: (x: OptionState) => Promise<Element>
 ): Option {
     return Option(value, view);
 }
-
-/**
- * TODO:
- * @param attributes
- * @param input
- * @returns
- */
 async function radio(
     attributes: Attribute[],
     input: {
@@ -2080,12 +1914,7 @@ async function radio(
     return await radioHelper(Orientation.Column, attributes, input);
 }
 
-/**TODO:
- * Same as radio, but displayed as a row
- * @param attributes
- * @param input
- * @returns
- */
+/** Same as radio, but displayed as a row */
 async function radioRow(
     attributes: Attribute[],
     input: {
@@ -2369,12 +2198,10 @@ async function row(
 
 // Style Defaults
 
-/**TODO:
+/**
  * The blue default checked box icon.
-
-You'll likely want to make your own checkbox at some point that fits your design.
- * @param checked 
- * @returns 
+ *
+ * You'll likely want to make your own checkbox at some point that fits your design.
  */
 async function defaultCheckbox(checked: boolean): Promise<Element> {
     return el(

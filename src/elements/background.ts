@@ -1,12 +1,11 @@
-/** TODO:
+/**
  * @docs color, gradient
-
-
-# Images
-
-@docs image, uncropped, tiled, tiledX, tiledY
-
-**Note** if you want more control over a background image than is provided here, you should try just using a normal `Element.image` with something like `Element.behindContent`.
+ *
+ * # Images
+ *
+ * @docs image, uncropped, tiled, tiledX, tiledY
+ *
+ * **Note** if you want more control over a background image than is provided here, you should try just using a normal `Element.image` with something like `Element.behindContent`.
  */
 
 import {
@@ -22,11 +21,6 @@ import * as Internal from '../internal/model.ts';
 import { isEmpty } from '../utils/utils.ts';
 import { style } from './attributes.ts';
 
-/**
- * TODO:
- * @param clr
- * @returns
- */
 async function color(backgroundColor: Promise<Color>): Promise<Attribute> {
     const val = await backgroundColor;
     const [a, b, c, d, e] = Object.values(val);
@@ -40,47 +34,27 @@ async function color(backgroundColor: Promise<Color>): Promise<Attribute> {
     );
 }
 
-/** TODO:
- * Resize the image to fit the containing element while maintaining proportions and cropping the overflow.
- * @param src
- * @returns
- */
+/** Resize the image to fit the containing element while maintaining proportions and cropping the overflow. */
 function image(src: string): Attribute {
     return style('background', `url('${src}') center / cover no-repeat`);
 }
 
-/** TODO:
- * A centered background image that keeps its natural proportions, but scales to fit the space.
- * @param src
- * @returns
- */
+/** A centered background image that keeps its natural proportions, but scales to fit the space. */
 function uncropped(src: string): Attribute {
     return style('background', `url('${src}') center / contain no-repeat`);
 }
 
-/** TODO:
- * Tile an image in the x and y axes.
- * @param src
- * @returns
- */
+/** Tile an image in the x and y axes. */
 function tiled(src: string): Attribute {
     return style('background', `url('${src}') repeat`);
 }
 
-/** TODO:
- * Tile an image in the x axis.
- * @param src
- * @returns
- */
+/** Tile an image in the x axis. */
 function tiledX(src: string): Attribute {
     return style('background', `url('${src}') repeat-x`);
 }
 
-/** TODO:
- * Tile an image in the Y axis.
- * @param src
- * @returns
- */
+/** Tile an image in the Y axis. */
 function tiledY(src: string): Attribute {
     return style('background', `url('${src}') repeat-y`);
 }

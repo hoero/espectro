@@ -1,56 +1,46 @@
-/**TODO:
- * 
-    import Element
-    import Element.Font as Font
-
-    view =
-        Element.el
-            [ Font.color (Element.rgb 0 0 1)
-            , Font.size 18
-            , Font.family
-                [ Font.typeface "Open Sans"
-                , Font.sansSerif
-                ]
-            ]
-            (Element.text "Woohoo, I'm stylish text")
-
-**Note:** `Font.color`, `Font.size`, and `Font.family` are inherited, meaning you can set them at the top of your view and all subsequent nodes will have that value.
-
-**Other Note:** If you're looking for something like `line-height`, it's handled by `Element.spacing` on a `paragraph`.
-
-@docs color, size
-
-
-## Typefaces
-
-@docs family, Font, typeface, serif, sansSerif, monospace
-
-@docs external
-
-
-## Alignment and Spacing
-
-@docs alignLeft, alignRight, center, justify, letterSpacing, wordSpacing
-
-
-## Font Styles
-
-@docs underline, strike, italic, unitalicized
-
-
-## Font Weight
-
-@docs heavy, extraBold, bold, semiBold, medium, regular, light, extraLight, hairline
-
-
-## Variants
-
-@docs Variant, variant, variantList, smallCaps, slashedZero, ligatures, ordinal, tabularNumbers, stackedFractions, diagonalFractions, swash, feature, indexed
-
-
-## Shadows
-
-@docs glow, shadow
+/**
+ *
+ * ```ts
+ * Element.el(
+ *  [ Font.color(Element.rgb(0, 0, 1))
+ *  , Font.size(18)
+ *  , Font.family([ Font.typeface("Open Sans"), Font.sansSerif])
+ *  ],
+ *  Element.text("Woohoo, I'm stylish text")
+ * )
+ * ```
+ *
+ * **Note:** `Font.color`, `Font.size`, and `Font.family` are inherited, meaning you can set them at the top of your view and all subsequent nodes will have that value.
+ *
+ * **Other Note:** If you're looking for something like `line-height`, it's handled by `Element.spacing` on a `paragraph`.
+ *
+ * @docs color, size
+ *
+ * ## Typefaces
+ *
+ * @docs family, Font, typeface, serif, sansSerif, monospace
+ *
+ * @docs external
+ *
+ * ## Alignment and Spacing
+ *
+ * @docs alignLeft, alignRight, center, justify, letterSpacing, wordSpacing
+ *
+ * ## Font Styles
+ *
+ * @docs underline, strike, italic, unitalicized
+ *
+ * ## Font Weight
+ *
+ * @docs heavy, extraBold, bold, semiBold, medium, regular, light, extraLight, hairline
+ *
+ * ## Variants
+ *
+ * @docs Variant, variant, variantList, smallCaps, slashedZero, ligatures, ordinal, tabularNumbers, stackedFractions, diagonalFractions, swash, feature, indexed
+ *
+ * ## Shadows
+ *
+ * @docs glow, shadow
  */
 
 import {
@@ -93,19 +83,13 @@ const _sizeByCapital: Attribute = Internal.htmlClass(classes.sizeByCapital),
     _full: Attribute = Internal.htmlClass(classes.fullSize);
 
 // Alignment
-/**
- * Align the font to the left.
- */
+/** Align the font to the left. */
 const alignLeft: Attribute = Class(Flag.fontAlignment, classes.textLeft);
 
-/**
- * Align the font to the right.
- */
+/** Align the font to the right. */
 const alignRight: Attribute = Class(Flag.fontAlignment, classes.textRight);
 
-/**
- * Center align the font.
- */
+/** Center align the font. */
 const center: Attribute = Class(Flag.fontAlignment, classes.textCenter);
 
 const justify: Attribute = Class(Flag.fontAlignment, classes.textJustify);
@@ -132,9 +116,7 @@ const hairline: Attribute = Class(Flag.fontWeight, classes.textThin),
     black: Attribute = Class(Flag.fontWeight, classes.textHeavy),
     heavy: Attribute = black;
 
-/**
- * This will reset bold and italic.
- */
+/** This will reset bold and italic. */
 const unitalicized: Attribute = Internal.htmlClass(classes.textUnitalicized);
 
 // Variants
@@ -143,46 +125,25 @@ const unitalicized: Attribute = Internal.htmlClass(classes.textUnitalicized);
  */
 const smallCaps: Variant = VariantActive('smcp');
 
-/**
- * Add a slash when rendering `0`
- */
+/** Add a slash when rendering `0` */
 const slashedZero: Variant = VariantActive('zero');
 
-/**
- * TODO:
- */
 const ligatures: Variant = VariantActive('liga');
 
-/**
- * Oridinal markers like `1st` and `2nd` will receive special glyphs.
- */
+/** Oridinal markers like `1st` and `2nd` will receive special glyphs. */
 const ordinal: Variant = VariantActive('ordn');
 
-/**
- * Number figures will each take up the same space, allowing them to be easily aligned, such as in tables.
- */
+/** Number figures will each take up the same space, allowing them to be easily aligned, such as in tables. */
 const tabularNumbers: Variant = VariantActive('tnum');
 
-/**
- * Render fractions with the numerator stacked on top of the denominator.
- */
+/** Render fractions with the numerator stacked on top of the denominator. */
 const stackedFractions: Variant = VariantActive('afrc');
 
-/**
- * Render fractions
- */
+/** Render fractions */
 const diagonalFractions: Variant = VariantActive('frac');
 
-/**
- * TODO:
- */
 const swash: Variant = VariantActive('swsh');
 
-/**TODO:
- *
- * @param clr
- * @returns
- */
 async function color(fontColor: Promise<Color>): Promise<Attribute> {
     const val = await fontColor;
     const [a, b, c, d, e] = Object.values(val);
@@ -192,20 +153,13 @@ async function color(fontColor: Promise<Color>): Promise<Attribute> {
     );
 }
 
-/** TODO:
- * import Element
-    import Element.Font as Font
-
-    myElement =
-        Element.el
-            [ Font.family
-                [ Font.typeface "Helvetica"
-                , Font.sansSerif
-                ]
-            ]
-            (text "")
- * @param families 
- * @returns 
+/**
+ * ```ts
+ * Element.el(
+ *  [ Font.family([ Font.typeface("Helvetica"), Font.sansSerif])],
+ *  text("")
+ * )
+ * ```
  */
 function family(families: Font[]): Attribute {
     return StyleClass(
@@ -221,20 +175,10 @@ function family(families: Font[]): Attribute {
     );
 }
 
-/**TODO:
- *
- * @param name
- * @returns
- */
 function typeface(name: string): Font {
     return Typeface(name);
 }
 
-/**
- * TODO:
- * @param param0
- * @returns
- */
 function _fontWith({
     name,
     adjustment,
@@ -247,50 +191,38 @@ function _fontWith({
     return FontWith(name, adjustment, variants);
 }
 
-/**TODO:
+/**
  * **Note** it's likely that `Font.external` will cause a flash on your page on loading.
-
-To bypass this, import your fonts using a separate stylesheet and just use `Font.typeface`.
-
-It's likely that `Font.external` will be removed or redesigned in the future to avoid the flashing.
-
-`Font.external` can be used to import font files. Let's say you found a neat font on <http://fonts.google.com>:
-
-    import Element
-    import Element.Font as Font
-
-    view =
-        Element.el
-            [ Font.family
-                [ Font.external
-                    { name = "Roboto"
-                    , url = "https://fonts.googleapis.com/css?family=Roboto"
-                    }
-                , Font.sansSerif
-                ]
-            ]
-            (Element.text "Woohoo, I'm stylish text")
- * @param param0 
- * @returns 
+ *
+ * To bypass this, import your fonts using a separate stylesheet and just use `Font.typeface`.
+ *
+ * It's likely that `Font.external` will be removed or redesigned in the future to avoid the flashing.
+ *
+ * `Font.external` can be used to import font files. Let's say you found a neat font on <http://fonts.google.com>:
+ *
+ * ```ts
+ * Element.el(
+ *  [ Font.family([ Font.external(
+ *      { name: "Roboto",
+ *       url: "https://fonts.googleapis.com/css?family=Roboto"
+ *      }),
+ *      Font.sansSerif])
+ *  ],
+ *  Element.text("Woohoo, I'm stylish text")
+ * )
+ * ```
+ *
  */
 function external({ url, name }: { url: string; name: string }): Font {
     return ImportFont(name, url);
 }
 
-/**TODO:
- * Font sizes are always given as `px`.
- * @param i
- * @returns
- */
+/** TODO: Rem version. Font sizes are always given as `px`. */
 function size(i: number): Attribute {
     return StyleClass(Flag.fontSize, FontSize(i));
 }
 
-/**TODO:
- * In `px`.
- * @param offset
- * @returns
- */
+/**TODO: Rem version. In `px`. */
 function letterSpacing(offset: number): Attribute {
     return StyleClass(
         Flag.letterSpacing,
@@ -302,11 +234,7 @@ function letterSpacing(offset: number): Attribute {
     );
 }
 
-/**TODO:
- * In `px`.
- * @param offset
- * @returns
- */
+/**TODO: Rem version. In `px`. */
 function wordSpacing(offset: number): Attribute {
     return StyleClass(
         Flag.wordSpacing,
@@ -318,11 +246,6 @@ function wordSpacing(offset: number): Attribute {
     );
 }
 
-/**
- * TODO:
- * @param param0
- * @returns
- */
 async function shadow({
     offset,
     blur,
@@ -343,12 +266,7 @@ async function shadow({
     );
 }
 
-/**
- * TODO:
- * A glow is just a simplified shadow.
- * @param param0
- * @returns
- */
+/** A glow is just a simplified shadow. */
 async function glow(color: Promise<Color>, i: number): Promise<Attribute> {
     const shade = Shadow(color, [0, 0], i * 2, 0, false);
     return StyleClass(
@@ -361,17 +279,17 @@ async function glow(color: Promise<Color>, i: number): Promise<Attribute> {
     );
 }
 
-/**TODO:
+/**
  * You can use this to set a single variant on an element itself such as:
-
-    el
-        [ Font.variant Font.smallCaps
-        ]
-        (text "rendered with smallCaps")
-
-**Note** These will **not** stack. If you want multiple variants, you should use `Font.variantList`.
- * @param variant_ 
- * @returns 
+ *
+ * ```ts
+ * el(
+ *  [ Font.variant(Font.smallCaps) ],
+ *  text("rendered with smallCaps")
+ * )
+ * ```
+ *
+ * **Note** These will **not** stack. If you want multiple variants, you should use `Font.variantList`.
  */
 function variant(variant_: Variant): Attribute {
     switch (variant_.type) {
@@ -393,11 +311,6 @@ function variant(variant_: Variant): Attribute {
     }
 }
 
-/**
- * TODO:
- * @param x
- * @returns
- */
 function isSmallCaps(x: Variant): boolean {
     switch (x.type) {
         case Variants.VariantActive:
@@ -408,11 +321,6 @@ function isSmallCaps(x: Variant): boolean {
     }
 }
 
-/**
- * TODO:
- * @param vars
- * @returns
- */
 function variantList(vars: Variant[]): Attribute {
     const features: string[] = vars.map(Internal.renderVariant),
         hasSmallCaps: boolean = vars.some(isSmallCaps),
@@ -429,26 +337,20 @@ function variantList(vars: Variant[]): Attribute {
     );
 }
 
-/**TODO:
+/**
  * Set a feature by name and whether it should be on or off.
-
-Feature names are four-letter names as defined in the [OpenType specification](https://docs.microsoft.com/en-us/typography/opentype/spec/featurelist).
- * @param name 
- * @param on 
- * @returns 
+ *
+ * Feature names are four-letter names as defined in the [OpenType specification](https://docs.microsoft.com/en-us/typography/opentype/spec/featurelist).
  */
 function feature(name: string, on: boolean): Variant {
     if (on) return VariantIndexed(name, 1);
     return VariantIndexed(name, 0);
 }
 
-/** TODO:
- *A font variant might have multiple versions within the font.
-
-In these cases we need to specify the index of the version we want.
- * @param name
- * @param on
- * @returns
+/**
+ * A font variant might have multiple versions within the font.
+ *
+ * In these cases we need to specify the index of the version we want.
  */
 function indexed(name: string, on: number): Variant {
     return VariantIndexed(name, on);

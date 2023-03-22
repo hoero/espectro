@@ -1,25 +1,21 @@
-/**TODO:
+/**
  * @docs color
-
-
-## Border Widths
-
-@docs width, widthXY, widthEach
-
-
-## Border Styles
-
-@docs solid, dashed, dotted
-
-
-## Rounded Corners
-
-@docs rounded, roundEach
-
-
-## Shadows
-
-@docs glow, innerGlow, shadow, innerShadow
+ *
+ * ## Border Widths
+ *
+ * @docs width, widthXY, widthEach
+ *
+ * ## Border Styles
+ *
+ * @docs solid, dashed, dotted
+ *
+ * ## Rounded Corners
+ *
+ * @docs rounded, roundEach
+ *
+ * ## Shadows
+ *
+ * @docs glow, innerGlow, shadow, innerShadow
  */
 
 import {
@@ -40,11 +36,6 @@ const solid: Attribute = Class(Flag.borderStyle, classes.borderSolid),
     dashed: Attribute = Class(Flag.borderStyle, classes.borderDashed),
     dotted: Attribute = Class(Flag.borderStyle, classes.borderDotted);
 
-/**TODO:
- *
- * @param clr
- * @returns
- */
 async function color(borderColor: Promise<Color>): Promise<Attribute> {
     const val = await borderColor;
     const [a, b, c, d, e] = Object.values(val);
@@ -58,21 +49,11 @@ async function color(borderColor: Promise<Color>): Promise<Attribute> {
     );
 }
 
-/**TODO:
- *
- * @param v
- * @returns
- */
 function width(v: number): Attribute {
     return StyleClass(Flag.borderWidth, BorderWidth('b-' + v, v, v, v, v));
 }
 
-/** TODO:
- * Set horizontal and vertical borders.
- * @param x
- * @param y
- * @returns
- */
+/** Set horizontal and vertical borders. */
 function widthXY(x: number, y: number): Attribute {
     return StyleClass(
         Flag.borderWidth,
@@ -80,11 +61,6 @@ function widthXY(x: number, y: number): Attribute {
     );
 }
 
-/**TODO:
- *
- * @param param0
- * @returns
- */
 function widthEach({
     bottom,
     left,
@@ -113,11 +89,7 @@ function widthEach({
     }
 }
 
-/**TODO:
- * Round all corners.
- * @param radius
- * @returns
- */
+/** Round all corners. */
 function rounded(radius: number): Attribute {
     return StyleClass(
         Flag.borderRound,
@@ -125,11 +97,7 @@ function rounded(radius: number): Attribute {
     );
 }
 
-/**TODO:
- * Round all corners.
- * @param radius
- * @returns
- */
+/** Round all corners. */
 function roundEach({
     topLeft,
     topRight,
@@ -151,22 +119,10 @@ function roundEach({
     );
 }
 
-/**
- * TODO:
- * @param clr
- * @param size
- * @returns
- */
 async function glow(clr: Promise<Color>, size: number): Promise<Attribute> {
     return await shadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
-/**
- * TODO:
- * @param clr
- * @param size
- * @returns
- */
 async function innerGlow(
     clr: Promise<Color>,
     size: number
@@ -174,11 +130,6 @@ async function innerGlow(
     return await innerShadow(Shadow(clr, [0, 0], size * 2, size));
 }
 
-/**
- * TODO:
- * @param param0
- * @returns
- */
 async function shadow({
     offset,
     size,
@@ -201,11 +152,6 @@ async function shadow({
     );
 }
 
-/**
- * TODO:
- * @param param0
- * @returns
- */
 async function innerShadow({
     offset,
     size,

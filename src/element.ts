@@ -1,187 +1,163 @@
-/*TODO:
-# Basic Elements
+/**
+ * # Basic Elements
+ *
+ * @docs Element, none, text, el
+ *
+ * # Rows and Columns
+ *
+ * When we want more than one child on an element, we want to be _specific_ about how they will be laid out.
+ *
+ * So, the common ways to do that would be `row` and `column`.
+ *
+ * @docs row, wrappedRow, column
+ *
+ * # Text Layout
+ *
+ * Text layout needs some specific considerations.
+ *
+ * @docs paragraph, textColumn
+ *
+ * # Data Table
+ *
+ * @docs Column, table, IndexedColumn, indexedTable
+ *
+ * # Size
+ *
+ * @docs Attribute, width, height, Length, px, shrink, fill, fillPortion, maximum, minimum
+ *
+ * # Debugging
+ *
+ * @docs explain
+ *
+ * Padding and Spacing
+ *
+ * There's no concept of margin in `espectro`, instead we have padding and spacing.
+ *
+ * Padding is the distance between the outer edge and the content, and spacing is the space between children.
+ *
+ * So, if we have the following row, with some padding and spacing.
+ *
+ * ```ts
+ * Element.row([ padding 10, spacing 7 ],
+ * [ Element.el([], none)
+ * , Element.el([], none)
+ * , Element.el([], none)
+ * ])
+ * ```
+ *
+ * Here's what we can expect:
+ *
+ * ![Three boxes spaced 7 pixels apart. There's a 10 pixel distance from the edge of the parent to the boxes.](https://mdgriffith.gitbooks.io/style-elements/content/assets/spacing-400.png)
+ *
+ * **Note** `spacing` set on a `paragraph`, will set the pixel spacing between lines.
+ *
+ * @docs padding, paddingXY, paddingEach
+ *
+ * @docs spacing, spacingXY, spaceEvenly
+ *
+ * # Alignment
+ *
+ * Alignment can be used to align an `Element` within another `Element`.
+ *
+ * ```ts
+ * Element.el([ centerX, alignTop ], text("I'm centered and aligned top!"))
+ * ```
+ *
+ * If alignment is set on elements in a layout such as `row`, then the element will push the other elements in that direction. Here's an example.
+ *
+ * ```ts
+ * Element.row([],
+ * [ Element.el([], Element.none)
+ * , Element.el([ alignLeft ], Element.none)
+ * , Element.el([ centerX ], Element.none)
+ * , Element.el([ alignRight ], Element.none)
+ * ])
+ * ```
+ *
+ * will result in a layout like
+ *
+ * |-|-|    |-|    |-|
+ *
+ * Where there are two elements on the left, one on the right, and one in the center of the space between the elements on the left and right.
+ *
+ * **Note** For text alignment, check out `Element.Font`!
+ *
+ * @docs centerX, centerY, alignLeft, alignRight, alignTop, alignBottom
+ *
+ * # Transparency
+ *
+ * @docs transparent, alpha, pointer
+ *
+ * # Adjustment
+ *
+ * @docs moveUp, moveDown, moveRight, moveLeft, rotate, scale
+ *
+ * # Clipping and Scrollbars
+ *
+ * Clip the content if it overflows.
+ *
+ * @docs clip, clipX, clipY
+ *
+ * Add a scrollbar if the content is larger than the element.
+ *
+ * @docs scrollbars, scrollbarX, scrollbarY
+ *
+ * # Rendering
+ *
+ * @docs layout, layoutWith, Option, noStaticStyleSheet, forceHover, noHover, focusStyle, FocusStyle
+ *
+ * # Links
+ *
+ * @docs link, newTabLink, download, downloadAs
+ *
+ * # Images
+ *
+ * @docs image
+ *
+ * # Nearby Elements
+ *
+ * Let's say we want a dropdown menu. Essentially we want to say: _put this element below this other element, but don't affect the layout when you do_.
+ *
+ * ```ts
+ * Element.row([],
+ * [ Element.el(
+ * [ Element.below (Element.text "I'm below!") ],
+ * Element.text("I'm normal!"))
+ * ])
+ * ```
+ *
+ * This will result in
+ *
+ * |- I'm normal! -|
+ * I'm below
+ *
+ * Where `"I'm Below"` doesn't change the size of `Element.row`.
+ *
+ * This is very useful for things like dropdown menus or tooltips.
+ *
+ * @docs above, below, onRight, onLeft, inFront, behindContent
+ *
+ * # Temporary Styling
+ *
+ * @docs Attr, Decoration, mouseOver, mouseDown, focused
+ *
+ * # Responsiveness
+ *
+ * The main technique for responsiveness is to store window size information in your model.
+ *
+ * You'll need to retrieve the initial window size, passing in `window.innerWidth` and `window.innerHeight` as to the corresponding function.
+ *
+ * @docs Device, DeviceClass, Orientation, classifyDevice
+ *
+ * # Scaling
+ *
+ * @docs modular
+ *
+ * ## Compatibility
+ *
+ * @docs html, htmlAttribute
+ */
 
-@docs Element, none, text, el
-
-
-# Rows and Columns
-
-When we want more than one child on an element, we want to be _specific_ about how they will be laid out.
-
-So, the common ways to do that would be `row` and `column`.
-
-@docs row, wrappedRow, column
-
-
-# Text Layout
-
-Text layout needs some specific considerations.
-
-@docs paragraph, textColumn
-
-
-# Data Table
-
-@docs Column, table, IndexedColumn, indexedTable
-
-
-# Size
-
-@docs Attribute, width, height, Length, px, shrink, fill, fillPortion, maximum, minimum
-
-
-# Debugging
-
-@docs explain
-
-
-# Padding and Spacing
-
-There's no concept of margin in `elm-ui`, instead we have padding and spacing.
-
-Padding is the distance between the outer edge and the content, and spacing is the space between children.
-
-So, if we have the following row, with some padding and spacing.
-
-    Element.row [ padding 10, spacing 7 ]
-        [ Element.el [] none
-        , Element.el [] none
-        , Element.el [] none
-        ]
-
-Here's what we can expect:
-
-![Three boxes spaced 7 pixels apart. There's a 10 pixel distance from the edge of the parent to the boxes.](https://mdgriffith.gitbooks.io/style-elements/content/assets/spacing-400.png)
-
-**Note** `spacing` set on a `paragraph`, will set the pixel spacing between lines.
-
-@docs padding, paddingXY, paddingEach
-
-@docs spacing, spacingXY, spaceEvenly
-
-
-# Alignment
-
-Alignment can be used to align an `Element` within another `Element`.
-
-    Element.el [ centerX, alignTop ] (text "I'm centered and aligned top!")
-
-If alignment is set on elements in a layout such as `row`, then the element will push the other elements in that direction. Here's an example.
-
-    Element.row []
-        [ Element.el [] Element.none
-        , Element.el [ alignLeft ] Element.none
-        , Element.el [ centerX ] Element.none
-        , Element.el [ alignRight ] Element.none
-        ]
-
-will result in a layout like
-
-    |-|-|    |-|    |-|
-
-Where there are two elements on the left, one on the right, and one in the center of the space between the elements on the left and right.
-
-**Note** For text alignment, check out `Element.Font`!
-
-@docs centerX, centerY, alignLeft, alignRight, alignTop, alignBottom
-
-
-# Transparency
-
-@docs transparent, alpha, pointer
-
-
-# Adjustment
-
-@docs moveUp, moveDown, moveRight, moveLeft, rotate, scale
-
-
-# Clipping and Scrollbars
-
-Clip the content if it overflows.
-
-@docs clip, clipX, clipY
-
-Add a scrollbar if the content is larger than the element.
-
-@docs scrollbars, scrollbarX, scrollbarY
-
-
-# Rendering
-
-@docs layout, layoutWith, Option, noStaticStyleSheet, forceHover, noHover, focusStyle, FocusStyle
-
-
-# Links
-
-@docs link, newTabLink, download, downloadAs
-
-
-# Images
-
-@docs image
-
-
-# Color
-
-In order to use attributes like `Font.color` and `Background.color`, you'll need to make some colors!
-
-@docs Color, rgba, rgb, rgb255, rgba255, fromRgb, fromRgb255, toRgb
-
-
-# Nearby Elements
-
-Let's say we want a dropdown menu. Essentially we want to say: _put this element below this other element, but don't affect the layout when you do_.
-
-    Element.row []
-        [ Element.el
-            [ Element.below (Element.text "I'm below!")
-            ]
-            (Element.text "I'm normal!")
-        ]
-
-This will result in
-
-    |- I'm normal! -|
-       I'm below
-
-Where `"I'm Below"` doesn't change the size of `Element.row`.
-
-This is very useful for things like dropdown menus or tooltips.
-
-@docs above, below, onRight, onLeft, inFront, behindContent
-
-
-# Temporary Styling
-
-@docs Attr, Decoration, mouseOver, mouseDown, focused
-
-
-# Responsiveness
-
-The main technique for responsiveness is to store window size information in your model.
-
-Install the `Browser` package, and set up a subscription for [`Browser.Events.onResize`](https://package.elm-lang.org/packages/elm/browser/latest/Browser-Events#onResize).
-
-You'll also need to retrieve the initial window size. You can either use [`Browser.Dom.getViewport`](https://package.elm-lang.org/packages/elm/browser/latest/Browser-Dom#getViewport) or pass in `window.innerWidth` and `window.innerHeight` as flags to your program, which is the preferred way. This requires minor setup on the JS side, but allows you to avoid the state where you don't have window info.
-
-@docs Device, DeviceClass, Orientation, classifyDevice
-
-
-# Scaling
-
-@docs modular
-
-
-## Mapping
-
-@docs map, mapAttribute
-
-
-## Compatibility
-
-@docs html, htmlAttribute
-*/
 import { DOM, elmish } from '../deps.ts';
 import {
     Length,
@@ -325,77 +301,42 @@ function InternalColumn(
 
 type InternalTableColumn = InternalIndexedColumn | InternalColumn;
 
-enum DeviceClass {
-    Phone,
-    Tablet,
-    Desktop,
-    BigDesktop,
-}
-
-enum Orientation {
-    Portrait,
-    Landscape,
-}
-
-interface Device {
-    class_: DeviceClass;
-    orientation: Orientation;
-}
-
-function Device(class_: DeviceClass, orientation: Orientation): Device {
-    return { class_, orientation };
-}
-
 const { Just, Nothing, MaybeType } = elmish.Maybe;
 
-/**
- * Shrink an element to fit its contents.
- */
+/** Shrink an element to fit its contents. */
 const shrink: Length = Content();
 
-/**
- * Fill the available space. The available space will be split evenly between elements that have `width fill`.
- */
+/** Fill the available space. The available space will be split evenly between elements that have `width(fill)`. */
 const fill: Length = Fill(1);
 
-/**
- * Set supported CSS property to min-content
- */
+/** Set supported CSS property to min-content */
 const minContent: Length = MinContent();
 
-/**
- * Set supported CSS property to max-content
- */
+/** Set supported CSS property to max-content */
 const maxContent: Length = MaxContent();
 
-/**TODO:
+/**
  * Elm UI embeds two StyleSheets, one that is constant, and one that changes dynamically based on styles collected from the elements being rendered.
-
-This option will stop the static/constant stylesheet from rendering.
-
-If you're embedding multiple elm-ui `layout` elements, you need to guarantee that only one is rendering the static style sheet and that it's above all the others in the DOM tree.
+ *
+ * This option will stop the static/constant stylesheet from rendering.
+ *
+ * If you're embedding multiple espectro `layout` elements, you need to guarantee that only one is rendering the static style sheet and that it's above all the others in the DOM tree.
  */
 const noStaticStyleSheet: Option = RenderModeOption(
     RenderMode.NoStaticStyleSheet
 );
 
-const _defaultFocus: FocusStyle = Internal.focusDefaultStyle;
-
-/**
- * Disable all `mouseOver` styles.
- */
+/** Disable all `mouseOver` styles. */
 const noHover: Option = HoverOption(HoverSetting.NoHover);
 
 /**
  * Any `hover` styles, aka attributes with `mouseOver` in the name, will be always turned on.
-
-    This is useful for when you're targeting a platform that has no mouse, such as mobile.
+ *
+ * This is useful for when you're targeting a platform that has no mouse, such as mobile.
  */
 const forceHover: Option = HoverOption(HoverSetting.ForceHover);
 
-/**
- * When you want to render exactly nothing.
- */
+/** When you want to render exactly nothing. */
 const none: Element = Empty();
 
 const scrollbars: Attribute = Class(Flag.overflow, classes.scrollbars);
@@ -424,9 +365,7 @@ const alignRight: Attribute = AlignX(HAlign.Right);
 
 const spaceEvenly: Attribute = Class(Flag.spacing, classes.spaceEvenly);
 
-/**
- * Set the cursor to be a pointing hand when it's hovering over this element.
- */
+/** Set the cursor to be a pointing hand when it's hovering over this element. */
 const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
 function html(html: DOM.Node): Element {
@@ -445,47 +384,44 @@ function rem(value: number): Length {
     return Rem(value);
 }
 
-/** TODO: Similarly you can set a minimum boundary.
-
-     el
-        [ height
-            (fill
-                |> maximum 300
-                |> minimum 30
-            )
-
-        ]
-        (text "I will stop at 300px")
-*/
+/**
+ * Similarly you can set a minimum boundary.
+ *
+ * ```ts
+ * el([ height(minimum(30, maximum(300, fill)))],
+ *  text("I will stop at 300px")
+ * )
+ * ```
+ */
 function minimum(value: number, length: Length): Length {
     return Min(value, length);
 }
 
-/** TODO: Add a maximum to a length.
-
-    el
-        [ height
-            (fill
-                |> maximum 300
-            )
-        ]
-        (text "I will stop at 300px")
-*/
+/**
+ * Add a maximum to a length.
+ *
+ * ```ts
+ * el([ height(maximum(300, fill))],
+ *  text("I will stop at 300px")
+ * )
+ * ```
+ */
 function maximum(value: number, length: Length): Length {
     return Max(value, length);
 }
 
-/** TODO: Sometimes you may not want to split available space evenly. In this case you can use `fillPortion` to define which elements should have what portion of the available space.
-
-So, two elements, one with `width (fillPortion 2)` and one with `width (fillPortion 3)`. The first would get 2 portions of the available space, while the second would get 3.
-
-**Also:** `fill == fillPortion 1`
-*/
+/**
+ * Sometimes you may not want to split available space evenly. In this case you can use `fillPortion` to define which elements should have what portion of the available space.
+ *
+ * So, two elements, one with `width(fillPortion(2))` and one with `width(fillPortion(3))`. The first would get 2 portions of the available space, while the second would get 3.
+ *
+ * **Also:** `fill === fillPortion(1)`
+ */
 function fillPortion(value: number): Length {
     return Fill(value);
 }
 
-// This is your top level node where you can turn `Element` into `Html`.
+/** This is your top level node where you can turn `Element` into `Html`. */
 async function layout(
     attributes: Attribute[],
     child: Element
@@ -516,33 +452,31 @@ function focusStyle(focus: FocusStyle): FocusStyleOption {
 
 /**
  * Create some plain text.
-
-    text "Hello, you stylish developer!"
-
-**Note** text does not wrap by default. In order to get text to wrap, check out `paragraph`!
+ *
+ * ```ts
+ * text("Hello, you stylish developer!")
+ * ```
+ *
+ * **Note** text does not wrap by default. In order to get text to wrap, check out `paragraph`!
  */
 function text(content: string): Element {
     return Text(content);
 }
 
-/**TODO:
+/**
  * The basic building block of your layout.
-
-You can think of an `el` as a `div`, but it can only have one child.
-
-If you want multiple children, you'll need to use something like `row` or `column`
-
-    import Element exposing (Element, rgb)
-    import Element.Background as Background
-    import Element.Border as Border
-
-    myElement : Element msg
-    myElement =
-        Element.el
-            [ Background.color (rgb 0 0.5 0)
-            , Border.color (rgb 0 0.7 0)
-            ]
-            (Element.text "You've made a stylish element!")
+ *
+ * You can think of an `el` as a `div`, but it can only have one child.
+ *
+ * If you want multiple children, you'll need to use something like `row` or `column`
+ *
+ * ```ts
+ * Element.el(
+ *  [ Background.color((rgb(0, 0.5, 0)))
+ *  , Border.color((rgb(0, 0.7, 0)))
+ *  ],
+ *  Element.text("You've made a stylish element!"))
+ * ```
  */
 async function el(attributes: Attribute[], child: Element): Promise<Element> {
     return await Internal.element(
@@ -589,7 +523,7 @@ async function column(
     );
 }
 
-// Same as `row`, but will wrap if it takes up too much horizontal space.
+/** Same as `row`, but will wrap if it takes up too much horizontal space. */
 async function wrappedRow(
     attributes: Attribute[],
     children: Element[]
@@ -722,57 +656,49 @@ async function wrappedRow(
     }
 }
 
-/**
- * Highlight the borders of an element and it's children below. This can really help if you're running into some issue with your layout!
- */
+/** Highlight the borders of an element and it's children below. This can really help if you're running into some issue with your layout! */
 function explain(): Attribute {
     console.error(`An element is being debugged!`);
     return Internal.htmlClass('explain');
 }
 
-/** TODO:
+/**
  * Show some tabular data.
-
-Start with a list of records and specify how each column should be rendered.
-
-So, if we have a list of `persons`:
-
-    type alias Person =
-        { firstName : String
-        , lastName : String
-        }
-
-    persons : List Person
-    persons =
-        [ { firstName = "David"
-          , lastName = "Bowie"
-          }
-        , { firstName = "Florence"
-          , lastName = "Welch"
-          }
-        ]
-
-We could render it using
-
-    Element.table []
-        { data = persons
-        , columns =
-            [ { header = Element.text "First Name"
-              , width = fill
-              , view =
-                    \person ->
-                        Element.text person.firstName
-              }
-            , { header = Element.text "Last Name"
-              , width = fill
-              , view =
-                    \person ->
-                        Element.text person.lastName
-              }
-            ]
-        }
-
-**Note:** Sometimes you might not have a list of records directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of records before feeding it into `Element.table`.
+ *
+ * Start with a list of ovjects and specify how each column should be rendered.
+ *
+ * So, if we have a list of `persons`:
+ *
+ * ```ts
+ * interface Person {
+ *  firstName: string;
+ *  lastName: string;
+ * }
+ *
+ * const persons: Person[] =
+ *  [ { firstName: "David", lastName: "Bowie" },
+ *  { firstName: "Florence" , lastName: "Welch" } ]
+ * ```
+ *
+ * We could render it using
+ *
+ * ```ts
+ * Element.table([],
+ *  { data: persons
+ *  , columns:
+ *       [ { header: Element.text("First Name"),
+ *          width: fill,
+ *          view: (person) => Element.text(person.firstName)
+ *          },
+ *          { header: Element.text("Last Name"),
+ *          width: fill,
+ *          view: (person) => Element.text(person.lastName)
+ *          }
+ *      ]
+ * })
+ * ```
+ *
+ * **Note:** Sometimes you might not have a list of objects directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of objects before feeding it into `Element.table`.
  */
 async function table(
     attributes: Attribute[],
@@ -787,9 +713,7 @@ async function table(
     });
 }
 
-/** TODO:
- * Same as `Element.table` except the `view` for each column will also receive the row index as well as the record.
- */
+/** Same as `Element.table` except the `view` for each column will also receive the row index as well as the object. */
 async function indexedTable(
     attributes: Attribute[],
     config: {
@@ -994,44 +918,37 @@ async function tableHelper(
     );
 }
 
-/**TODO:
+/**
  * A paragraph will layout all children as wrapped, inline elements.
-
-    import Element exposing (el, paragraph, text)
-    import Element.Font as Font
-
-    view =
-        paragraph []
-            [ text "lots of text ...."
-            , el [ Font.bold ] (text "this is bold")
-            , text "lots of text ...."
-            ]
-
-This is really useful when you want to markup text by having some parts be bold, or some be links, or whatever you so desire.
-
-Also, if a child element has `alignLeft` or `alignRight`, then it will be moved to that side and the text will flow around it, (ah yes, `float` behavior).
-
-This makes it particularly easy to do something like a [dropped capital](https://en.wikipedia.org/wiki/Initial).
-
-    import Element exposing (alignLeft, el, padding, paragraph, text)
-    import Element.Font as Font
-
-    view =
-        paragraph []
-            [ el
-                [ alignLeft
-                , padding 5
-                ]
-                (text "S")
-            , text "o much text ...."
-            ]
-
-Which will look something like
-
-![A paragraph where the first letter is twice the height of the others](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%209.41.52%20PM.png)
-
-**Note** `spacing` on a paragraph will set the pixel spacing between lines.
-
+ *
+ * ```ts
+ * paragraph([],
+ *  [ text("lots of text ....")
+ *  , el([ Font.bold ], text("this is bold"))
+ *  , text("lots of text ....")
+ * ])
+ * ```
+ *
+ * This is really useful when you want to markup text by having some parts be bold, or some be links, or whatever you so desire.
+ *
+ * Also, if a child element has `alignLeft` or `alignRight`, then it will be moved to that side and the text will flow around it, (ah yes, `float` behavior).
+ *
+ * This makes it particularly easy to do something like a [dropped capital](https://en.wikipedia.org/wiki/Initial).
+ *
+ * ```ts
+ * paragraph([],
+ *  [ el([ alignLeft
+ *      , padding 5
+ *      ],
+ *      text("S"))
+ *  , text("o much text ....")
+ * ])
+ * ```
+ *
+ * Which will look something like
+ *
+ * ![A paragraph where the first letter is twice the height of the others](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%209.41.52%20PM.png)
+ * **Note** `spacing` on a paragraph will set the pixel spacing between lines.
  */
 async function paragraph(
     attributes: Attribute[],
@@ -1045,24 +962,26 @@ async function paragraph(
     );
 }
 
-/**TODO:
+/**
  * Now that we have a paragraph, we need some way to attach a bunch of paragraph's together.
-
-To do that we can use a `textColumn`.
-
-The main difference between a `column` and a `textColumn` is that `textColumn` will flow the text around elements that have `alignRight` or `alignLeft`, just like we just saw with paragraph.
-
-In the following example, we have a `textColumn` where one child has `alignLeft`.
-
-    Element.textColumn [ spacing 10, padding 10 ]
-        [ paragraph [] [ text "lots of text ...." ]
-        , el [ alignLeft ] none
-        , paragraph [] [ text "lots of text ...." ]
-        ]
-
-Which will result in something like:
-
-![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
+ *
+ * To do that we can use a `textColumn`.
+ *
+ * The main difference between a `column` and a `textColumn` is that `textColumn` will flow the text around elements that have `alignRight` or `alignLeft`, just like we just saw with paragraph.
+ *
+ * In the following example, we have a `textColumn` where one child has `alignLeft`.
+ *
+ * ```ts
+ * Element.textColumn([ spacing(10), padding(10) ],
+ *  [ paragraph([], [ text("lots of text ...." )]),
+ *    el([ alignLeft ], none),
+ *    paragraph([], [ text("lots of text ...." )])
+ * ])
+ * ```
+ *
+ * Which will result in something like:
+ *
+ * ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
  */
 async function textColumn(
     attributes: Attribute[],
@@ -1076,14 +995,14 @@ async function textColumn(
     );
 }
 
-/**TODO:
+/**
  * Both a source and a description are required for images.
-
-The description is used for people using screen readers.
-
-Leaving the description blank will cause the image to be ignored by assistive technology. This can make sense for images that are purely decorative and add no additional information.
-
-So, take a moment to describe your image as you would to someone who has a harder time seeing.
+ *
+ * The description is used for people using screen readers.
+ *
+ * Leaving the description blank will cause the image to be ignored by assistive technology. This can make sense for images that are purely decorative and add no additional information.
+ *
+ * So, take a moment to describe your image as you would to someone who has a harder time seeing.
  */
 async function image(
     attributes: Attribute[],
@@ -1120,11 +1039,13 @@ async function image(
     );
 }
 
-/**TODO:
- * link []
-        { url = "http://fruits.com"
-        , label = text "A link to my favorite fruit provider."
-        }
+/**
+ * ```ts
+ * link([],
+ *  { url: "http://fruits.com",
+ *  label: text("A link to my favorite fruit provider.")
+ * })
+ * ```
  */
 async function link(
     attributes: Attribute[],
@@ -1133,12 +1054,6 @@ async function link(
     return await linkCore(attributes, { url, label });
 }
 
-/**TODO:
- *
- * @param attributes
- * @param param1
- * @returns
- */
 async function newTabLink(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
@@ -1173,12 +1088,6 @@ async function linkCore(
     );
 }
 
-/**TODO:
- * A link to download a file.
- * @param attributes
- * @param param1
- * @returns
- */
 async function download(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
@@ -1186,12 +1095,6 @@ async function download(
     return await downloadCore(attributes, { url, filename: '', label });
 }
 
-/**TODO:
- * A link to download a file, but you can specify the filename.
- * @param attributes
- * @param param1
- * @returns
- */
 async function downloadAs(
     attributes: Attribute[],
     { label, filename, url }: { label: Element; filename: string; url: string }
@@ -1236,22 +1139,16 @@ function onLeft(element: Element): Attribute {
     return createNearby(Location.OnLeft, element);
 }
 
-/**TODO:
+/**
  * This will place an element in front of another.
-
-**Note:** If you use this on a `layout` element, it will place the element as fixed to the viewport which can be useful for modals and overlays.
- * @param element 
- * @returns 
+ *
+ * **Note:** If you use this on a `layout` element, it will place the element as fixed to the viewport which can be useful for modals and overlays.
  */
 function inFront(element: Element): Attribute {
     return createNearby(Location.InFront, element);
 }
 
-/**TODO:
- * This will place an element between the background and the content of an element.
- * @param element
- * @returns
- */
+/**This will place an element between the background and the content of an element. */
 function behindContent(element: Element): Attribute {
     return createNearby(Location.Behind, element);
 }
@@ -1266,20 +1163,10 @@ function createNearby(location: Location, element: Element): Attribute {
     }
 }
 
-/**
- * TODO:
- * @param attributes
- * @returns
- */
 function width(width: Length): Attribute {
     return Width(width);
 }
 
-/**
- * TODO:
- * @param attributes
- * @returns
- */
 function height(width: Length): Attribute {
     return Height(width);
 }
@@ -1288,11 +1175,7 @@ function scale(n: number): Attribute {
     return TransformComponent_(Flag.scale, Scale([n, n, 1]));
 }
 
-/**TODO:
- * Angle is given in radians.
- * @param angle
- * @returns
- */
+/** Angle is given in radians. */
 function rotate(angle: number): Attribute {
     return TransformComponent_(Flag.rotate, Rotate([0, 0, 1], angle));
 }
@@ -1317,33 +1200,30 @@ function padding(x: number): Attribute {
     return StyleClass(Flag.padding, PaddingStyle('p-' + x, x, x, x, x));
 }
 
-/**
- * Set horizontal and vertical padding.
- * @param x
- * @param y
- * @returns
- */
+/** Set horizontal and vertical padding. */
 function paddingXY(x: number, y: number): Attribute {
     return x === y
         ? padding(x)
         : StyleClass(Flag.padding, PaddingStyle(`p-${x}-${y}`, y, x, y, x));
 }
 
-/** TODO:
- *If you find yourself defining unique paddings all the time, you might consider defining
-
-    edges =
-        { top = 0
-        , right = 0
-        , bottom = 0
-        , left = 0
-        }
-
-And then just do
-
-    paddingEach { edges | right = 5 }
- * @param param0
- * @returns
+/**
+ * If you find yourself defining unique paddings all the time, you might consider defining
+ * ```ts
+ * const edges =
+ *  { top: 0,
+ *    right: 0,
+ *    bottom: 0,
+ *    left: 0
+ *  }
+ * ```
+ *
+ * And then just do
+ *
+ * ```ts
+ * edges.right = 5
+ * paddingEach(edges)
+ * ```
  */
 function paddingEach({
     top,
@@ -1377,13 +1257,10 @@ function spacing(x: number): Attribute {
     );
 }
 
-/**TODO:
+/**
  * In the majority of cases you'll just need to use `spacing`, which will work as intended.
-
-However for some layouts, like `textColumn`, you may want to set a different spacing for the x axis compared to the y axis.
- * @param x 
- * @param y 
- * @returns 
+ *
+ * However for some layouts, like `textColumn`, you may want to set a different spacing for the x axis compared to the y axis.
  */
 function spacingXY(x: number, y: number): Attribute {
     return StyleClass(
@@ -1392,23 +1269,16 @@ function spacingXY(x: number, y: number): Attribute {
     );
 }
 
-/**TODO:
- * Make an element transparent and have it ignore any mouse or touch events, though it will stil take up space.
- * @param on
- * @returns
- */
+/** Make an element transparent and have it ignore any mouse or touch events, though it will stil take up space. */
 function transparent(on: boolean): Attribute {
     return on
         ? StyleClass(Flag.transparency, Transparency('transparent', 1.0))
         : StyleClass(Flag.transparency, Transparency('visible', 0.0));
 }
 
-/**TODO:
- * A capped value between 0.0 and 1.0, where 0.0 is transparent and 1.0 is fully opaque.
-
-Semantically equivalent to html opacity.
- * @param o 
- * @returns 
+/**A capped value between 0.0 and 1.0, where 0.0 is transparent and 1.0 is fully opaque.
+ *
+ * Semantically equivalent to html opacity.
  */
 function alpha(o: number): Attribute {
     const transparency_: number = ((x: number) => 1 - x)(
@@ -1423,56 +1293,26 @@ function alpha(o: number): Attribute {
     );
 }
 
-/** TODO:
- * Takes in a Window.Size and returns a device profile which can be used for responsiveness.
-
-If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
- * @param window 
- * @returns 
- */
-function classifyDevice(window: { width: number; height: number }): Device {
-    const longSide: number = Math.max(window.width, window.height),
-        shortSide: number = Math.min(window.width, window.height);
-    return Device(
-        (() => {
-            if (shortSide < 600) {
-                return DeviceClass.Phone;
-            } else if (longSide <= 1200) {
-                return DeviceClass.Tablet;
-            } else if (longSide > 1200 && longSide <= 1920) {
-                return DeviceClass.Desktop;
-            } else {
-                return DeviceClass.BigDesktop;
-            }
-        })(),
-        window.width < window.height
-            ? Orientation.Portrait
-            : Orientation.Landscape
-    );
-}
-
-/**TODO:
+/**
  * When designing it's nice to use a modular scale to set spacial rythms.
-
-    scaled =
-        Element.modular 16 1.25
-
-A modular scale starts with a number, and multiplies it by a ratio a number of times.
-Then, when setting font sizes you can use:
-
-    Font.size (scaled 1) -- results in 16
-
-    Font.size (scaled 2) -- 16 * 1.25 results in 20
-
-    Font.size (scaled 4) -- 16 * 1.25 ^ (4 - 1) results in 31.25
-
-We can also provide negative numbers to scale below 16px.
-
-    Font.size (scaled -1) -- 16 * 1.25 ^ (-1) results in 12.8
- * @param normal 
- * @param ratio 
- * @param rescale 
- * @returns 
+ *
+ * ```ts
+ * function scaled(rescale: number) {
+ *      return Element.modular(16, 1.25, rescale)
+ * }
+ * ```
+ * A modular scale starts with a number, and multiplies it by a ratio a number of times.
+ * Then, when setting font sizes you can use:
+ *
+ * `Font.size(scaled(1))` -- results in 16
+ *
+ * `Font.size(scaled(2))` -- 16 * 1.25 results in 20
+ *
+ * `Font.size(scaled(4))` -- 16 * 1.25 ^ (4 - 1) results in 31.25
+ *
+ * We can also provide negative numbers to scale below 16px.
+ *
+ * `Font.size(scaled(-1))` -- 16 * 1.25 ^ (-1) results in 12.8
  */
 function modular(normal: number, ratio: number, rescale: number): number {
     if (rescale === 0) {
@@ -1577,10 +1417,6 @@ export {
     mouseOver,
     mouseDown,
     focused,
-    DeviceClass,
-    Orientation,
-    Device,
-    classifyDevice,
     modular,
     html,
     htmlAttribute,

@@ -1,29 +1,28 @@
 // deno-lint-ignore-file no-explicit-any
 
-/** MEDIA QUERY MANAGER
-    -------------------------
-
-    0      - *      : Base
-    0      - 600px  : Phone
-    600    - 954px  : Tablet portrait mode
-    954    - 1200px : Tablet landscape mode
-    [1200  - 1921px]: Is where our normal styles apply (Desktop)
-    1921px ->       : Big Desktop
-
-    $breakpoint argument choices:
-    - phone
-    - phonePortrait
-    - phoneLandscape
-    - tablet
-    - tabletPortrait
-    - tabletLandscape
-    - desktop
-    - desktopPortrait
-    - desktopLandscape
-    - bigDesktop
-    - bigDesktopPortrait
-    - bigDesktopLandscape
-*/
+/** ## Media Query Manager
+ *
+ * - #### 0      - *      : Base
+ * - #### 0      - 600px  : Phone
+ * - #### 600    - 954px  : Tablet portrait mode
+ * - #### 954    - 1200px : Tablet landscape mode
+ * - #### [1200  - 1921px]: This is where our normal styles apply (Desktop)
+ * - #### 1921px ->       : Big Desktop
+ *
+ * ### Breakpoint argument choices:
+ * - phone
+ * - phonePortrait
+ * - phoneLandscape
+ * - tablet
+ * - tabletPortrait
+ * - tabletLandscape
+ * - desktop
+ * - desktopPortrait
+ * - desktopLandscape
+ * - bigDesktop
+ * - bigDesktopPortrait
+ * - bigDesktopLandscape
+ */
 
 interface Breakpoints {
     default?: any;
@@ -41,11 +40,6 @@ interface Breakpoints {
     bigDesktopLandscape?: any;
 }
 
-interface Device {
-    class: DeviceClass;
-    orientation: Orientation;
-}
-
 enum DeviceClass {
     Phone,
     Tablet,
@@ -58,85 +52,92 @@ enum Orientation {
     Landscape,
 }
 
-function isPhone(device: Device) {
-    return device.class === DeviceClass.Phone;
+interface Device {
+    class_: DeviceClass;
+    orientation: Orientation;
 }
 
-function isPhonePortrait(device: Device) {
+function Device(class_: DeviceClass, orientation: Orientation): Device {
+    return { class_, orientation };
+}
+
+function isPhone(device: Device): boolean {
+    return device.class_ === DeviceClass.Phone;
+}
+
+function isPhonePortrait(device: Device): boolean {
     return (
-        device.class === DeviceClass.Phone &&
+        device.class_ === DeviceClass.Phone &&
         device.orientation === Orientation.Portrait
     );
 }
 
-function isPhoneLandscape(device: Device) {
+function isPhoneLandscape(device: Device): boolean {
     return (
-        device.class === DeviceClass.Phone &&
+        device.class_ === DeviceClass.Phone &&
         device.orientation === Orientation.Landscape
     );
 }
 
-function isTablet(device: Device) {
-    return device.class === DeviceClass.Tablet;
+function isTablet(device: Device): boolean {
+    return device.class_ === DeviceClass.Tablet;
 }
 
-function isTabletPortrait(device: Device) {
+function isTabletPortrait(device: Device): boolean {
     return (
-        device.class === DeviceClass.Tablet &&
+        device.class_ === DeviceClass.Tablet &&
         device.orientation === Orientation.Portrait
     );
 }
 
-function isTabletLandscape(device: Device) {
+function isTabletLandscape(device: Device): boolean {
     return (
-        device.class === DeviceClass.Tablet &&
+        device.class_ === DeviceClass.Tablet &&
         device.orientation === Orientation.Landscape
     );
 }
 
-function isDesktop(device: Device) {
-    return device.class === DeviceClass.Desktop;
+function isDesktop(device: Device): boolean {
+    return device.class_ === DeviceClass.Desktop;
 }
 
-function isDesktopPortrait(device: Device) {
+function isDesktopPortrait(device: Device): boolean {
     return (
-        device.class === DeviceClass.Desktop &&
+        device.class_ === DeviceClass.Desktop &&
         device.orientation === Orientation.Portrait
     );
 }
 
-function isDesktopLandscape(device: Device) {
+function isDesktopLandscape(device: Device): boolean {
     return (
-        device.class === DeviceClass.Desktop &&
+        device.class_ === DeviceClass.Desktop &&
         device.orientation === Orientation.Landscape
     );
 }
 
-function isBigDesktop(device: Device) {
-    return device.class === DeviceClass.BigDesktop;
+function isBigDesktop(device: Device): boolean {
+    return device.class_ === DeviceClass.BigDesktop;
 }
 
-function isBigDesktopPortrait(device: Device) {
+function isBigDesktopPortrait(device: Device): boolean {
     return (
-        device.class === DeviceClass.BigDesktop &&
+        device.class_ === DeviceClass.BigDesktop &&
         device.orientation === Orientation.Portrait
     );
 }
 
-function isBigDesktopLandscape(device: Device) {
+function isBigDesktopLandscape(device: Device): boolean {
     return (
-        device.class === DeviceClass.BigDesktop &&
+        device.class_ === DeviceClass.BigDesktop &&
         device.orientation === Orientation.Landscape
     );
 }
 
-/** TODO: Simulates CSS @media query
-
-    With device data it can return specific values for different
-    device profiles using breakpoints.
-*/
-function respond(device: Device, bps: Breakpoints) {
-    switch (device.class) {
+/** #### Simulates CSS @media query
+ * With device data it can return specific values for different device profiles using breakpoints.
+ */
+function respond(device: Device, bps: Breakpoints): any {
+    switch (device.class_) {
         case DeviceClass.Phone:
             if (bps.phone || bps.phonePortrait || bps.phoneLandscape) {
                 switch (device.orientation) {
@@ -213,40 +214,35 @@ function respond(device: Device, bps: Breakpoints) {
     }
 }
 
-// TODO: Gets the device data based on the viewport width and viewport height.
-function deviceData(vw: number, vh: number) {
+/** Gets the device data based on the viewport width and viewport height. */
+function deviceData(vw: number, vh: number): Device {
     return classifyDevice({ width: vw, height: vh });
 }
 
-/** TODO: Takes in a Window.Size and returns a device profile which can be used for responsiveness.
-
-If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
-*/
+/**
+ * Takes in `window.innerWidth` and `window.innerHeight`, and returns a device profile which can be used for responsiveness.
+ *
+ * If you have more detailed concerns around responsiveness, it probably makes sense to copy this function into your codebase and modify as needed.
+ */
 function classifyDevice(window: { width: number; height: number }): Device {
-    const longSide = Math.max(window.width, window.height);
-    const shortSide = Math.min(window.width, window.height);
-
-    return {
-        class: (function () {
-            if (shortSide !== undefined && shortSide < 600) {
+    const longSide: number = Math.max(window.width, window.height),
+        shortSide: number = Math.min(window.width, window.height);
+    return Device(
+        (() => {
+            if (shortSide < 600) {
                 return DeviceClass.Phone;
-            } else if (longSide !== undefined && longSide <= 1200) {
+            } else if (longSide <= 1200) {
                 return DeviceClass.Tablet;
-            } else if (
-                longSide !== undefined &&
-                longSide > 1200 &&
-                longSide <= 1920
-            ) {
+            } else if (longSide > 1200 && longSide <= 1920) {
                 return DeviceClass.Desktop;
             } else {
                 return DeviceClass.BigDesktop;
             }
         })(),
-        orientation:
-            window.width < window.height
-                ? Orientation.Portrait
-                : Orientation.Landscape,
-    };
+        window.width < window.height
+            ? Orientation.Portrait
+            : Orientation.Landscape
+    );
 }
 
 export {
