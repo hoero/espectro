@@ -1,8 +1,9 @@
+// deno-lint-ignore-file no-explicit-any
 import { classValidator } from '../deps.ts';
 import { ChannelsColor } from './color.ts';
 
 const validateColor = (color: ChannelsColor) => {
-    return classValidator.validate(color).then((errors) => {
+    return classValidator.validate(color).then((errors: string | any[]) => {
         if (errors.length > 0) {
             console.log('Validation failed: ', errors);
             return;

@@ -6,7 +6,7 @@
  * @docs focusedOnLoad
  */
 
-import { attribute } from '../dom/attribute.ts';
+import { preact } from '../../deps.ts';
 import { Attr, Attribute } from '../internal/data.ts';
 
 /**
@@ -14,74 +14,74 @@ import { Attr, Attribute } from '../internal/data.ts';
  *
  * You should only have a maximum of one per page.
  */
-const focusedOnLoad: Attribute = Attr(attribute('autocomplete', 'true'));
+const focusedOnLoad: Attribute = Attr({ autocomplete: 'true' });
 
 function selected(selected_: boolean): Attribute {
-    return Attr(attribute('selected', `${selected_}`));
+    return Attr({ selected: selected_ });
 }
 
 function name(name_: string): Attribute {
-    return Attr(attribute('name', name_));
+    return Attr({ name: name_ });
 }
 
 function value(x: number | string): Attribute {
-    return Attr(attribute('value', typeof x === 'string' ? x : x.toString()));
+    return Attr({ value: typeof x === 'string' ? x : x.toString() });
 }
 
 function tabindex(i: number): Attribute {
-    return Attr(attribute('tabindex', i.toString()));
+    return Attr({ tabIndex: i });
 }
 
 function disabled(disabled_: boolean): Attribute {
-    return Attr(attribute('disabled', `${disabled_}`));
+    return Attr({ disabled: disabled_ });
 }
 
-function spellcheck(spellchecked_: boolean): Attribute {
-    return Attr(attribute('spellchecked', `${spellchecked_}`));
+function spellcheck(spellcheck_: boolean): Attribute {
+    return Attr({ spellcheck: spellcheck_ });
 }
 
 function readonly(readonly_: boolean): Attribute {
-    return Attr(attribute('readonly', `${readonly_}`));
+    return Attr({ readonly: readonly_ });
 }
 
 function autofill(autofill_: string): Attribute {
-    return Attr(attribute('autocomplete', autofill_));
+    return Attr({ autocomplete: autofill_ });
 }
 
-function role(role_: string): Attribute {
-    return Attr(attribute('role', role_));
+function role(role_: preact.JSX.AriaRole): Attribute {
+    return Attr({ role: role_ });
 }
 
 function ariaChecked(ariaChecked_: boolean): Attribute {
-    return Attr(attribute('aria-checked', `${ariaChecked_}`));
+    return Attr({ 'aria-checked': ariaChecked_ });
 }
 
 function type(type_: string): Attribute {
-    return Attr(attribute('type', type_));
+    return Attr({ type: type_ });
 }
 
 function step(x: number | string): Attribute {
-    return Attr(attribute('step', typeof x === 'string' ? x : x.toString()));
+    return Attr({ step: typeof x === 'string' ? x : x.toString() });
 }
 
 function min(x: number): Attribute {
-    return Attr(attribute('min', x.toString()));
+    return Attr({ min: x.toString() });
 }
 
 function max(x: number): Attribute {
-    return Attr(attribute('max', x.toString()));
+    return Attr({ max: x.toString() });
 }
 
 function orient(orientation: string): Attribute {
-    return Attr(attribute('orient', orientation));
+    return Attr({ orient: orientation });
 }
 
 function class_(className: string): Attribute {
-    return Attr(attribute('class', className));
+    return Attr({ class: className });
 }
 
 function style(property: string, value: string): Attribute {
-    return Attr(attribute('style', `${property}: ${value}`));
+    return Attr({ style: `${property}: ${value}` });
 }
 
 export {

@@ -1,5 +1,5 @@
-import { DOM, elmish } from '../../deps.ts';
-import { EventHandler } from '../dom/event.ts';
+// deno-lint-ignore-file no-explicit-any
+import { elmish, preact } from '../../deps.ts';
 import { Flag_, Second, Field } from './flag.ts';
 
 export type Maybe<T> = elmish.Maybe.Maybe<T>;
@@ -13,22 +13,24 @@ export enum Elements {
 
 export interface Unstyled {
     type: Elements.Unstyled;
-    html: (a: LayoutContext) => DOM.Node;
+    html: (a: LayoutContext) => preact.JSX.Element;
 }
 
-export function Unstyled(html: (a: LayoutContext) => DOM.Node): Unstyled {
+export function Unstyled(
+    html: (a: LayoutContext) => preact.JSX.Element
+): Unstyled {
     return { type: Elements.Unstyled, html };
 }
 
 export interface Styled {
     type: Elements.Styled;
     styles: Style[];
-    html: (a: EmbedStyle, b: LayoutContext) => DOM.Node;
+    html: (a: EmbedStyle, b: LayoutContext) => preact.JSX.Element;
 }
 
 export function Styled(
     styles: Style[],
-    html: (a: EmbedStyle, b: LayoutContext) => DOM.Node
+    html: (a: EmbedStyle, b: LayoutContext) => preact.JSX.Element
 ): Styled {
     return { type: Elements.Styled, styles, html };
 }
@@ -666,10 +668,16 @@ export function NoAttribute(): NoAttribute {
 
 export interface Attr {
     type: Attributes.Attr;
-    attr: DOM.Attr;
+    attr: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes;
 }
 
-export function Attr(attr: DOM.Attr): Attr {
+export function Attr(
+    attr: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes
+): Attr {
     return { type: Attributes.Attr, attr };
 }
 
@@ -783,15 +791,6 @@ export function TransformComponent_(
     return { type: Attributes.TransformComponent, flag, component };
 }
 
-export interface Event {
-    type: Attributes.Event;
-    handler: EventHandler;
-}
-
-export function Event(handler: EventHandler): Event {
-    return { type: Attributes.Event, handler };
-}
-
 export type Attribute =
     | NoAttribute
     | Attr
@@ -803,8 +802,7 @@ export type Attribute =
     | Width
     | Height
     | Nearby
-    | TransformComponent_
-    | Event;
+    | TransformComponent_;
 
 export enum TransformComponents {
     MoveX,
@@ -1160,20 +1158,25 @@ export function Generic(): Generic {
 
 export interface NodeName_ {
     type: NodeNames.NodeName;
-    nodeName: string;
+    nodeName: keyof preact.JSX.IntrinsicElements;
 }
 
-export function NodeName(nodeName: string): NodeName_ {
+export function NodeName(
+    nodeName: keyof preact.JSX.IntrinsicElements
+): NodeName_ {
     return { type: NodeNames.NodeName, nodeName };
 }
 
 export interface Embedded {
     type: NodeNames.Embedded;
-    nodeName: string;
-    internal: string;
+    nodeName: keyof preact.JSX.IntrinsicElements;
+    internal: keyof preact.JSX.IntrinsicElements;
 }
 
-export function Embedded(nodeName: string, internal: string): Embedded {
+export function Embedded(
+    nodeName: keyof preact.JSX.IntrinsicElements,
+    internal: keyof preact.JSX.IntrinsicElements
+): Embedded {
     return { type: NodeNames.Embedded, nodeName, internal };
 }
 
@@ -1198,10 +1201,12 @@ export function NoNearbyChildren(): NoNearbyChildren {
 
 export interface ChildrenBehind {
     type: NearbyChildrens.ChildrenBehind;
-    existingBehind: DOM.Node[];
+    existingBehind: preact.ComponentChildren[];
 }
 
-export function ChildrenBehind(existingBehind: DOM.Node[]): ChildrenBehind {
+export function ChildrenBehind(
+    existingBehind: preact.ComponentChildren[]
+): ChildrenBehind {
     return {
         type: NearbyChildrens.ChildrenBehind,
         existingBehind,
@@ -1210,10 +1215,12 @@ export function ChildrenBehind(existingBehind: DOM.Node[]): ChildrenBehind {
 
 export interface ChildrenInFront {
     type: NearbyChildrens.ChildrenInFront;
-    existingInFront: DOM.Node[];
+    existingInFront: preact.ComponentChildren[];
 }
 
-export function ChildrenInFront(existingInFront: DOM.Node[]): ChildrenInFront {
+export function ChildrenInFront(
+    existingInFront: preact.ComponentChildren[]
+): ChildrenInFront {
     return {
         type: NearbyChildrens.ChildrenInFront,
         existingInFront,
@@ -1222,13 +1229,13 @@ export function ChildrenInFront(existingInFront: DOM.Node[]): ChildrenInFront {
 
 export interface ChildrenBehindAndInFront {
     type: NearbyChildrens.ChildrenBehindAndInFront;
-    existingBehind: DOM.Node[];
-    existingInFront: DOM.Node[];
+    existingBehind: preact.ComponentChildren[];
+    existingInFront: preact.ComponentChildren[];
 }
 
 export function ChildrenBehindAndInFront(
-    existingBehind: DOM.Node[],
-    existingInFront: DOM.Node[]
+    existingBehind: preact.ComponentChildren[],
+    existingInFront: preact.ComponentChildren[]
 ): ChildrenBehindAndInFront {
     return {
         type: NearbyChildrens.ChildrenBehindAndInFront,
@@ -1245,7 +1252,9 @@ export type NearbyChildren =
 
 export interface Gathered {
     node: NodeName;
-    attributes: DOM.Attr[];
+    attributes: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes;
     styles: Style[];
     children: NearbyChildren;
     has: Field[];
@@ -1253,7 +1262,9 @@ export interface Gathered {
 
 export function Gathered(
     node: NodeName,
-    attributes: DOM.Attr[],
+    attributes: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes,
     styles: Style[],
     children: NearbyChildren,
     has: Field[]
@@ -1271,7 +1282,6 @@ export interface Unkeyed<T> {
     unkeyed: T[];
 }
 
-// deno-lint-ignore no-explicit-any
 export function Unkeyed(unkeyed: any[]): Unkeyed<any> {
     return {
         type: Childrens.Unkeyed,
@@ -1284,7 +1294,6 @@ export interface Keyed<T> {
     keyed: [string, T][];
 }
 
-// deno-lint-ignore no-explicit-any
 export function Keyed(keyed: [string, any][]): Keyed<any> {
     return {
         type: Childrens.Keyed,

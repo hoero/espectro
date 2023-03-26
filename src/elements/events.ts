@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 /**
  *
  * ## Mouse Events
@@ -8,8 +9,8 @@
  * @docs onFocus, onLoseFocus
  */
 
-import { EventHandler, on as on_ } from '../dom/event.ts';
-import { Attribute, Event } from '../internal/data.ts';
+import { preact } from '../../deps.ts';
+import { Attr, Attribute } from '../internal/data.ts';
 
 // Key codes
 const enter = 'Enter',
@@ -30,129 +31,165 @@ const enter = 'Enter',
 
 // Mouse Events
 
-function onMouseDown(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).mouseDown = handler));
+function onMouseDown(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onMouseDown', handler);
 }
 
-function onMouseUp(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).mouseUp = handler));
+function onMouseUp(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onMouseUp', handler);
 }
 
-function onClick(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).click = handler));
+function onClick(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onClick', handler);
 }
 
-function onDoubleClick(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).doubleClick = handler));
+function onDoubleClick(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onDblClick', handler);
 }
 
-function onMouseEnter(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).mouseEnter = handler));
+function onMouseEnter(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onMouseEnter', handler);
 }
 
-function onMouseLeave(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).mouseLeave = handler));
+function onMouseLeave(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onMouseLeave', handler);
 }
 
-function onMouseMove(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).mouseMove = handler));
+function onMouseMove(
+    handler: preact.JSX.MouseEventHandler<EventTarget>
+): Attribute {
+    return on('onMouseMove', handler);
 }
 
 // Focus Events
 
-function onLoseFocus(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).blur = handler));
+function onLoseFocus(
+    handler: preact.JSX.FocusEventHandler<EventTarget>
+): Attribute {
+    return on('onBlur', handler);
 }
 
-function onFocus(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).focus = handler));
+function onFocus(
+    handler: preact.JSX.FocusEventHandler<EventTarget>
+): Attribute {
+    return on('onFocus', handler);
 }
 
-function onFocusOut(class_: string, handler: EventHandler): Attribute {
-    return on(class_, 'focusout', handler);
+function onFocusOut(
+    handler: preact.JSX.FocusEventHandler<EventTarget>
+): Attribute {
+    return on('onfocusout', handler);
 }
 
-function onFocusIn(class_: string, handler: EventHandler): Attribute {
-    return on(class_, 'focusin', handler);
+function onFocusIn(
+    handler: preact.JSX.FocusEventHandler<EventTarget>
+): Attribute {
+    return on('onfocusin', handler);
+}
+
+// Form Events
+
+function onInput(
+    handler: preact.JSX.GenericEventHandler<EventTarget>
+): Attribute {
+    return on('onInput', handler);
 }
 
 // Keyboard Events
 
-function onInput(class_: string, handler: EventHandler): Attribute {
-    return Event((on_(class_).input = handler));
+function onEnter(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(enter, handler);
 }
 
-function onEnter(class_: string, handler: EventHandler) {
-    return onKey(class_, enter, handler);
+function onSpace(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(space, handler);
 }
 
-function onSpace(class_: string, handler: EventHandler) {
-    return onKey(class_, space, handler);
+function onEscape(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(escape, handler);
 }
 
-function onEscape(class_: string, handler: EventHandler) {
-    return onKey(class_, escape, handler);
+function onTab(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(tab, handler);
 }
 
-function onTab(class_: string, handler: EventHandler) {
-    return onKey(class_, tab, handler);
+function onDelete(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(delete_, handler);
 }
 
-function onDelete(class_: string, handler: EventHandler) {
-    return onKey(class_, delete_, handler);
+function onBackspace(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(backspace, handler);
 }
 
-function onBackspace(class_: string, handler: EventHandler) {
-    return onKey(class_, backspace, handler);
+function onUpArrow(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(upArrow, handler);
 }
 
-function onUpArrow(class_: string, handler: EventHandler) {
-    return onKey(class_, upArrow, handler);
+function onRightArrow(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(rightArrow, handler);
 }
 
-function onRightArrow(class_: string, handler: EventHandler) {
-    return onKey(class_, rightArrow, handler);
+function onLeftArrow(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(leftArrow, handler);
 }
 
-function onLeftArrow(class_: string, handler: EventHandler) {
-    return onKey(class_, leftArrow, handler);
-}
-
-function onDownArrow(class_: string, handler: EventHandler) {
-    return onKey(class_, downArrow, handler);
+function onDownArrow(handler: preact.JSX.KeyboardEventHandler<EventTarget>) {
+    return onKey(downArrow, handler);
 }
 
 function onKey(
-    class_: string,
     keyCode: string,
-    handler: EventHandler
+    handler: preact.JSX.KeyboardEventHandler<EventTarget>
 ): Attribute {
-    return on(class_, 'keyup', (ctx) => {
-        const { key } = <KeyboardEvent>ctx.e;
-        ctx.e.preventDefault();
-        switch (key) {
-            case keyCode:
-                handler(ctx);
-                break;
-            default:
-                break;
+    return on(
+        'onKeyUp',
+        (event: preact.JSX.TargetedKeyboardEvent<EventTarget>) => {
+            const { key } = event;
+            event.preventDefault();
+            switch (key) {
+                case keyCode:
+                    handler(event);
+                    break;
+                default:
+                    break;
+            }
         }
-    });
+    );
 }
 
-function onKeyLookUp(class_: string, handler: EventHandler): Attribute {
+function onKeyLookUp(
+    handler: preact.JSX.KeyboardEventHandler<EventTarget>
+): Attribute {
     // We generally want these attached to the keydown event because it allows us to prevent default on things like spacebar scrolling the page.
     // https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/button_role
-    return on(class_, 'keydown', (ctx) => {
-        ctx.e.preventDefault();
-        handler(ctx);
-    });
+    return on(
+        'onKeyDown',
+        (event: preact.JSX.TargetedKeyboardEvent<EventTarget>) => {
+            event.preventDefault();
+            handler(event);
+        }
+    );
 }
 
 // General Events
 
-function on(class_: string, event: string, handler: EventHandler): Attribute {
-    return Event((on_(class_)[event] = handler));
+function on<T extends preact.JSX.TargetedEvent>(
+    event: string,
+    handler: preact.JSX.EventHandler<T>
+): Attribute {
+    return Attr({ [event]: handler });
 }
 
 export {

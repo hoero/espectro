@@ -1,4 +1,5 @@
-import { DOM, elmish } from '../../deps.ts';
+// deno-lint-ignore-file no-explicit-any
+import { elmish, preact } from '../../deps.ts';
 import * as Flag from './flag.ts';
 import { classes as cls, dot, rules } from './style.ts';
 import {
@@ -80,12 +81,12 @@ import {
     Px,
     Hsla,
 } from './data.ts';
-import { attribute } from '../dom/attribute.ts';
-import domElement from '../dom/element.ts';
 import { isEmpty, isNumber, isPlainObject, isString } from '../utils/utils.ts';
 import { rgba } from '../color.ts';
 
 const { Just, Nothing, map, withDefault, MaybeType } = elmish.Maybe;
+
+const { h } = preact;
 
 const noStyleSheet = NoStyleSheet();
 
@@ -176,56 +177,54 @@ function hasSmallCaps(typeface: Font): boolean {
 const div = Generic();
 
 function htmlClass(cls: string): Attribute {
-    return Attr(attribute('class', cls));
+    return Attr({ class: cls });
 }
 
-function unstyled(node: DOM.Node): Element {
+function unstyled(node: preact.JSX.Element): Element {
     return Unstyled(() => node);
 }
 
 async function finalizeNode(
     has: Flag.Field[],
     node: NodeName,
-    attributes: DOM.Attr[],
-    children: Children<DOM.Node>,
+    attributes: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes,
+    children: Children<preact.JSX.Element>,
     embedMode: EmbedStyle,
     parentContext: LayoutContext
-): Promise<DOM.Node> {
-    const attributes_: [string, string][] = attributes.map((x: DOM.Attr) => [
-        x.name,
-        x.value,
-    ]);
-    const html: Promise<DOM.Node> = (async () => {
+): Promise<preact.JSX.Element> {
+    const html: Promise<preact.JSX.Element> = (async () => {
         switch (node.type) {
             case NodeNames.Generic:
-                return await createNode('div', attributes_);
+                return await createNode('div', attributes);
 
             case NodeNames.NodeName:
-                return await createNode(node.nodeName, attributes_);
+                return await createNode(node.nodeName, attributes);
 
             case NodeNames.Embedded: {
-                const el = domElement(node.nodeName, attributes_);
-                const child = domElement(
-                    node.internal,
-                    [['class', cls.any + ' ' + cls.single]],
-                    el
+                return h<any>(
+                    node.nodeName,
+                    attributes,
+                    h(node.internal, {
+                        class: cls.any + ' ' + cls.single,
+                    })
                 );
-                el.appendChild(child);
-                return el;
             }
         }
     })();
 
     async function createNode(
-        nodeName: string,
-        attrs: [string, string][]
-    ): Promise<DOM.Node> {
+        nodeName: keyof preact.JSX.IntrinsicElements,
+        attrs: preact.ClassAttributes<string> &
+            preact.JSX.HTMLAttributes &
+            preact.JSX.SVGAttributes
+    ): Promise<preact.JSX.Element> {
         switch (children.type) {
             case Childrens.Keyed: {
-                const keyedNode = domElement(nodeName, attrs);
                 const child = async (
                     embedMode: EmbedStyle
-                ): Promise<[string, DOM.Node][]> => {
+                ): Promise<[string, preact.ComponentChildren][]> => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.keyed;
@@ -248,27 +247,22 @@ async function finalizeNode(
                     }
                 };
                 const child_ = await child(embedMode);
-                // TODO: Review this logic, where to put the key
-                keyedNode.append(...child_[1]);
-                return keyedNode;
+                return h<any>(
+                    nodeName,
+                    attrs,
+                    child_.map(
+                        ([key, componentChild]: [
+                            string,
+                            preact.ComponentChildren
+                        ]) => h<any>('span', { key }, componentChild)
+                    )
+                );
             }
 
             case Childrens.Unkeyed: {
-                const unkeyedNode: DOM.Element = (() => {
-                    switch (nodeName) {
-                        case 'div':
-                            return domElement('div', attrs);
-
-                        case 'p':
-                            return domElement('p', attrs);
-
-                        default:
-                            return domElement(nodeName, attrs);
-                    }
-                })();
                 const child = async (
                     embedMode: EmbedStyle
-                ): Promise<DOM.Node[]> => {
+                ): Promise<preact.ComponentChildren[]> => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.unkeyed;
@@ -291,8 +285,16 @@ async function finalizeNode(
                     }
                 };
                 const child_ = await child(embedMode);
-                unkeyedNode.append(...child_);
-                return unkeyedNode;
+                switch (nodeName) {
+                    case 'div':
+                        return h<any>('div', attrs, child_);
+
+                    case 'p':
+                        return h<any>('p', attrs, child_);
+
+                    default:
+                        return h<any>(nodeName, attrs, child_);
+                }
             }
         }
     }
@@ -305,35 +307,33 @@ async function finalizeNode(
             ) {
                 return await html;
             } else if (Flag.present(Flag.alignRight, has)) {
-                const u = domElement('u', [
-                    [
-                        'class',
-                        [
+                return h(
+                    'u',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.contentCenterY,
                             cls.alignContainerRight,
                         ].join(' '),
-                    ],
-                ]);
-                u.appendChild(await html);
-                return u;
+                    },
+                    await html
+                );
             } else if (Flag.present(Flag.centerX, has)) {
-                const s = domElement('s', [
-                    [
-                        'class',
-                        [
+                return h(
+                    's',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.contentCenterY,
                             cls.alignContainerCenterX,
                         ].join(' '),
-                    ],
-                ]);
-                s.appendChild(await html);
-                return s;
+                    },
+                    await html
+                );
             } else {
                 return await html;
             }
@@ -345,33 +345,31 @@ async function finalizeNode(
             ) {
                 return await html;
             } else if (Flag.present(Flag.centerY, has)) {
-                const s = domElement('s', [
-                    [
-                        'class',
-                        [
+                return h(
+                    's',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.alignContainerCenterY,
                         ].join(' '),
-                    ],
-                ]);
-                s.appendChild(await html);
-                return s;
+                    },
+                    await html
+                );
             } else if (Flag.present(Flag.alignBottom, has)) {
-                const u = domElement('u', [
-                    [
-                        'class',
-                        [
+                return h(
+                    'u',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.alignContainerBottom,
                         ].join(' '),
-                    ],
-                ]);
-                u.appendChild(await html);
-                return u;
+                    },
+                    await html
+                );
             } else {
                 return await html;
             }
@@ -381,38 +379,36 @@ async function finalizeNode(
                 Flag.present(Flag.alignRight, has) ||
                 Flag.present(Flag.alignBottom, has)
             ) {
-                const u = domElement('u', [
-                    [
-                        'class',
-                        [
+                return h(
+                    'u',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.contentCenterY,
                             cls.alignContainerRight,
                         ].join(' '),
-                    ],
-                ]);
-                u.appendChild(await html);
-                return u;
+                    },
+                    await html
+                );
             } else if (
                 Flag.present(Flag.centerX, has) ||
                 Flag.present(Flag.centerY, has)
             ) {
-                const s = domElement('s', [
-                    [
-                        'class',
-                        [
+                return h(
+                    's',
+                    {
+                        class: [
                             cls.any,
                             cls.single,
                             cls.container,
                             cls.contentCenterY,
                             cls.alignContainerCenterX,
                         ].join(' '),
-                    ],
-                ]);
-                s.appendChild(await html);
-                return s;
+                    },
+                    await html
+                );
             } else {
                 return await html;
             }
@@ -426,9 +422,9 @@ async function embedWith(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
-    children: DOM.Node[]
-): Promise<DOM.Node[]> {
-    const dinamicStyleSheet: DOM.Node = toStyleSheet(
+    children: preact.ComponentChildren[]
+): Promise<preact.ComponentChildren[]> {
+    const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
             (
@@ -446,9 +442,9 @@ async function embedKeyed(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
-    children: [string, DOM.Node][]
-): Promise<[string, DOM.Node][]> {
-    const dinamicStyleSheet: DOM.Node = toStyleSheet(
+    children: [string, preact.ComponentChildren][]
+): Promise<[string, preact.ComponentChildren][]> {
+    const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
             (
@@ -480,7 +476,10 @@ function reduceStyles(
     return [cache.add(styleName), [style, ...existing]];
 }
 
-function addNodeName(newNode: string, old: NodeName): NodeName {
+function addNodeName(
+    newNode: keyof preact.JSX.IntrinsicElements,
+    old: NodeName
+): NodeName {
     switch (old.type) {
         case NodeNames.Generic:
             return NodeName(newNode);
@@ -783,7 +782,9 @@ function gatherAttrRecursive(
     has: Flag.Field[],
     transform: Transformation,
     styles: Style[],
-    attrs: DOM.Attr[],
+    attrs: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes,
     children: NearbyChildren,
     elementAttrs: Attribute[]
 ): Gathered {
@@ -794,13 +795,10 @@ function gatherAttrRecursive(
             case MaybeType.Nothing:
                 return Gathered(
                     node,
-                    [
-                        attribute(
-                            'class',
-                            [classes, ...classes_(attrs)].join(' ')
-                        ),
-                        ...attrs.filter((attr) => attr.name !== 'class'),
-                    ],
+                    {
+                        class: classes,
+                        ...attrs,
+                    },
                     styles,
                     children,
                     has
@@ -809,26 +807,15 @@ function gatherAttrRecursive(
             case MaybeType.Just:
                 return Gathered(
                     node,
-                    [
-                        attribute(
-                            'class',
-                            [classes, class_.value, ...classes_(attrs)].join(
-                                ' '
-                            )
-                        ),
-                        ...attrs.filter((attr) => attr.name !== 'class'),
-                    ],
+                    {
+                        class: classes + ' ' + class_.value,
+                        ...attrs,
+                    },
                     [Transform(transform), ...styles],
                     children,
                     has
                 );
         }
-    }
-
-    function classes_(attrs: DOM.Attr[]): string[] {
-        return attrs
-            .filter((attr) => attr.name === 'class')
-            .map((attr) => attr.value);
     }
 
     const [attribute_, ...remaining] = elementAttrs;
@@ -853,7 +840,7 @@ function gatherAttrRecursive(
                 has,
                 transform,
                 styles,
-                [attribute_.attr, ...attrs],
+                { ...attribute_.attr, ...attrs },
                 children,
                 remaining
             );
@@ -921,9 +908,32 @@ function gatherAttrRecursive(
                             remaining
                         );
                     } else if (attribute_.description.i < 7) {
+                        const heading: keyof preact.JSX.IntrinsicElements =
+                            (() => {
+                                switch (attribute_.description.i) {
+                                    case 1:
+                                        return 'h1';
+
+                                    case 2:
+                                        return 'h2';
+
+                                    case 3:
+                                        return 'h3';
+
+                                    case 4:
+                                        return 'h4';
+
+                                    case 5:
+                                        return 'h5';
+
+                                    case 6:
+                                    default:
+                                        return 'h6';
+                                }
+                            })();
                         return gatherAttrRecursive(
                             classes,
-                            addNodeName(`h${attribute_.description.i}`, node),
+                            addNodeName(heading, node),
                             has,
                             transform,
                             styles,
@@ -951,13 +961,10 @@ function gatherAttrRecursive(
                         has,
                         transform,
                         styles,
-                        [
-                            attribute(
-                                'aria-label',
-                                attribute_.description.label
-                            ),
+                        {
+                            'aria-label': attribute_.description.label,
                             ...attrs,
-                        ],
+                        },
                         children,
                         remaining
                     );
@@ -969,7 +976,7 @@ function gatherAttrRecursive(
                         has,
                         transform,
                         styles,
-                        [attribute('aria-live', 'polite'), ...attrs],
+                        { 'aria-live': 'polite', ...attrs },
                         children,
                         remaining
                     );
@@ -981,7 +988,7 @@ function gatherAttrRecursive(
                         has,
                         transform,
                         styles,
-                        [attribute('aria-live', 'assertive'), ...attrs],
+                        { 'aria-live': 'assertive', ...attrs },
                         children,
                         remaining
                     );
@@ -993,7 +1000,7 @@ function gatherAttrRecursive(
                         has,
                         transform,
                         styles,
-                        [attribute('role', 'button'), ...attrs],
+                        { role: 'button', ...attrs },
                         children,
                         remaining
                     );
@@ -1415,18 +1422,6 @@ function gatherAttrRecursive(
                 children,
                 remaining
             );
-
-        case Attributes.Event:
-            return gatherAttrRecursive(
-                classes,
-                node,
-                has,
-                transform,
-                styles,
-                attrs,
-                children,
-                remaining
-            );
     }
 }
 
@@ -1490,7 +1485,10 @@ function addNearbyElement(
     }
 }
 
-function nearbyElement(location: Location, element_: Element): DOM.Element {
+function nearbyElement(
+    location: Location,
+    element_: Element
+): preact.JSX.Element {
     const common = [cls.nearby, cls.single];
 
     function classes_(location: Location) {
@@ -1518,7 +1516,7 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
     function child(element_: Element) {
         switch (element_.type) {
             case Elements.Empty:
-                return new DOM.Text('');
+                return h('', null, '');
 
             case Elements.Text:
                 return textElement(TextElement.Text, element_.str);
@@ -1531,9 +1529,7 @@ function nearbyElement(location: Location, element_: Element): DOM.Element {
         }
     }
 
-    const el = domElement('div', [['class', classes_(location)]]);
-    el.appendChild(child(element_));
-    return el;
+    return h('div', { class: classes_(location) }, child(element_));
 }
 
 function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
@@ -1810,7 +1806,7 @@ async function elementCore(
             [Flag.none],
             untransformed,
             [],
-            [],
+            {},
             NoNearbyChildren(),
             attributes.reverse()
         ),
@@ -1826,8 +1822,8 @@ async function createElement(
 ): Promise<Element> {
     function gather(
         child: Element,
-        [htmls, existingStyles]: [Unkeyed<DOM.Node>, Style[]]
-    ): [DOM.Node[], Style[]] {
+        [htmls, existingStyles]: [Unkeyed<preact.ComponentChildren>, Style[]]
+    ): [preact.ComponentChildren[], Style[]] {
         switch (child.type) {
             case Elements.Unstyled:
                 return [
@@ -1871,8 +1867,8 @@ async function createElement(
 
     function gatherKeyed(
         [key, child]: [string, Element],
-        [htmls, existingStyles]: [Keyed<DOM.Node>, Style[]]
-    ): [[string, DOM.Node][], Style[]] {
+        [htmls, existingStyles]: [Keyed<preact.ComponentChildren>, Style[]]
+    ): [[string, preact.ComponentChildren][], Style[]] {
         switch (child.type) {
             case Elements.Unstyled:
                 return [
@@ -1924,7 +1920,10 @@ async function createElement(
         case Childrens.Keyed: {
             const gathered = children.keyed.reduceRight(
                 (
-                    [keyed, styles]: [[string, DOM.Node][], Style[]],
+                    [keyed, styles]: [
+                        [string, preact.ComponentChildren][],
+                        Style[]
+                    ],
                     keyed_: [string, Element]
                 ) => gatherKeyed(keyed_, [Keyed(keyed), styles]),
                 [[], []]
@@ -1973,8 +1972,10 @@ async function createElement(
 
         case Childrens.Unkeyed: {
             const gathered = children.unkeyed.reduceRight(
-                ([unkeyed, styles]: [DOM.Node[], Style[]], unkeyed_: Element) =>
-                    gather(unkeyed_, [Unkeyed(unkeyed), styles]),
+                (
+                    [unkeyed, styles]: [preact.ComponentChildren[], Style[]],
+                    unkeyed_: Element
+                ) => gather(unkeyed_, [Unkeyed(unkeyed), styles]),
                 [[], []]
             );
 
@@ -2010,9 +2011,9 @@ async function createElement(
 }
 
 function addChildren(
-    existing: DOM.Node[],
+    existing: preact.ComponentChildren[],
     nearbyChildren: NearbyChildren
-): DOM.Node[] {
+): preact.ComponentChildren[] {
     switch (nearbyChildren.type) {
         case NearbyChildrens.NoNearbyChildren:
             return existing;
@@ -2032,32 +2033,44 @@ function addChildren(
 
 function addKeyedChildren(
     key: string,
-    existing: [string, DOM.Node][],
+    existing: [string, preact.ComponentChildren][],
     nearbyChildren: NearbyChildren
-): [string, DOM.Node][] {
+): [string, preact.ComponentChildren][] {
     switch (nearbyChildren.type) {
         case NearbyChildrens.NoNearbyChildren:
             return existing;
 
         case NearbyChildrens.ChildrenBehind:
             return nearbyChildren.existingBehind
-                .map((x: DOM.Node): [string, DOM.Node] => [key, x])
+                .map(
+                    (
+                        x: preact.ComponentChildren
+                    ): [string, preact.ComponentChildren] => [key, x]
+                )
                 .concat(existing);
 
         case NearbyChildrens.ChildrenInFront:
             return existing.concat(
                 nearbyChildren.existingInFront.map(
-                    (x: DOM.Node): [string, DOM.Node] => [key, x]
+                    (
+                        x: preact.ComponentChildren
+                    ): [string, preact.ComponentChildren] => [key, x]
                 )
             );
 
         case NearbyChildrens.ChildrenBehindAndInFront:
             return nearbyChildren.existingBehind
-                .map((x: DOM.Node): [string, DOM.Node] => [key, x])
+                .map(
+                    (
+                        x: preact.ComponentChildren
+                    ): [string, preact.ComponentChildren] => [key, x]
+                )
                 .concat(existing)
                 .concat(
                     nearbyChildren.existingInFront.map(
-                        (x: DOM.Node): [string, DOM.Node] => [key, x]
+                        (
+                            x: preact.ComponentChildren
+                        ): [string, preact.ComponentChildren] => [key, x]
                     )
                 );
     }
@@ -2069,26 +2082,25 @@ const focusDefaultStyle = FocusStyle(
     Nothing()
 );
 
-function staticRoot(options: OptionObject): DOM.Node {
+function staticRoot(options: OptionObject): preact.JSX.Element {
     switch (options.mode) {
         case RenderMode.Layout: {
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = domElement('div', []),
-                style = domElement('style', [], div);
-            style.innerHTML = rules();
-            div.appendChild(style);
-            return div;
+            return h('div', null, h('style', null, rules()));
         }
 
         case RenderMode.NoStaticStyleSheet: {
-            return new DOM.Text('');
+            return h('', null, '');
         }
 
         case RenderMode.WithVirtualCss: {
-            const staticRules = domElement('espectro-static-rules', []),
-                rules_ = attribute('rules', JSON.stringify(rules()));
-            staticRules.appendChild(rules_);
-            return staticRules;
+            return h(
+                'espectro-static-rules',
+                {
+                    style: rules(),
+                },
+                ''
+            );
         }
     }
 }
@@ -2333,7 +2345,7 @@ function getLength(length: Maybe<Length>): Maybe<number> {
     }
 }
 
-function textElement(type: TextElement, str: string): DOM.Element {
+function textElement(type: TextElement, str: string): preact.JSX.Element {
     const textClasses = `${cls.any} ${cls.text} ${cls.widthContent} ${cls.heightContent}`,
         textFillClasses = `${cls.any} ${cls.text} ${cls.widthFill} ${cls.heightFill}`;
 
@@ -2347,12 +2359,13 @@ function textElement(type: TextElement, str: string): DOM.Element {
         }
     }
 
-    const element_ = domElement('div', [['class', classes_(type)]]);
-    element_.innerHTML = str;
-    return element_;
+    return h('div', { class: classes_(type) }, str);
 }
 
-function toHtml(mode: (s: Style[]) => EmbedStyle, element: Element): DOM.Node {
+function toHtml(
+    mode: (s: Style[]) => EmbedStyle,
+    element: Element
+): preact.JSX.Element {
     switch (element.type) {
         case Elements.Unstyled:
             return element.html(asEl);
@@ -2372,7 +2385,7 @@ async function renderRoot(
     optionList: Option[],
     attributes: Attribute[],
     child: Element
-): Promise<DOM.Node> {
+): Promise<preact.JSX.Element> {
     const options: OptionObject = optionsToObject(optionList);
 
     return toHtml(
@@ -2639,32 +2652,33 @@ function optionsToObject(options: Option[]): OptionObject {
     );
 }
 
-function toStyleSheet(options: OptionObject, stylesheet: Style[]): DOM.Node {
+function toStyleSheet(
+    options: OptionObject,
+    stylesheet: Style[]
+): preact.JSX.Element {
     switch (options.mode) {
-        case RenderMode.Layout: {
+        case RenderMode.Layout:
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = domElement('div', []),
-                style = domElement('style', [], div);
-            style.innerHTML = toStyleSheetString(options, stylesheet);
-            div.appendChild(style);
-            return div;
-        }
+            return h(
+                'div',
+                null,
+                h('style', null, toStyleSheetString(options, stylesheet))
+            );
 
-        case RenderMode.NoStaticStyleSheet: {
+        case RenderMode.NoStaticStyleSheet:
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            const div = domElement('div', []),
-                style = domElement('style', [], div);
-            style.innerHTML = toStyleSheetString(options, stylesheet);
-            div.appendChild(style);
-            return div;
-        }
+            return h(
+                'div',
+                null,
+                h('style', null, toStyleSheetString(options, stylesheet))
+            );
 
-        case RenderMode.WithVirtualCss: {
-            const rules = domElement('espectro-rules', []),
-                rules_ = attribute('rules', encodeStyles(options, stylesheet));
-            rules.appendChild(rules_);
-            return rules;
-        }
+        case RenderMode.WithVirtualCss:
+            return h(
+                'espectro-rules',
+                { style: encodeStyles(options, stylesheet) },
+                ''
+            );
     }
 }
 
@@ -3412,13 +3426,7 @@ async function formatBoxShadow(shadow: Shadow): Promise<string> {
     const [a, b, c, d, e] = Object.values(color);
     return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
         shadow.offset[1]
-    }px ${floatClass(shadow.blur)}px ${floatClass(shadow.size)}px ${formatColor(
-        a,
-        b,
-        c,
-        d,
-        e
-    )}`;
+    }px ${shadow.blur}px ${shadow.size}px ${formatColor(a, b, c, d, e)}`;
 }
 
 async function boxShadowClass(shadow: Shadow): Promise<string> {

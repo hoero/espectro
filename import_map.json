@@ -1,10 +1,8 @@
 {
     "imports": {
-        "deno_dom/": "https://deno.land/x/deno_dom@v0.1.36-alpha/",
-        "DOM": "https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts",
         "elmish": "https://deno.land/x/elmish@v0.0.4/mod.ts",
         "classValidator": "https://deno.land/x/deno_class_validator@v1.0.0/mod.ts",
-        "capsule": "https://deno.land/x/capsule@v0.5.3/mod.ts"
+        "preact": "https://esm.sh/preact"
     },
     "scopes": {}
 }

@@ -158,7 +158,7 @@
  * @docs html, htmlAttribute
  */
 
-import { DOM, elmish } from '../deps.ts';
+import { elmish, preact } from '../deps.ts';
 import {
     Length,
     Px,
@@ -222,7 +222,6 @@ import {
 } from './internal/data.ts';
 import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
-import { attribute } from './dom/attribute.ts';
 import * as Internal from './internal/model.ts';
 import { style } from './elements/attributes.ts';
 
@@ -368,11 +367,15 @@ const spaceEvenly: Attribute = Class(Flag.spacing, classes.spaceEvenly);
 /** Set the cursor to be a pointing hand when it's hovering over this element. */
 const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
-function html(html: DOM.Node): Element {
+function html(html: preact.JSX.Element): Element {
     return Internal.unstyled(html);
 }
 
-function htmlAttribute(attribute: DOM.Attr): Attribute {
+function htmlAttribute(
+    attribute: preact.ClassAttributes<string> &
+        preact.JSX.HTMLAttributes &
+        preact.JSX.SVGAttributes
+): Attribute {
     return Attr(attribute);
 }
 
@@ -425,7 +428,7 @@ function fillPortion(value: number): Fill {
 async function layout(
     attributes: Attribute[],
     child: Element
-): Promise<DOM.Node> {
+): Promise<preact.JSX.Element> {
     return await layoutWith([], attributes, child);
 }
 
@@ -433,7 +436,7 @@ async function layoutWith(
     options: Option[],
     attributes: Attribute[],
     child: Element
-): Promise<DOM.Node> {
+): Promise<preact.JSX.Element> {
     return await Internal.renderRoot(
         options,
         [
@@ -1029,8 +1032,8 @@ async function image(
                 asEl,
                 NodeName('img'),
                 [
-                    Attr(attribute('src', src)),
-                    Attr(attribute('alt', description)),
+                    Attr({ src: src }),
+                    Attr({ alt: description }),
                     ...imageAttributes,
                 ],
                 Unkeyed([])
@@ -1058,13 +1061,10 @@ async function newTabLink(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
 ): Promise<Element> {
-    return await linkCore(
-        [Attr(attribute('target', '_blank')), ...attributes],
-        {
-            url,
-            label,
-        }
-    );
+    return await linkCore([Attr({ target: '_blank' }), ...attributes], {
+        url,
+        label,
+    });
 }
 
 async function linkCore(
@@ -1075,8 +1075,8 @@ async function linkCore(
         asEl,
         NodeName('a'),
         [
-            Attr(attribute('href', url)),
-            Attr(attribute('rel', 'noopener noreferrer')),
+            Attr({ href: url }),
+            Attr({ rel: 'noopener noreferrer' }),
             width(shrink),
             height(shrink),
             Internal.htmlClass(
@@ -1110,8 +1110,8 @@ async function downloadCore(
         asEl,
         NodeName('a'),
         [
-            Attr(attribute('href', url)),
-            Attr(attribute('download', filename)),
+            Attr({ href: url }),
+            Attr({ download: filename }),
             width(shrink),
             height(shrink),
             Internal.htmlClass(classes.contentCenterX),

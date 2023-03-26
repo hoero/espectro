@@ -147,10 +147,8 @@
  * Alternatively, see if it's reasonable to _not_ display an input if you'd normally disable it. Is there an option where it's only visible when it's editable?
  */
 
-import { elmish } from '../../deps.ts';
+import { elmish, preact } from '../../deps.ts';
 import { hsl, hsla } from '../color.ts';
-import { attribute } from '../dom/attribute.ts';
-import { ComponentEventContext, EventHandler } from '../dom/event.ts';
 import {
     alignLeft,
     alpha,
@@ -162,7 +160,6 @@ import {
     fill,
     fillPortion,
     height,
-    htmlAttribute,
     inFront,
     moveUp,
     none,
@@ -217,7 +214,6 @@ import * as Region from './region.ts';
 import * as Border from './border.ts';
 import * as Background from './background.ts';
 import * as Font from './font.ts';
-import domElement from '../dom/element.ts';
 import {
     ariaChecked,
     autofill,
@@ -237,6 +233,7 @@ import {
 import { isEmpty } from '../utils/utils.ts';
 
 const { Just, Nothing, map, withDefault, MaybeType } = elmish.Maybe;
+const { h } = preact;
 
 interface Placeholder_ {
     attributes: Attribute[];
@@ -304,13 +301,13 @@ enum TextKinds {
 
 interface TextInputNode {
     type: TextKinds.TextInputNode;
-    inputType: string;
+    data: string;
 }
 
-function TextInputNode(inputType: string): TextInputNode {
+function TextInputNode(data: string): TextInputNode {
     return {
         type: TextKinds.TextInputNode,
-        inputType,
+        data,
     };
 }
 
@@ -333,10 +330,10 @@ interface TextInput {
 }
 
 interface Text {
-    onChange: {
-        componentClass: string;
-        handler: (text: string, ctx: ComponentEventContext) => EventHandler;
-    };
+    onChange: (
+        text: string,
+        event: preact.JSX.TargetedEvent<EventTarget>
+    ) => preact.JSX.GenericEventHandler<EventTarget>;
     text: string;
     placeholder: Maybe<Placeholder>;
     label: Label;
@@ -491,7 +488,7 @@ async function button(
         onPress,
         label,
     }: {
-        onPress: { componentClass: string; handler: Maybe<EventHandler> };
+        onPress: Maybe<preact.JSX.EventHandler<preact.JSX.TargetedEvent>>;
         label: Element;
     }
 ): Promise<Element> {
@@ -510,28 +507,25 @@ async function button(
             tabindex(0),
         ].concat(
             (() => {
-                switch (onPress.handler.type) {
+                switch (onPress.type) {
                     case MaybeType.Nothing:
                         return [disabled(true), ...attributes];
 
                     case MaybeType.Just: {
-                        const handler = onPress.handler.value;
+                        const handler = onPress.value;
                         return [
-                            Events.onClick(onPress.componentClass, handler),
-                            Events.onKeyLookUp(
-                                onPress.componentClass,
-                                (ctx) => {
-                                    const { key } = <KeyboardEvent>ctx.e;
-                                    switch (key) {
-                                        case Events.enter:
-                                        case Events.space:
-                                            handler(ctx);
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                            Events.onClick(handler),
+                            Events.onKeyLookUp((event) => {
+                                const { key } = event;
+                                switch (key) {
+                                    case Events.enter:
+                                    case Events.space:
+                                        handler(event);
+                                        break;
+                                    default:
+                                        break;
                                 }
-                            ),
+                            }),
                             ...attributes,
                         ];
                     }
@@ -577,13 +571,10 @@ async function checkbox(
         checked,
         onChange,
     }: {
-        onChange: {
-            componentClass: string;
-            handler: (
-                checked: boolean,
-                ctx: ComponentEventContext
-            ) => EventHandler;
-        };
+        onChange: (
+            checked: boolean,
+            event: preact.JSX.TargetedEvent
+        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
         icon: (checked: boolean) => Element;
         checked: boolean;
         label: Label;
@@ -591,16 +582,14 @@ async function checkbox(
 ): Promise<Element> {
     const attrs: Attribute[] = [
         isHiddenLabel(label) ? NoAttribute() : spacing(6),
-        Events.onClick(onChange.componentClass, (ctx) =>
-            onChange.handler(!checked, ctx)
-        ),
+        Events.onClick((event) => onChange(!checked, event)),
         Region.announce,
-        Events.onKeyLookUp(onChange.componentClass, (ctx) => {
-            const { key } = <KeyboardEvent>ctx.e;
+        Events.onKeyLookUp((event) => {
+            const { key } = event;
             switch (key) {
                 case Events.enter:
                 case Events.space:
-                    onChange.handler(!checked, ctx);
+                    onChange(!checked, event);
                     break;
                 default:
                     break;
@@ -680,13 +669,10 @@ function thumb(attributes: Attribute[]): Thumb {
 async function slider(
     attributes: Attribute[],
     input: {
-        onChange: {
-            componentClass: string;
-            handler: (
-                value: number,
-                ctx: ComponentEventContext
-            ) => EventHandler;
-        };
+        onChange: (
+            value: number,
+            event: preact.JSX.TargetedEvent<EventTarget>
+        ) => preact.JSX.GenericEventHandler<EventTarget>;
         label: Label;
         min: number;
         max: number;
@@ -864,11 +850,12 @@ async function slider(
                             )
                         ),
                         class_(className + ' ui-slide-bar focusable-parent'),
-                        Events.onInput(input.onChange.componentClass, (ctx) => {
-                            const { inputType } = <InputEvent>ctx.e;
-                            return input.onChange.handler(
-                                Number.parseFloat(inputType),
-                                ctx
+                        Events.onInput((event) => {
+                            const { data } = <InputEvent>event;
+                            const data_ = typeof data === 'string' ? data : '0';
+                            return input.onChange(
+                                Number.parseFloat(data_),
+                                event
                             );
                         }),
                         type('range'),
@@ -1028,7 +1015,7 @@ async function textHelper(
                         // `type` needs to come _before_ `value`
                         // More reading: https://github.com/mdgriffith/elm-ui/pull/94/commits/4f493a27001ccc3cf1f2baa82e092c35d3811876
                         return [
-                            type(textInput.input.inputType),
+                            type(textInput.input.data),
                             Internal.htmlClass(classes.inputText),
                         ];
 
@@ -1051,9 +1038,10 @@ async function textHelper(
                 }
             })().concat([
                 value(textOptions.text),
-                Events.onInput(textOptions.onChange.componentClass, (ctx) => {
-                    const { inputType } = <InputEvent>ctx.e;
-                    return textOptions.onChange.handler(inputType, ctx);
+                Events.onInput((event) => {
+                    const { data } = <InputEvent>event;
+                    const data_ = typeof data === 'string' ? data : '';
+                    return textOptions.onChange(data_, event);
                 }),
                 hiddenLabelAttribute(textOptions.label),
                 spellcheck(textInput.spellchecked),
@@ -1116,17 +1104,19 @@ async function textHelper(
                                                     ];
                                             }
                                         } else {
-                                            const el = domElement('span', [
-                                                [
-                                                    'class',
-                                                    classes.inputMultilineFiller,
-                                                ],
-                                            ]);
-                                            // We append a non-breaking space to the end of the content so that newlines don't get chomped.
-                                            el.append(
-                                                textOptions.text + '\u{00A0}'
-                                            );
-                                            return [Internal.unstyled(el)];
+                                            return [
+                                                Internal.unstyled(
+                                                    h<any>(
+                                                        'span',
+                                                        {
+                                                            class: classes.inputMultilineFiller,
+                                                        },
+                                                        // We append a non-breaking space to the end of the content so that newlines don't get chomped.
+                                                        textOptions.text +
+                                                            '\u{00A0}'
+                                                    )
+                                                ),
+                                            ];
                                         }
                                     })()
                                 )
@@ -1535,29 +1525,19 @@ function redistributeOver(
                         els.cover = [attr, ...els.cover];
                         return els;
                     } else {
-                        const newHeight = htmlAttribute(
-                                attribute(
-                                    'style',
-                                    `height: calc(1.0em + ${
-                                        2 *
-                                        Math.min(
-                                            attr.style.top,
-                                            attr.style.bottom
-                                        )
-                                    }px)"`
-                                )
+                        const newHeight = style(
+                                'height',
+                                `calc(1.0em + ${
+                                    2 *
+                                    Math.min(attr.style.top, attr.style.bottom)
+                                }px)"`
                             ),
-                            newLineHeight = htmlAttribute(
-                                attribute(
-                                    'style',
-                                    `line-height: calc(1.0em + ${
-                                        2 *
-                                        Math.min(
-                                            attr.style.top,
-                                            attr.style.bottom
-                                        )
-                                    }px)"`
-                                )
+                            newLineHeight = style(
+                                'line-height',
+                                `calc(1.0em + ${
+                                    2 *
+                                    Math.min(attr.style.top, attr.style.bottom)
+                                }px)"`
                             ),
                             newTop =
                                 attr.style.top -
@@ -1620,11 +1600,6 @@ function redistributeOver(
         }
 
         case Attributes.Attr: {
-            els.input = [attr, ...els.input];
-            return els;
-        }
-
-        case Attributes.Event: {
             els.input = [attr, ...els.input];
             return els;
         }
@@ -1704,10 +1679,10 @@ async function search(
 async function newPassword(
     attributes: Attribute[],
     pass: {
-        onChange: {
-            componentClass: string;
-            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            text: string,
+            event: preact.JSX.TargetedEvent<EventTarget>
+        ) => preact.JSX.GenericEventHandler<EventTarget>;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1733,10 +1708,10 @@ async function newPassword(
 async function currentPassword(
     attributes: Attribute[],
     pass: {
-        onChange: {
-            componentClass: string;
-            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            text: string,
+            event: preact.JSX.TargetedEvent<EventTarget>
+        ) => preact.JSX.GenericEventHandler<EventTarget>;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1792,10 +1767,10 @@ async function email(
 async function multiline(
     attributes: Attribute[],
     multi: {
-        onChange: {
-            componentClass: string;
-            handler: (text: string, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            text: string,
+            event: preact.JSX.TargetedEvent<EventTarget>
+        ) => preact.JSX.GenericEventHandler<EventTarget>;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1905,10 +1880,10 @@ function optionWith(
 async function radio(
     attributes: Attribute[],
     input: {
-        onChange: {
-            componentClass: string;
-            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            option: any,
+            event: preact.JSX.TargetedEvent
+        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
@@ -1921,10 +1896,10 @@ async function radio(
 async function radioRow(
     attributes: Attribute[],
     input: {
-        onChange: {
-            componentClass: string;
-            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            option: any,
+            event: preact.JSX.TargetedEvent
+        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
@@ -1992,10 +1967,10 @@ async function radioHelper(
     orientation: Orientation,
     attributes: Attribute[],
     input: {
-        onChange: {
-            componentClass: string;
-            handler: (option: any, ctx: ComponentEventContext) => EventHandler;
-        };
+        onChange: (
+            option: any,
+            event: preact.JSX.TargetedEvent
+        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
@@ -2094,9 +2069,7 @@ async function radioHelper(
                     }
                 })(),
                 role('radio'),
-                Events.onClick(input.onChange.componentClass, (ctx) =>
-                    input.onChange.handler(value, ctx)
-                ),
+                Events.onClick((event) => input.onChange(value, event)),
             ],
             await view(status)
         );
@@ -2132,8 +2105,8 @@ async function radioHelper(
             Internal.htmlClass('focus'),
             Region.announce,
             role('radiogroup'),
-            Events.onKeyLookUp(input.onChange.componentClass, (ctx) => {
-                const { key } = <KeyboardEvent>ctx.e;
+            Events.onKeyLookUp((event) => {
+                const { key } = event;
                 switch (prevNext.type) {
                     case MaybeType.Nothing:
                         break;
@@ -2145,18 +2118,18 @@ async function radioHelper(
                             case Events.leftArrow_:
                             case Events.upArrow:
                             case Events.upArrow_:
-                                input.onChange.handler(prev, ctx);
+                                input.onChange(prev, event);
                                 break;
                             case Events.rightArrow:
                             case Events.rightArrow_:
                             case Events.downArrow:
                             case Events.downArrow_:
-                                input.onChange.handler(next, ctx);
+                                input.onChange(next, event);
                                 break;
                             case Events.space:
                                 switch (input.selected.type) {
                                     case MaybeType.Nothing:
-                                        input.onChange.handler(prev, ctx);
+                                        input.onChange(prev, event);
                                         break;
                                     default:
                                         break;
