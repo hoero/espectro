@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 /**
  * # Color
  *
@@ -6,28 +7,30 @@
  * @docs Color, Colour, hsl, hsla, fromHsl, fromHsla, toHsl, rgba, rgb, rgb255, rgba255, fromRgb, fromRgba, toRgb
  */
 
-import { classValidator } from '../deps.ts';
-import validate from './validation.ts';
 import { Colour, Hsla, Rgba, Notation, Color } from './internal/data.ts';
 
-const min = {
-    message:
-        'Invalid value. Channel should be more or equal to $constraint1, but actual value is $value.',
-};
-const max = {
-    message:
-        'Invalid value. Channel should be less or equal to $constraint1, but actual value is $value.',
-};
+interface ValidatorConfig {
+    [property: string]: {
+        [validatorProp: string]: [string, Record<string, unknown>][];
+    };
+}
+
+const registeredValidators: ValidatorConfig = {};
+
+const min =
+    'Invalid value. Channel should be more or equal to $constraint, but actual value is $value.';
+const max =
+    'Invalid value. Channel should be less or equal to $constraint, but actual value is $value.';
 
 class ChannelsColor {
     private _notation: Notation;
-    @classValidator.Min(0, min)
+    @Min(0, min)
     private a: number;
-    @classValidator.Min(0, min)
+    @Min(0, min)
     private b: number;
-    @classValidator.Min(0, min)
+    @Min(0, min)
     private c: number;
-    @classValidator.Min(0, min)
+    @Min(0, min)
     private d: number;
 
     constructor(
@@ -72,13 +75,13 @@ class ChannelsColor {
 
 class HslaColor extends ChannelsColor {
     notation: Notation.Hsl | Notation.Hsla;
-    @classValidator.Max(360, max)
+    @Max(360, max)
     hue: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     saturation: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     lightness: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     alpha: number;
 
     constructor(
@@ -99,13 +102,13 @@ class HslaColor extends ChannelsColor {
 
 class RgbaColor extends ChannelsColor {
     notation: Notation.Rgb | Notation.Rgba;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     red: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     green: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     blue: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     alpha: number;
 
     constructor(
@@ -126,13 +129,13 @@ class RgbaColor extends ChannelsColor {
 
 class Rgba255Color extends ChannelsColor {
     notation: Notation.Rgb255 | Notation.Rgba255;
-    @classValidator.Max(255)
+    @Max(255, max)
     red: number;
-    @classValidator.Max(255)
+    @Max(255, max)
     green: number;
-    @classValidator.Max(255)
+    @Max(255, max)
     blue: number;
-    @classValidator.Max(1, max)
+    @Max(1, max)
     alpha: number;
 
     constructor(
@@ -151,20 +154,99 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
+function Min(min: number, message: string) {
+    return function (target: any, propName: string) {
+        registeredValidators[target.constructor.name] = {
+            ...registeredValidators[target.constructor.name],
+            [propName]: [
+                ...(registeredValidators[target.constructor.name]?.[propName] ??
+                    []),
+                ['min', { val: min, message }],
+            ],
+        };
+    };
+}
+
+function Max(max: number, message: string) {
+    return function (target: any, propName: string) {
+        registeredValidators[target.constructor.name] = {
+            ...registeredValidators[target.constructor.name],
+            [propName]: [
+                ...(registeredValidators[target.constructor.name]?.[propName] ??
+                    []),
+                ['max', { val: max, message }],
+            ],
+        };
+    };
+}
+
+function isValid(obj: any): boolean {
+    const objValidatorConfig = registeredValidators[obj.constructor.name];
+    if (!objValidatorConfig) return true;
+    let isValid = true;
+    for (const prop in objValidatorConfig) {
+        for (const validator of objValidatorConfig[prop]) {
+            switch (validator[0]) {
+                case 'min':
+                    isValid = isValid && obj[prop] >= <number>validator[1].val;
+                    break;
+                case 'max':
+                    isValid = isValid && obj[prop] <= <number>validator[1].val;
+                    break;
+            }
+        }
+    }
+    return isValid;
+}
+
+function validate(color: any): Color {
+    const objValidatorConfig = registeredValidators[color.constructor.name];
+    const isValid_: boolean = isValid(color);
+    let color_ = Hsla(0, 0, 0, 0, Notation.Hsla);
+    for (const prop in objValidatorConfig) {
+        for (const validator of objValidatorConfig[prop]) {
+            switch (validator[0]) {
+                case 'min': {
+                    const msg = <string>validator[1].message,
+                        val = `${color[prop]}`,
+                        constraint = `${validator[1].val}`;
+                    if (!isValid_)
+                        throw new Error(
+                            msg
+                                .replace('$constraint', constraint)
+                                .replace('$value', val)
+                        );
+                    color_ = color.color;
+                    break;
+                }
+                case 'max': {
+                    const msg = <string>validator[1].message,
+                        val = `${color[prop]}`,
+                        constraint = `${validator[1].val}`;
+                    if (!isValid_)
+                        throw new Error(
+                            msg
+                                .replace('$constraint', constraint)
+                                .replace('$value', val)
+                        );
+                    color_ = color.color;
+                    break;
+                }
+            }
+        }
+    }
+    return color_;
+}
+
 /**
  * Provide the hue, saturation, and lightness values for the color.
  * @param hue takes a value between 0 and 360.
  * @param saturation takes a value between 0 and 1.
  * @param lightness takes a value between 0 and 1.
- * @returns a Promise that resolves on Hsla.
  */
-function hsl(
-    hue: number,
-    saturation: number,
-    lightness: number
-): Promise<Color> {
+function hsl(hue: number, saturation: number, lightness: number): Color {
     const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -173,14 +255,13 @@ function hsl(
  * @param saturation takes a value between 0 and 1.
  * @param lightness takes a value between 0 and 1.
  * @param alpha takes a value between 0 and 1.
- * @returns a Promise that resolves on Hsla.
  */
 function hsla(
     hue: number,
     saturation: number,
     lightness: number,
     alpha: number
-): Promise<Color> {
+): Color {
     const color = new HslaColor(
         Notation.Hsla,
         hue,
@@ -188,7 +269,7 @@ function hsla(
         lightness,
         alpha
     );
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -214,9 +295,8 @@ function fromHsla({ hue, saturation, lightness, alpha }: Hsla): Colour {
 /**
  * Deconstruct a `Color` into its hsl channels.
  * @param colour an array with each channel.
- * @returns a Promise that resolves on Hsla.
  */
-function toHsl(colour: Colour): Promise<Color> {
+function toHsl(colour: Colour): Color {
     const [hue, saturation, lightness, alpha] = colour;
     const color = new HslaColor(
         Notation.Hsl,
@@ -225,7 +305,7 @@ function toHsl(colour: Colour): Promise<Color> {
         lightness,
         alpha
     );
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -233,11 +313,10 @@ function toHsl(colour: Colour): Promise<Color> {
  * @param red takes a value between 0 and 1.
  * @param green takes a value between 0 and 1.
  * @param blue takes a value between 0 and 1.
- * @returns a Promise that resolves on Rgba.
  */
-function rgb(red: number, green: number, blue: number): Promise<Color> {
+function rgb(red: number, green: number, blue: number): Color {
     const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -246,16 +325,10 @@ function rgb(red: number, green: number, blue: number): Promise<Color> {
  * @param green takes a value between 0 and 1.
  * @param blue takes a value between 0 and 1.
  * @param alpha takes a value between 0 and 1.
- * @returns a Promise that resolves on Rgba.
  */
-function rgba(
-    red: number,
-    green: number,
-    blue: number,
-    alpha: number
-): Promise<Color> {
+function rgba(red: number, green: number, blue: number, alpha: number): Color {
     const color = new RgbaColor(Notation.Rgba, red, green, blue, alpha);
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -263,11 +336,10 @@ function rgba(
  * @param red takes a value between 0 and 255.
  * @param green takes a value between 0 and 255.
  * @param blue takes a value between 0 and 255.
- * @returns a Promise that resolves on Rgba.
  */
-function rgb255(red: number, green: number, blue: number): Promise<Color> {
+function rgb255(red: number, green: number, blue: number): Color {
     const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -276,16 +348,15 @@ function rgb255(red: number, green: number, blue: number): Promise<Color> {
  * @param green takes a value between 0 and 255.
  * @param blue takes a value between 0 and 255.
  * @param alpha takes a value between 0 and 1.
- * @returns a Promise that resolves on Rgba.
  */
 function rgba255(
     red: number,
     green: number,
     blue: number,
     alpha: number
-): Promise<Color> {
+): Color {
     const color = new Rgba255Color(Notation.Rgba255, red, green, blue, alpha);
-    return validateColor(color);
+    return validate(color);
 }
 
 /**
@@ -311,20 +382,11 @@ function fromRgba({ red, green, blue, alpha }: Rgba): Colour {
 /**
  * Deconstruct a `Color` into its rgb channels.
  * @param colour an array with each channel.
- * @returns a Promise that resolves on Rgba.
  */
-function toRgb(colour: Colour): Promise<Color> {
+function toRgb(colour: Colour): Color {
     const [red, green, blue, alpha] = colour;
     const color = new RgbaColor(Notation.Rgb, red, green, blue, alpha);
-    return validateColor(color);
-}
-
-async function validateColor(color: ChannelsColor): Promise<Color> {
-    const result = await validate(color);
-    if (result === undefined) {
-        throw new Error('Color is undefined!');
-    }
-    return result;
+    return validate(color);
 }
 
 export {

@@ -184,7 +184,7 @@ function unstyled(node: preact.JSX.Element): Element {
     return Unstyled(() => node);
 }
 
-async function finalizeNode(
+function finalizeNode(
     has: Flag.Field[],
     node: NodeName,
     attributes: preact.ClassAttributes<string> &
@@ -193,14 +193,14 @@ async function finalizeNode(
     children: Children<preact.JSX.Element>,
     embedMode: EmbedStyle,
     parentContext: LayoutContext
-): Promise<preact.JSX.Element> {
-    const html: Promise<preact.JSX.Element> = (async () => {
+): preact.JSX.Element {
+    const html: preact.JSX.Element = (() => {
         switch (node.type) {
             case NodeNames.Generic:
-                return await createNode('div', attributes);
+                return createNode('div', attributes);
 
             case NodeNames.NodeName:
-                return await createNode(node.nodeName, attributes);
+                return createNode(node.nodeName, attributes);
 
             case NodeNames.Embedded: {
                 return h<any>(
@@ -214,23 +214,23 @@ async function finalizeNode(
         }
     })();
 
-    async function createNode(
+    function createNode(
         nodeName: keyof preact.JSX.IntrinsicElements,
         attrs: preact.ClassAttributes<string> &
             preact.JSX.HTMLAttributes &
             preact.JSX.SVGAttributes
-    ): Promise<preact.JSX.Element> {
+    ): preact.JSX.Element {
         switch (children.type) {
             case Childrens.Keyed: {
-                const child = async (
+                const child = (
                     embedMode: EmbedStyle
-                ): Promise<[string, preact.ComponentChildren][]> => {
+                ): [string, preact.ComponentChildren][] => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.keyed;
 
                         case EmbedStyles.OnlyDynamic:
-                            return await embedKeyed(
+                            return embedKeyed(
                                 false,
                                 embedMode.options,
                                 embedMode.styles,
@@ -238,7 +238,7 @@ async function finalizeNode(
                             );
 
                         case EmbedStyles.StaticRootAndDynamic:
-                            return await embedKeyed(
+                            return embedKeyed(
                                 true,
                                 embedMode.options,
                                 embedMode.styles,
@@ -246,11 +246,10 @@ async function finalizeNode(
                             );
                     }
                 };
-                const child_ = await child(embedMode);
                 return h<any>(
                     nodeName,
                     attrs,
-                    child_.map(
+                    child(embedMode).map(
                         ([key, componentChild]: [
                             string,
                             preact.ComponentChildren
@@ -260,15 +259,15 @@ async function finalizeNode(
             }
 
             case Childrens.Unkeyed: {
-                const child = async (
+                const child = (
                     embedMode: EmbedStyle
-                ): Promise<preact.ComponentChildren[]> => {
+                ): preact.ComponentChildren[] => {
                     switch (embedMode.type) {
                         case EmbedStyles.NoStyleSheet:
                             return children.unkeyed;
 
                         case EmbedStyles.OnlyDynamic:
-                            return await embedWith(
+                            return embedWith(
                                 false,
                                 embedMode.options,
                                 embedMode.styles,
@@ -276,7 +275,7 @@ async function finalizeNode(
                             );
 
                         case EmbedStyles.StaticRootAndDynamic:
-                            return await embedWith(
+                            return embedWith(
                                 true,
                                 embedMode.options,
                                 embedMode.styles,
@@ -284,7 +283,7 @@ async function finalizeNode(
                             );
                     }
                 };
-                const child_ = await child(embedMode);
+                const child_ = child(embedMode);
                 switch (nodeName) {
                     case 'div':
                         return h<any>('div', attrs, child_);
@@ -305,7 +304,7 @@ async function finalizeNode(
                 Flag.present(Flag.widthFill, has) &&
                 !Flag.present(Flag.widthBetween, has)
             ) {
-                return await html;
+                return html;
             } else if (Flag.present(Flag.alignRight, has)) {
                 return h(
                     'u',
@@ -318,7 +317,7 @@ async function finalizeNode(
                             cls.alignContainerRight,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else if (Flag.present(Flag.centerX, has)) {
                 return h(
@@ -332,10 +331,10 @@ async function finalizeNode(
                             cls.alignContainerCenterX,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else {
-                return await html;
+                return html;
             }
 
         case LayoutContext.AsColumn:
@@ -343,7 +342,7 @@ async function finalizeNode(
                 Flag.present(Flag.heightFill, has) &&
                 !Flag.present(Flag.heightBetween, has)
             ) {
-                return await html;
+                return html;
             } else if (Flag.present(Flag.centerY, has)) {
                 return h(
                     's',
@@ -355,7 +354,7 @@ async function finalizeNode(
                             cls.alignContainerCenterY,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else if (Flag.present(Flag.alignBottom, has)) {
                 return h(
@@ -368,10 +367,10 @@ async function finalizeNode(
                             cls.alignContainerBottom,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else {
-                return await html;
+                return html;
             }
 
         case LayoutContext.AsEl:
@@ -390,7 +389,7 @@ async function finalizeNode(
                             cls.alignContainerRight,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else if (
                 Flag.present(Flag.centerX, has) ||
@@ -407,23 +406,23 @@ async function finalizeNode(
                             cls.alignContainerCenterX,
                         ].join(' '),
                     },
-                    await html
+                    html
                 );
             } else {
-                return await html;
+                return html;
             }
 
         default:
-            return await html;
+            return html;
     }
 }
 
-async function embedWith(
+function embedWith(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
     children: preact.ComponentChildren[]
-): Promise<preact.ComponentChildren[]> {
+): preact.ComponentChildren[] {
     const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
@@ -431,19 +430,19 @@ async function embedWith(
                 acc: [Set<string>, Style[]],
                 style: Style
             ): [Set<string>, Style[]] => reduceStyles(style, acc),
-            [new Set(''), await renderFocusStyle(opts.focus)]
+            [new Set(''), renderFocusStyle(opts.focus)]
         )[1]
     );
     if (static_) return [staticRoot(opts), dinamicStyleSheet, ...children];
     return [dinamicStyleSheet, ...children];
 }
 
-async function embedKeyed(
+function embedKeyed(
     static_: boolean,
     opts: OptionObject,
     styles: Style[],
     children: [string, preact.ComponentChildren][]
-): Promise<[string, preact.ComponentChildren][]> {
+): [string, preact.ComponentChildren][] {
     const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
@@ -451,7 +450,7 @@ async function embedKeyed(
                 acc: [Set<string>, Style[]],
                 style: Style
             ): [Set<string>, Style[]] => reduceStyles(style, acc),
-            [new Set(''), await renderFocusStyle(opts.focus)]
+            [new Set(''), renderFocusStyle(opts.focus)]
         )[1]
     );
     if (static_)
@@ -792,29 +791,23 @@ function gatherAttrRecursive(
         const class_ = transformClass(transform);
 
         switch (class_.type) {
-            case MaybeType.Nothing:
-                return Gathered(
-                    node,
-                    {
-                        class: classes,
-                        ...attrs,
-                    },
-                    styles,
-                    children,
-                    has
-                );
+            case MaybeType.Nothing: {
+                const classes_ = attrs.class;
+                attrs.class = classes + ' ' + classes_;
+                return Gathered(node, attrs, styles, children, has);
+            }
 
-            case MaybeType.Just:
+            case MaybeType.Just: {
+                const classes_ = attrs.class;
+                attrs.class = classes + ' ' + class_.value + ' ' + classes_;
                 return Gathered(
                     node,
-                    {
-                        class: classes + ' ' + class_.value,
-                        ...attrs,
-                    },
+                    attrs,
                     [Transform(transform), ...styles],
                     children,
                     has
                 );
+            }
         }
     }
 
@@ -840,7 +833,7 @@ function gatherAttrRecursive(
                 has,
                 transform,
                 styles,
-                { ...attribute_.attr, ...attrs },
+                { ...attrs, ...attribute_.attr },
                 children,
                 remaining
             );
@@ -1781,23 +1774,14 @@ function contextClasses(context: LayoutContext) {
 
 const untransformed = Untransformed();
 
-async function element(
-    context: LayoutContext,
-    node: NodeName,
-    attributes: Attribute[],
-    children: Children<Element>
-): Promise<Element> {
-    return await elementCore(context, node, attributes, children);
-}
-
-async function elementCore(
+function element(
     context: LayoutContext,
     node: NodeName,
     attributes: Attribute[],
     children: Children<Element>,
     options?: OptionObject
-): Promise<Element> {
-    return await createElement(
+): Element {
+    return createElement(
         context,
         children,
         gatherAttrRecursive(
@@ -1814,12 +1798,12 @@ async function elementCore(
     );
 }
 
-async function createElement(
+function createElement(
     context: LayoutContext,
     children: Children<Element>,
     rendered: Gathered,
     options?: OptionObject
-): Promise<Element> {
+): Element {
     function gather(
         child: Element,
         [htmls, existingStyles]: [Unkeyed<preact.ComponentChildren>, Style[]]
@@ -1934,7 +1918,7 @@ async function createElement(
                 : rendered.styles.concat(gathered[1]);
 
             if (isEmpty(newStyles)) {
-                const node = await finalizeNode(
+                const node = finalizeNode(
                     rendered.has,
                     rendered.node,
                     rendered.attributes,
@@ -1951,7 +1935,7 @@ async function createElement(
                 return Unstyled(() => node);
             }
 
-            const node = await finalizeNode(
+            const node = finalizeNode(
                 rendered.has,
                 rendered.node,
                 rendered.attributes,
@@ -1984,7 +1968,7 @@ async function createElement(
                 : rendered.styles.concat(gathered[1]);
 
             if (isEmpty(newStyles)) {
-                const node = await finalizeNode(
+                const node = finalizeNode(
                     rendered.has,
                     rendered.node,
                     rendered.attributes,
@@ -1995,7 +1979,7 @@ async function createElement(
                 return Unstyled(() => node);
             }
 
-            const node = await finalizeNode(
+            const node = finalizeNode(
                 rendered.has,
                 rendered.node,
                 rendered.attributes,
@@ -2381,16 +2365,16 @@ function toHtml(
     }
 }
 
-async function renderRoot(
+function renderRoot(
     optionList: Option[],
     attributes: Attribute[],
     child: Element
-): Promise<preact.JSX.Element> {
+): preact.JSX.Element {
     const options: OptionObject = optionsToObject(optionList);
 
     return toHtml(
         (s: Style[]) => embedStyle(options, s),
-        await elementCore(asEl, div, attributes, Unkeyed([child]), options)
+        element(asEl, div, attributes, Unkeyed([child]), options)
     );
 }
 
@@ -2467,7 +2451,7 @@ function renderFontClassName(font: Font, current: string): string {
     }
 }
 
-async function renderFocusStyle(focus: FocusStyle): Promise<Style[]> {
+function renderFocusStyle(focus: FocusStyle): Style[] {
     function withDefault_(prop: Maybe<Property>) {
         return withDefault(Property('', ''), prop);
     }
@@ -2493,14 +2477,13 @@ async function renderFocusStyle(focus: FocusStyle): Promise<Style[]> {
                         );
                     }, focus.backgroundColor)
                 ),
-                await withDefault(
-                    new Promise<Property>((resolve, _reject) => {
-                        resolve(Property('', ''));
-                    }),
-                    map(async (shadow: Shadow): Promise<Property> => {
-                        const val = await formatBoxShadow(shadow);
-                        return Property('box-shadow', val);
-                    }, focus.shadow)
+                withDefault(
+                    Property('', ''),
+                    map(
+                        (shadow: Shadow): Property =>
+                            Property('box-shadow', formatBoxShadow(shadow)),
+                        focus.shadow
+                    )
                 ),
                 Property('outline', 'none'),
             ].flatMap((val) => val)
@@ -2528,17 +2511,13 @@ async function renderFocusStyle(focus: FocusStyle): Promise<Style[]> {
                         );
                     }, focus.backgroundColor)
                 ),
-                await withDefault(
-                    new Promise<Property>((resolve, _reject) => {
-                        resolve(Property('', ''));
-                    }),
-                    map(async (shadow: Shadow): Promise<Property> => {
-                        if (shadow) {
-                            const val = await formatBoxShadow(shadow);
-                            return Property('box-shadow', val);
-                        }
-                        return Property('', '');
-                    }, focus.shadow)
+                withDefault(
+                    Property('', ''),
+                    map(
+                        (shadow: Shadow): Property =>
+                            Property('box-shadow', formatBoxShadow(shadow)),
+                        focus.shadow
+                    )
                 ),
                 Property('outline', 'none'),
             ].flatMap((val) => val)
@@ -2867,7 +2846,7 @@ function fontName(font: Font): string {
         case FontFamilyType.Typeface:
         case FontFamilyType.ImportFont:
         case FontFamilyType.FontWith:
-            return `"${font.name}"`;
+            return `${font.name}`;
 
         default:
             return '';
@@ -3049,17 +3028,17 @@ function renderStyleRule(
             ]);
 
         case Styles.FontFamily: {
-            const features: string = rule.typefaces
-                .flatMap((value: Font) => {
-                    return renderVariants(value);
-                })
-                .join(', ');
+            const features: string[] = rule.typefaces.flatMap((value: Font) => {
+                return withDefault('', renderVariants(value));
+            });
             const families: Property[] = [
                 Property(
                     'font-family',
                     rule.typefaces.map(fontName).join(', ')
                 ),
-                Property('font-feature-settings', features),
+                features.length > 1
+                    ? Property('font-feature-settings', features.join(', '))
+                    : Property('font-feature-settings', 'unset'),
                 Property(
                     'font-variant',
                     rule.typefaces.some(hasSmallCaps) ? 'small-caps' : 'normal'
@@ -3397,41 +3376,36 @@ function lengthClassName(x: Length): string {
     }
 }
 
-async function formatDropShadow(shadow: Shadow): Promise<string> {
-    const color: Color = await shadow.color;
-    const [a, b, c, d, e] = Object.values(color);
+function formatDropShadow(shadow: Shadow): string {
+    const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-async function formatTextShadow(shadow: Shadow): Promise<string> {
-    const color: Color = await shadow.color;
-    const [a, b, c, d, e] = Object.values(color);
+function formatTextShadow(shadow: Shadow): string {
+    const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
         shadow.blur
     )}px ${formatColor(a, b, c, d, e)}`;
 }
 
-async function textShadowClass(shadow: Shadow): Promise<string> {
-    const color: Color = await shadow.color;
-    const [a, b, c, d, e] = Object.values(color);
+function textShadowClass(shadow: Shadow): string {
+    const [a, b, c, d, e] = Object.values(shadow.color);
     return `txt${floatClass(shadow.offset[0])}px${floatClass(
         shadow.offset[1]
     )}px${floatClass(shadow.blur)}px${formatColorClass(a, b, c, d, e)}`;
 }
 
-async function formatBoxShadow(shadow: Shadow): Promise<string> {
-    const color: Color = await shadow.color;
-    const [a, b, c, d, e] = Object.values(color);
+function formatBoxShadow(shadow: Shadow): string {
+    const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
         shadow.offset[1]
     }px ${shadow.blur}px ${shadow.size}px ${formatColor(a, b, c, d, e)}`;
 }
 
-async function boxShadowClass(shadow: Shadow): Promise<string> {
-    const color: Color = await shadow.color;
-    const [a, b, c, d, e] = Object.values(color);
+function boxShadowClass(shadow: Shadow): string {
+    const [a, b, c, d, e] = Object.values(shadow.color);
     return `${shadow.inset ? 'box-inset' : 'box-'}${floatClass(
         shadow.offset[0]
     )}px${floatClass(shadow.offset[1])}px${floatClass(

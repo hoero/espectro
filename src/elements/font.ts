@@ -144,12 +144,15 @@ const diagonalFractions: Variant = VariantActive('frac');
 
 const swash: Variant = VariantActive('swsh');
 
-async function color(fontColor: Promise<Color>): Promise<Attribute> {
-    const val = await fontColor;
-    const [a, b, c, d, e] = Object.values(val);
+function color(fontColor: Color): Attribute {
+    const [a, b, c, d, e] = Object.values(fontColor);
     return StyleClass(
         Flag.fontColor,
-        Colored(`fc-${Internal.formatColorClass(a, b, c, d, e)}`, 'color', val)
+        Colored(
+            `fc-${Internal.formatColorClass(a, b, c, d, e)}`,
+            'color',
+            fontColor
+        )
     );
 }
 
@@ -246,35 +249,35 @@ function wordSpacing(offset: number): Attribute {
     );
 }
 
-async function shadow({
+function shadow({
     offset,
     blur,
     color,
 }: {
     offset: [number, number];
     blur: number;
-    color: Promise<Color>;
-}): Promise<Attribute> {
+    color: Color;
+}): Attribute {
     const shade = Shadow(color, offset, blur, 0, false);
     return StyleClass(
         Flag.txtShadows,
         Single(
-            await Internal.textShadowClass(shade),
+            Internal.textShadowClass(shade),
             'text-shadow',
-            await Internal.formatTextShadow(shade)
+            Internal.formatTextShadow(shade)
         )
     );
 }
 
 /** A glow is just a simplified shadow. */
-async function glow(color: Promise<Color>, i: number): Promise<Attribute> {
+function glow(color: Color, i: number): Attribute {
     const shade = Shadow(color, [0, 0], i * 2, 0, false);
     return StyleClass(
         Flag.txtShadows,
         Single(
-            await Internal.textShadowClass(shade),
+            Internal.textShadowClass(shade),
             'text-shadow',
-            await Internal.formatTextShadow(shade)
+            Internal.formatTextShadow(shade)
         )
     );
 }

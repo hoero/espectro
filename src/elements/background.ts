@@ -21,15 +21,14 @@ import * as Internal from '../internal/model.ts';
 import { isEmpty } from '../utils/utils.ts';
 import { style } from './attributes.ts';
 
-async function color(backgroundColor: Promise<Color>): Promise<Attribute> {
-    const val = await backgroundColor;
-    const [a, b, c, d, e] = Object.values(val);
+function color(backgroundColor: Color): Attribute {
+    const [a, b, c, d, e] = Object.values(backgroundColor);
     return StyleClass(
         Flag.bgColor,
         Colored(
             `bg-${Internal.formatColorClass(a, b, c, d, e)}`,
             'background-color',
-            val
+            backgroundColor
         )
     );
 }
@@ -59,32 +58,27 @@ function tiledY(src: string): Attribute {
     return style('background', `url('${src}') repeat-y`);
 }
 
-async function gradient(
-    angle: number,
-    steps: Promise<Color>[]
-): Promise<Attribute> {
+function gradient(angle: number, steps: Color[]): Attribute {
     if (isEmpty(steps)) return NoAttribute();
-    if (steps.length === 1) return await color(steps[0]);
-    const [stepsCls] = steps.map(async (clr: Promise<Color>) => {
-        const val = await clr;
-        const [a, b, c, d, e] = Object.values(val);
+    if (steps.length === 1) return color(steps[0]);
+    const [stepsCls] = steps.map((clr: Color) => {
+        const [a, b, c, d, e] = Object.values(clr);
         return Internal.formatColorClass(a, b, c, d, e);
     });
-    const [stepsColor] = steps.map(async (clr: Promise<Color>) => {
-        const val = await clr;
-        const [a, b, c, d, e] = Object.values(val);
+    const [stepsColor] = steps.map((clr: Color) => {
+        const [a, b, c, d, e] = Object.values(clr);
         return Internal.formatColor(a, b, c, d, e);
     });
-    return (async () => {
+    return (() => {
         return StyleClass(
             Flag.bgGradient,
             Single(
                 `bg-grad-${[Internal.floatClass(angle)]
-                    .concat(await stepsCls)
+                    .concat(stepsCls)
                     .join('-')}`,
                 'background-image',
                 `linear-gradient(${[angle + 'rad']
-                    .concat(await stepsColor)
+                    .concat(stepsColor)
                     .join(', ')}`
             )
         );

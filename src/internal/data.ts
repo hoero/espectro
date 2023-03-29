@@ -1420,7 +1420,7 @@ export function FocusStyle(
 }
 
 export interface Shadow {
-    color: Promise<Color>;
+    color: Color;
     offset: [number, number];
     inset?: boolean;
     blur: number;
@@ -1428,7 +1428,7 @@ export interface Shadow {
 }
 
 export function Shadow(
-    color: Promise<Color>,
+    color: Color,
     offset: [number, number],
     blur: number,
     size: number,
