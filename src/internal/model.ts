@@ -423,7 +423,7 @@ function embedWith(
     styles: Style[],
     children: preact.ComponentChildren[]
 ): preact.ComponentChildren[] {
-    const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
+    const dynamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
             (
@@ -433,8 +433,8 @@ function embedWith(
             [new Set(''), renderFocusStyle(opts.focus)]
         )[1]
     );
-    if (static_) return [staticRoot(opts), dinamicStyleSheet, ...children];
-    return [dinamicStyleSheet, ...children];
+    if (static_) return [staticRoot(opts), dynamicStyleSheet, ...children];
+    return [dynamicStyleSheet, ...children];
 }
 
 function embedKeyed(
@@ -443,7 +443,7 @@ function embedKeyed(
     styles: Style[],
     children: [string, preact.ComponentChildren][]
 ): [string, preact.ComponentChildren][] {
-    const dinamicStyleSheet: preact.JSX.Element = toStyleSheet(
+    const dynamicStyleSheet: preact.JSX.Element = toStyleSheet(
         opts,
         styles.reduce(
             (
@@ -456,10 +456,10 @@ function embedKeyed(
     if (static_)
         return [
             ['static-stylesheet', staticRoot(opts)],
-            ['dynamic-stylesheet', dinamicStyleSheet],
+            ['dynamic-stylesheet', dynamicStyleSheet],
             ...children,
         ];
-    return [['dynamic-stylesheet', dinamicStyleSheet], ...children];
+    return [['dynamic-stylesheet', dynamicStyleSheet], ...children];
 }
 
 function reduceStyles(
@@ -1804,7 +1804,7 @@ function createElement(
     rendered: Gathered,
     options?: OptionObject
 ): Element {
-    function gather(
+    function gatherUnkeyed(
         child: Element,
         [htmls, existingStyles]: [Unkeyed<preact.ComponentChildren>, Style[]]
     ): [preact.ComponentChildren[], Style[]] {
@@ -1959,7 +1959,7 @@ function createElement(
                 (
                     [unkeyed, styles]: [preact.ComponentChildren[], Style[]],
                     unkeyed_: Element
-                ) => gather(unkeyed_, [Unkeyed(unkeyed), styles]),
+                ) => gatherUnkeyed(unkeyed_, [Unkeyed(unkeyed), styles]),
                 [[], []]
             );
 
@@ -2068,24 +2068,15 @@ const focusDefaultStyle = FocusStyle(
 
 function staticRoot(options: OptionObject): preact.JSX.Element {
     switch (options.mode) {
-        case RenderMode.Layout: {
+        case RenderMode.Layout:
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             return h('div', null, h('style', null, rules()));
-        }
 
-        case RenderMode.NoStaticStyleSheet: {
-            return h('', null, '');
-        }
+        case RenderMode.NoStaticStyleSheet:
+            return h('', null, null);
 
-        case RenderMode.WithVirtualCss: {
-            return h(
-                'espectro-static-rules',
-                {
-                    style: rules(),
-                },
-                ''
-            );
-        }
+        case RenderMode.WithVirtualCss:
+            return h('espectro-static-rules', { style: rules() }, '');
     }
 }
 
@@ -2368,14 +2359,21 @@ function toHtml(
 function renderRoot(
     optionList: Option[],
     attributes: Attribute[],
-    child: Element
+    child: Element,
+    context: LayoutContext = asEl,
+    node: NodeName = div
 ): preact.JSX.Element {
     const options: OptionObject = optionsToObject(optionList);
 
     return toHtml(
         (s: Style[]) => embedStyle(options, s),
-        element(asEl, div, attributes, Unkeyed([child]), options)
+        element(context, node, attributes, Unkeyed([child]), options)
     );
+}
+
+function render(optionList: Option[], child: Element): preact.JSX.Element {
+    const options: OptionObject = optionsToObject(optionList);
+    return toHtml((s: Style[]) => embedStyle(options, s), child);
 }
 
 function embedStyle(options: OptionObject, styles: Style[]): EmbedStyle {
@@ -2437,17 +2435,9 @@ function renderFontClassName(font: Font, current: string): string {
             return current + 'monospace';
 
         case FontFamilyType.Typeface:
-            if (isString(font))
-                return current + font.name.toLowerCase().split(' ').join('-');
-            return '';
-
-        case FontFamilyType.ImportFont || FontFamilyType.FontWith:
-            if (isPlainObject(font))
-                return current + font.name.toLowerCase().split(' ').join('-');
-            return '';
-
-        default:
-            return '';
+        case FontFamilyType.ImportFont:
+        case FontFamilyType.FontWith:
+            return current + font.name.toLowerCase().split(' ').join('-');
     }
 }
 
@@ -2637,25 +2627,28 @@ function toStyleSheet(
 ): preact.JSX.Element {
     switch (options.mode) {
         case RenderMode.Layout:
-            // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            return h(
-                'div',
-                null,
-                h('style', null, toStyleSheetString(options, stylesheet))
-            );
-
         case RenderMode.NoStaticStyleSheet:
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             return h(
                 'div',
                 null,
-                h('style', null, toStyleSheetString(options, stylesheet))
+                h(
+                    'style',
+                    null,
+                    // replaceAll removes errors from the string
+                    toStyleSheetString(options, stylesheet).replaceAll(
+                        '[object Object]',
+                        ''
+                    )
+                )
             );
 
         case RenderMode.WithVirtualCss:
             return h(
                 'espectro-rules',
-                { style: encodeStyles(options, stylesheet) },
+                {
+                    style: encodeStyles(options, stylesheet),
+                },
                 ''
             );
     }
@@ -2847,9 +2840,6 @@ function fontName(font: Font): string {
         case FontFamilyType.ImportFont:
         case FontFamilyType.FontWith:
             return `${font.name}`;
-
-        default:
-            return '';
     }
 }
 
@@ -2873,13 +2863,14 @@ function renderProps(
     return `${existing}\n ${property.key}: ${property.value};`;
 }
 
+// TODO: Fix this
 function encodeStyles(options: OptionObject, stylesheet: Style[]): string {
     const stylesheet_: [string, string][] = stylesheet.map((style: Style) => {
         const styled: string[] = renderStyleRule(options, style, Nothing());
         return [getStyleName(style), JSON.stringify(styled)];
     });
     return JSON.stringify(stylesheet_, (_key, val: [string, string]) => {
-        const obj = { [val[0]]: val[1] };
+        const obj = `${val[0]} ${val[1]} `;
         return obj;
     });
 }
@@ -3732,6 +3723,7 @@ export {
     renderFontClassName,
     renderHeight,
     renderRoot,
+    render,
     renderVariant,
     renderWidth,
     rootStyle,

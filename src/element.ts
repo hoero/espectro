@@ -219,6 +219,7 @@ import {
     Transparency,
     PseudoSelector,
     PseudoClass,
+    LayoutContext,
 } from './internal/data.ts';
 import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
@@ -367,11 +368,11 @@ const spaceEvenly: Attribute = Class(Flag.spacing, classes.spaceEvenly);
 /** Set the cursor to be a pointing hand when it's hovering over this element. */
 const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
-function html(html: preact.JSX.Element): Element {
-    return Internal.unstyled(html);
+function jsx(jsx: preact.JSX.Element): Element {
+    return Internal.unstyled(jsx);
 }
 
-function htmlAttribute(
+function jsxAttribute(
     attribute: preact.ClassAttributes<string> &
         preact.JSX.HTMLAttributes &
         preact.JSX.SVGAttributes
@@ -426,23 +427,30 @@ function fillPortion(value: number): Fill {
 
 /** This is your top level node where you can turn `Element` into `JSX`. */
 function layout(attributes: Attribute[], child: Element): preact.JSX.Element {
-    return layoutWith([], attributes, child);
+    return layoutWith(
+        [],
+        [layoutWithAttrs, ...Internal.rootStyle.concat(attributes)],
+        child
+    );
 }
+
+const layoutWithAttrs: Attribute = Internal.htmlClass(
+    `${classes.root} ${classes.any} ${classes.single}`
+);
 
 function layoutWith(
     options: Option[],
     attributes: Attribute[],
-    child: Element
+    child: Element,
+    context?: LayoutContext,
+    node?: NodeName
 ): preact.JSX.Element {
     return Internal.renderRoot(
         options,
-        [
-            Internal.htmlClass(
-                `${classes.root} ${classes.any} ${classes.single}`
-            ),
-            ...Internal.rootStyle.concat(attributes),
-        ],
-        child
+        [layoutWithAttrs, ...attributes],
+        child,
+        context,
+        node
     );
 }
 
@@ -463,6 +471,8 @@ function text(content: string): Element {
     return Text(content);
 }
 
+const elAttrs: Attribute[] = [width(shrink), height(shrink)];
+
 /**
  * The basic building block of your layout.
  *
@@ -482,40 +492,52 @@ function el(attributes: Attribute[], child: Element): Element {
     return Internal.element(
         asEl,
         Internal.div,
-        [width(shrink), height(shrink), ...attributes],
+        [...elAttrs, ...attributes],
         Unkeyed([child])
     );
 }
+
+const rowAttrs: Attribute[] = [
+    Internal.htmlClass(classes.contentLeft + ' ' + classes.contentCenterY),
+    width(shrink),
+    height(shrink),
+];
 
 function row(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asRow,
         Internal.div,
-        [
-            Internal.htmlClass(
-                classes.contentLeft + ' ' + classes.contentCenterY
-            ),
-            width(shrink),
-            height(shrink),
-            ...attributes,
-        ],
+        [...rowAttrs, ...attributes],
         Unkeyed(children)
     );
 }
+
+const columnAttrs: Attribute[] = [
+    Internal.htmlClass(classes.contentTop + ' ' + classes.contentLeft),
+    height(shrink),
+    width(shrink),
+];
 
 function column(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asColumn,
         Internal.div,
-        [
-            Internal.htmlClass(classes.contentTop + ' ' + classes.contentLeft),
-            height(shrink),
-            width(shrink),
-            ...attributes,
-        ],
+        [...columnAttrs, ...attributes],
         Unkeyed(children)
     );
 }
+
+const wrappedRowAttrs: Attribute[] = [
+    Internal.htmlClass(
+        classes.contentLeft +
+            ' ' +
+            classes.contentCenterY +
+            ' ' +
+            classes.wrapped
+    ),
+    width(shrink),
+    height(shrink),
+];
 
 /** Same as `row`, but will wrap if it takes up too much horizontal space. */
 function wrappedRow(attributes: Attribute[], children: Element[]): Element {
@@ -527,18 +549,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
             return Internal.element(
                 asRow,
                 Internal.div,
-                [
-                    Internal.htmlClass(
-                        classes.contentLeft +
-                            ' ' +
-                            classes.contentCenterY +
-                            ' ' +
-                            classes.wrapped
-                    ),
-                    width(shrink),
-                    height(shrink),
-                    ...attributes,
-                ],
+                [...wrappedRowAttrs, ...attributes],
                 Unkeyed(children)
             );
 
@@ -584,19 +595,7 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                     return Internal.element(
                         asRow,
                         Internal.div,
-                        [
-                            Internal.htmlClass(
-                                classes.contentLeft +
-                                    ' ' +
-                                    classes.contentCenterY +
-                                    ' ' +
-                                    classes.wrapped
-                            ),
-                            width(shrink),
-                            height(shrink),
-                            ...attributes,
-                            newPadding.value,
-                        ],
+                        [...wrappedRowAttrs, ...attributes, newPadding.value],
                         Unkeyed(children)
                     );
 
@@ -899,6 +898,12 @@ function tableHelper(
     );
 }
 
+const paragraphAttrs: Attribute[] = [
+    Describe(Paragraph()),
+    width(fill),
+    spacing(5),
+];
+
 /**
  * A paragraph will layout all children as wrapped, inline elements.
  *
@@ -935,10 +940,12 @@ function paragraph(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asParagraph,
         Internal.div,
-        [Describe(Paragraph()), width(fill), spacing(5), ...attributes],
+        [...paragraphAttrs, ...attributes],
         Unkeyed(children)
     );
 }
+
+const textColumnAttrs: Attribute[] = [width(maximum(750, minimum(500, fill)))];
 
 /**
  * Now that we have a paragraph, we need some way to attach a bunch of paragraph's together.
@@ -965,7 +972,7 @@ function textColumn(attributes: Attribute[], children: Element[]): Element {
     return Internal.element(
         asTextColumn,
         Internal.div,
-        [width(maximum(750, minimum(500, fill))), ...attributes],
+        [...textColumnAttrs, ...attributes],
         Unkeyed(children)
     );
 }
@@ -1039,6 +1046,15 @@ function newTabLink(
     });
 }
 
+const linkAttrs: Attribute[] = [
+    Attr({ rel: 'noopener noreferrer' }),
+    width(shrink),
+    height(shrink),
+    Internal.htmlClass(
+        `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`
+    ),
+];
+
 function linkCore(
     attributes: Attribute[],
     { url, label }: { url: string; label: Element }
@@ -1046,16 +1062,7 @@ function linkCore(
     return Internal.element(
         asEl,
         NodeName('a'),
-        [
-            Attr({ href: url }),
-            Attr({ rel: 'noopener noreferrer' }),
-            width(shrink),
-            height(shrink),
-            Internal.htmlClass(
-                `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`
-            ),
-            ...attributes,
-        ],
+        [Attr({ href: url }), ...linkAttrs, ...attributes],
         Unkeyed([label])
     );
 }
@@ -1074,6 +1081,13 @@ function downloadAs(
     return downloadCore(attributes, { url, filename, label });
 }
 
+const downloadAttrs: Attribute[] = [
+    width(shrink),
+    height(shrink),
+    Internal.htmlClass(classes.contentCenterX),
+    Internal.htmlClass(classes.contentCenterY),
+];
+
 function downloadCore(
     attributes: Attribute[],
     { url, filename, label }: { url: string; filename: string; label: Element }
@@ -1084,10 +1098,7 @@ function downloadCore(
         [
             Attr({ href: url }),
             Attr({ download: filename }),
-            width(shrink),
-            height(shrink),
-            Internal.htmlClass(classes.contentCenterX),
-            Internal.htmlClass(classes.contentCenterY),
+            ...downloadAttrs,
             ...attributes,
         ],
         Unkeyed([label])
@@ -1324,12 +1335,18 @@ export {
     none,
     text,
     el,
+    elAttrs,
     row,
+    rowAttrs,
     wrappedRow,
+    wrappedRowAttrs,
     Column,
     column,
+    columnAttrs,
     paragraph,
+    paragraphAttrs,
     textColumn,
+    textColumnAttrs,
     table,
     IndexedColumn,
     indexedTable,
@@ -1371,14 +1388,17 @@ export {
     scrollbarY,
     layout,
     layoutWith,
+    layoutWithAttrs,
     noStaticStyleSheet,
     forceHover,
     noHover,
     focusStyle,
     link,
+    linkAttrs,
     newTabLink,
     download,
     downloadAs,
+    downloadAttrs,
     image,
     above,
     below,
@@ -1390,6 +1410,6 @@ export {
     mouseDown,
     focused,
     modular,
-    html,
-    htmlAttribute,
+    jsx,
+    jsxAttribute,
 };
