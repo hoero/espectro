@@ -211,12 +211,15 @@ function Text({ children }: { children: preact.ComponentChild }) {
  *
  * If you want multiple children, you'll need to use something like `Row` or `Column`
  *
- * ```ts
- * Element.el(
- *  [ Background.color((rgb(0, 0.5, 0)))
- *  , Border.color((rgb(0, 0.7, 0)))
- *  ],
- *  Element.text("You've made a stylish element!"))
+ * ```jsx
+ * <El
+ *  attributes={[
+ *      Background.color((rgb(0, 0.5, 0))),
+ *      Border.color((rgb(0, 0.7, 0))),
+ *  ]}
+ * >
+ *  You've made a stylish element!
+ * </El>
  * ```
  */
 function El({
@@ -272,6 +275,7 @@ function Column({
     );
 }
 
+/** Same as `Row`, but will wrap if it takes up too much horizontal space. */
 function WrappedRow({
     attributes,
     children,
@@ -395,6 +399,48 @@ function WrappedRow({
     }
 }
 
+/**
+ * Show some tabular data.
+ *
+ * Start with a list of ovjects and specify how each column should be rendered.
+ *
+ * So, if we have a list of `persons`:
+ *
+ * ```ts
+ * interface Person {
+ *  firstName: string;
+ *  lastName: string;
+ * }
+ *
+ * const persons: Person[] =
+ *  [ { firstName: "David", lastName: "Bowie" },
+ *  { firstName: "Florence" , lastName: "Welch" } ]
+ * ```
+ *
+ * We could render it using
+ *
+ * ```jsx
+ * <Table
+ *  attributes={[]}
+ *  config={
+ *      { data: persons,
+ *        columns:
+ *          [ { header: "First Name",
+ *              width: fill,
+ *              view: (person) => person.firstName
+ *             },
+ *             { header: "Last Name",
+ *               width: fill,
+ *               view: (person) => person.lastName
+ *             }
+ *          ]
+ *      }
+ *  }
+ * />
+ * ```
+ *
+ * **Note:** Sometimes you might not have a list of objects directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of objects before feeding it into `Element.Table`.
+ */
 function Table({
     attributes,
     config,
@@ -416,6 +462,7 @@ function Table({
     );
 }
 
+/** Same as `Element.Table` except the `view` for each column will also receive the row index as well as the object. */
 function IndexedTable({
     attributes,
     config,
@@ -635,6 +682,39 @@ function TableHelper({
     );
 }
 
+/**
+ * A paragraph will layout all children as wrapped, inline elements.
+ *
+ * ```jsx
+ * <Paragraph
+ *  attributes={[]}
+ * >
+ *  <Text>lots of text ....</Text>
+ *  <El attributes={[ Font.bold ]}>this is bold</El>
+ *  <Text>lots of text ....</Text>
+ * </Paragraph>
+ * ```
+ *
+ * This is really useful when you want to markup text by having some parts be bold, or some be links, or whatever you so desire.
+ *
+ * Also, if a child element has `alignLeft` or `alignRight`, then it will be moved to that side and the text will flow around it, (ah yes, `float` behavior).
+ *
+ * This makes it particularly easy to do something like a [dropped capital](https://en.wikipedia.org/wiki/Initial).
+ *
+ * ```jsx
+ * <Paragraph
+ *  attributes={[]}
+ * >
+ *  <El attributes={[ alignLeft, padding(5) ]}>S</El>
+ *  <Text>o much text ....</Text>
+ * </Paragraph>
+ * ```
+ *
+ * Which will look something like
+ *
+ * ![A paragraph where the first letter is twice the height of the others](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%209.41.52%20PM.png)
+ * **Note** `spacing` on a paragraph will set the pixel spacing between lines.
+ */
 function Paragraph({
     attributes,
     children,
@@ -653,6 +733,29 @@ function Paragraph({
     );
 }
 
+/**
+ * Now that we have a paragraph, we need some way to attach a bunch of paragraph's together.
+ *
+ * To do that we can use a `TextColumn`.
+ *
+ * The main difference between a `Column` and a `TextColumn` is that `TextColumn` will flow the text around elements that have `alignRight` or `alignLeft`, just like we just saw with paragraph.
+ *
+ * In the following example, we have a `TextColumn` where one child has `alignLeft`.
+ *
+ * ```jsx
+ * <TextColumn
+ *  attributes={[]}
+ * >
+ *  <Paragraph attributes={[]}><Text>lots of text ....</Text></Paragraph>
+ *  <El attributes={[ alignLeft ]}></El>
+ *  <Paragraph attributes={[]}><Text>lots of text ....</Text></Paragraph>
+ * </TextColumn>
+ * ```
+ *
+ * Which will result in something like:
+ *
+ * ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
+ */
 function TextColumn({
     attributes,
     children,
@@ -671,6 +774,15 @@ function TextColumn({
     );
 }
 
+/**
+ * Both a source and a description are required for images.
+ *
+ * The description is used for people using screen readers.
+ *
+ * Leaving the description blank will cause the image to be ignored by assistive technology. This can make sense for images that are purely decorative and add no additional information.
+ *
+ * So, take a moment to describe your image as you would to someone who has a harder time seeing.
+ */
 function Image({
     attributes,
     src,
@@ -708,6 +820,16 @@ function Image({
     );
 }
 
+/**
+ * ```jsx
+ * <Link
+ *  attributes={[]}
+ *  url={"http://fruits.com"}
+ * >
+ *  A link to my favorite fruit provider.
+ * </Link>
+ * ```
+ */
 function Link({
     attributes,
     url,
@@ -762,7 +884,7 @@ function LinkCore({
             ]}
             node={NodeName('a')}
         >
-            {children}
+            {Text({ children })}
         </LayoutWith>
     );
 }
@@ -823,7 +945,7 @@ function DownloadCore({
             ]}
             node={NodeName('a')}
         >
-            {children}
+            {Text({ children })}
         </LayoutWith>
     );
 }

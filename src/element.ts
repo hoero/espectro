@@ -924,7 +924,7 @@ const paragraphAttrs: Attribute[] = [
  * ```ts
  * paragraph([],
  *  [ el([ alignLeft
- *      , padding 5
+ *      , padding(5)
  *      ],
  *      text("S"))
  *  , text("o much text ....")
