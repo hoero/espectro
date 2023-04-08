@@ -26,11 +26,8 @@ import {
 import * as Internal from '../internal/model.ts';
 import { classes } from '../internal/style.ts';
 
-async function el(
-    attributes: Attribute[],
-    child: [string, Element]
-): Promise<Element> {
-    return await Internal.element(
+function el(attributes: Attribute[], child: [string, Element]): Element {
+    return Internal.element(
         asEl,
         Internal.div,
         [width(shrink), height(shrink), ...attributes],
@@ -38,11 +35,8 @@ async function el(
     );
 }
 
-async function row(
-    attributes: Attribute[],
-    children: [string, Element][]
-): Promise<Element> {
-    return await Internal.element(
+function row(attributes: Attribute[], children: [string, Element][]): Element {
+    return Internal.element(
         asRow,
         Internal.div,
         [
@@ -57,11 +51,11 @@ async function row(
     );
 }
 
-async function column(
+function column(
     attributes: Attribute[],
     children: [string, Element][]
-): Promise<Element> {
-    return await Internal.element(
+): Element {
+    return Internal.element(
         asColumn,
         Internal.div,
         [

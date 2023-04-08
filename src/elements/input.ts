@@ -203,7 +203,6 @@ import {
     Class,
     asRow,
     MinContent,
-    Empty,
     Color,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
@@ -323,7 +322,7 @@ function TextArea(): TextArea {
 
 type TextKind = TextInputNode | TextArea;
 
-interface TextInput {
+export interface TextInput {
     input: TextKind;
     spellchecked: boolean;
     autofill: Maybe<string>;
@@ -461,6 +460,17 @@ function hiddenLabelAttribute(label: Label): Attribute {
     }
 }
 
+const buttonAttrs: Attribute[] = [
+    width(shrink),
+    height(shrink),
+    Internal.htmlClass(
+        `${classes.contentCenterX} ${classes.contentCenterY} ${classes.seButton} ${classes.noTextSelection}`
+    ),
+    pointer,
+    Describe(Button()),
+    tabindex(0),
+];
+
 /**
  * A standard button.
  *
@@ -492,17 +502,7 @@ function button(
     return Internal.element(
         asEl,
         Internal.div,
-        [
-            width(shrink),
-            height(shrink),
-            Internal.htmlClass(
-                `${classes.contentCenterX} ${classes.contentCenterY} ${classes.seButton} ${classes.noTextSelection}`
-            ),
-            pointer,
-            focusDefault(attributes),
-            Describe(Button()),
-            tabindex(0),
-        ].concat(
+        [...buttonAttrs, focusDefault(attributes)].concat(
             (() => {
                 switch (onPress.type) {
                     case MaybeType.Nothing:
@@ -554,6 +554,14 @@ function hasFocusStyle(attribute: Attribute): boolean {
     }
 }
 
+const checkboxAttrs: Attribute[] = [
+    role('checkbox'),
+    tabindex(0),
+    pointer,
+    alignLeft,
+    width(fill),
+];
+
 /**
  * - **onChange** - The `event` to send.
  * - **icon** - The checkbox icon to show. This can be whatever you'd like, but `Input.defaultCheckbox` is included to get you started.
@@ -577,33 +585,26 @@ function checkbox(
         label: Label;
     }
 ): Element {
-    const attrs: Attribute[] = [
-        isHiddenLabel(label) ? NoAttribute() : spacing(6),
-        Events.onClick((event) => onChange(!checked, event)),
-        Region.announce,
-        Events.onKeyLookUp((event) => {
-            const { key } = event;
-            switch (key) {
-                case Events.enter:
-                case Events.space:
-                    onChange(!checked, event);
-                    break;
-                default:
-                    break;
-            }
-        }),
-        tabindex(0),
-        pointer,
-        alignLeft,
-        width(fill),
-        ...attributes,
-    ];
     return applyLabel(
         [
-            role('checkbox'),
+            ...checkboxAttrs,
             ariaChecked(checked ? true : false),
             hiddenLabelAttribute(label),
-            ...attrs,
+            isHiddenLabel(label) ? NoAttribute() : spacing(6),
+            Events.onClick((event) => onChange(!checked, event)),
+            Region.announce,
+            Events.onKeyLookUp((event) => {
+                const { key } = event;
+                switch (key) {
+                    case Events.enter:
+                    case Events.space:
+                        onChange(!checked, event);
+                        break;
+                    default:
+                        break;
+                }
+            }),
+            ...attributes,
         ],
         label,
         Internal.element(
@@ -642,7 +643,7 @@ function thumb(attributes: Attribute[]): Thumb {
  *    label: Input.labelAbove([], text("My Slider Value")),
  *    min: 0,
  *    max: 75,
- *    step: Nothing,
+ *    step: Nothing(),
  *    value: model.sliderValue,
  *    thumb: Input.defaultThumb
  *  }
@@ -1238,32 +1239,32 @@ function renderBox({
     return `${top}px ${right}px ${bottom}px ${left}px`;
 }
 
+const placeholderAttrs: Attribute[] = [
+    Internal.htmlClass(
+        `${classes.noTextSelection} ${classes.passPointerEvents}`
+    ),
+    height(fill),
+    width(fill),
+    clip,
+    Font.color(charcoal),
+    Background.color(hsla(0, 0, 0, 0)),
+    Border.color(hsla(0, 0, 0, 0)),
+];
+
 function renderPlaceholder(
     placeholder: Placeholder,
     forPlaceholder: Attribute[],
     on: boolean
 ): Element {
-    try {
-        return el(
-            [
-                ...forPlaceholder,
-                Internal.htmlClass(
-                    `${classes.noTextSelection} ${classes.passPointerEvents}`
-                ),
-                height(fill),
-                width(fill),
-                alpha(on ? 1 : 0),
-                clip,
-                Font.color(charcoal),
-                Background.color(hsla(0, 0, 0, 0)),
-                Border.color(hsla(0, 0, 0, 0)),
-                ...placeholder.attributes,
-            ],
-            placeholder.element
-        );
-    } catch (error) {
-        throw new Error(error);
-    }
+    return el(
+        [
+            ...forPlaceholder,
+            ...placeholderAttrs,
+            alpha(on ? 1 : 0),
+            ...placeholder.attributes,
+        ],
+        placeholder.element
+    );
 }
 
 /** Because textareas are now shadowed, where they're rendered twice, we need to move the literal text area up because spacing is based on line height.
@@ -1619,37 +1620,27 @@ function redistributeOver(
 }
 
 function text(attributes: Attribute[], textOptions: Text): Element {
-    try {
-        return textHelper(
-            {
-                input: TextInputNode('text'),
-                spellchecked: false,
-                autofill: Nothing(),
-            },
-            attributes,
-            textOptions
-        );
-    } catch (error) {
-        console.log(error);
-        return Empty();
-    }
+    return textHelper(
+        {
+            input: TextInputNode('text'),
+            spellchecked: false,
+            autofill: Nothing(),
+        },
+        attributes,
+        textOptions
+    );
 }
 
 function spellChecked(attributes: Attribute[], textOptions: Text): Element {
-    try {
-        return textHelper(
-            {
-                input: TextInputNode('text'),
-                spellchecked: true,
-                autofill: Nothing(),
-            },
-            attributes,
-            textOptions
-        );
-    } catch (error) {
-        console.log(error);
-        return Empty();
-    }
+    return textHelper(
+        {
+            input: TextInputNode('text'),
+            spellchecked: true,
+            autofill: Nothing(),
+        },
+        attributes,
+        textOptions
+    );
 }
 
 function search(attributes: Attribute[], textOptions: Text): Element {
@@ -1856,6 +1847,7 @@ function option(value: any, text: Element): Option {
 function optionWith(value: any, view: (x: OptionState) => Element): Option {
     return Option(value, view);
 }
+
 function radio(
     attributes: Attribute[],
     input: {
@@ -1938,6 +1930,14 @@ function defaultRadioOption(
         ]
     );
 }
+
+const radioAttrs: Attribute[] = [
+    alignLeft,
+    tabindex(0),
+    Internal.htmlClass('focus'),
+    Region.announce,
+    role('radiogroup'),
+];
 
 function radioHelper(
     orientation: Orientation,
@@ -2076,11 +2076,7 @@ function radioHelper(
 
     return applyLabel(
         [
-            alignLeft,
-            tabindex(0),
-            Internal.htmlClass('focus'),
-            Region.announce,
-            role('radiogroup'),
+            ...radioAttrs,
             Events.onKeyLookUp((event) => {
                 const { key } = event;
                 switch (prevNext.type) {
@@ -2142,6 +2138,49 @@ function row(attributes: Attribute[], children: Element[]): Element {
     );
 }
 
+function defaultRadioAttrs(checked: boolean): Attribute[] {
+    return [
+        Internal.htmlClass('focusable'),
+        width(px(14)),
+        height(px(14)),
+        centerY,
+        Font.color(white),
+        Font.size(9),
+        Font.center,
+        Border.width(checked ? 0 : 1),
+        Border.rounded(3),
+        Border.color(checked ? hsl(211, 0.97, 0.61) : hsl(0, 0, 0.83)),
+        Border.shadow(
+            Shadow(
+                checked ? hsla(0, 0, 0.93, 0) : hsl(0, 0, 0.93),
+                [0, 0],
+                1,
+                1
+            )
+        ),
+        Background.color(checked ? hsl(211, 0.97, 0.61) : white),
+    ];
+}
+
+function defaultRadioInFrontAttrs(checked: boolean): Attribute[] {
+    return [
+        height(px(6)),
+        width(px(9)),
+        rotate(-45),
+        centerX,
+        centerY,
+        moveUp(1),
+        transparent(!checked),
+        Border.color(white),
+        Border.widthEach({
+            top: 0,
+            left: 2,
+            bottom: 2,
+            right: 0,
+        }),
+    ];
+}
+
 // Style Defaults
 
 /**
@@ -2152,46 +2191,8 @@ function row(attributes: Attribute[], children: Element[]): Element {
 function defaultCheckbox(checked: boolean): Element {
     return el(
         [
-            Internal.htmlClass('focusable'),
-            width(px(14)),
-            height(px(14)),
-            centerY,
-            Font.color(white),
-            Font.size(9),
-            Font.center,
-            Border.width(checked ? 0 : 1),
-            Border.rounded(3),
-            Border.color(checked ? hsl(211, 0.97, 0.61) : hsl(0, 0, 0.83)),
-            Border.shadow(
-                Shadow(
-                    checked ? hsla(0, 0, 0.93, 0) : hsl(0, 0, 0.93),
-                    [0, 0],
-                    1,
-                    1
-                )
-            ),
-            Background.color(checked ? hsl(211, 0.97, 0.61) : white),
-            inFront(
-                el(
-                    [
-                        height(px(6)),
-                        width(px(9)),
-                        rotate(-45),
-                        centerX,
-                        centerY,
-                        moveUp(1),
-                        transparent(!checked),
-                        Border.color(white),
-                        Border.widthEach({
-                            top: 0,
-                            left: 2,
-                            bottom: 2,
-                            right: 0,
-                        }),
-                    ],
-                    none
-                )
-            ),
+            ...defaultRadioAttrs(checked),
+            inFront(el(defaultRadioInFrontAttrs(checked), none)),
         ],
         none
     );
@@ -2199,12 +2200,19 @@ function defaultCheckbox(checked: boolean): Element {
 
 export {
     button,
+    buttonAttrs,
     checkbox,
+    checkboxAttrs,
     defaultCheckbox,
+    TextKinds,
     text,
+    defaultTextBoxStyle,
     multiline,
+    TextArea,
+    TextInputNode,
     Placeholder,
     placeholder,
+    placeholderAttrs,
     username,
     newPassword,
     currentPassword,
@@ -2216,15 +2224,34 @@ export {
     thumb,
     defaultThumb,
     radio,
+    radioAttrs,
+    defaultRadioAttrs,
+    defaultRadioInFrontAttrs,
     radioRow,
     Option,
     option,
     optionWith,
     OptionState,
     Label,
+    LabelLocation,
+    Labels,
+    HiddenLabel,
     labelAbove,
     labelBelow,
     labelLeft,
     labelRight,
     labelHidden,
+    focusDefault,
+    hiddenLabelAttribute,
+    isHiddenLabel,
+    redistribute,
+    isConstrained,
+    getHeight,
+    calcMoveToCompensateForPadding,
+    renderBox,
+    negateBox,
+    hasFocusStyle,
+    Orientation,
+    Found,
+    white,
 };
