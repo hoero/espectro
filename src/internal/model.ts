@@ -206,7 +206,7 @@ function finalizeNode(
                 return h<any>(
                     node.nodeName,
                     attributes,
-                    h(node.internal, {
+                    createNode(node.internal, {
                         class: cls.any + ' ' + cls.single,
                     })
                 );
