@@ -683,7 +683,7 @@ function Paragraph({
     children,
 }: {
     attributes: Attribute[];
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LayoutWith
@@ -724,7 +724,7 @@ function TextColumn({
     children,
 }: {
     attributes: Attribute[];
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LayoutWith
@@ -800,7 +800,7 @@ function Link({
 }: {
     attributes: Attribute[];
     url: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LinkCore attributes={attributes} url={url}>
@@ -816,7 +816,7 @@ function NewTabLink({
 }: {
     attributes: Attribute[];
     url: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LinkCore
@@ -835,7 +835,7 @@ function LinkCore({
 }: {
     attributes: Attribute[];
     url: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LayoutWith
@@ -859,7 +859,7 @@ function Download({
 }: {
     attributes: Attribute[];
     url: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <DownloadCore attributes={attributes} url={url} filename={''}>
@@ -877,7 +877,7 @@ function DownloadAs({
     attributes: Attribute[];
     url: string;
     filename: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <DownloadCore attributes={attributes} url={url} filename={filename}>
@@ -895,7 +895,7 @@ function DownloadCore({
     attributes: Attribute[];
     url: string;
     filename: string;
-    children: preact.JSX.Element;
+    children: preact.ComponentChild;
 }) {
     return (
         <LayoutWith
