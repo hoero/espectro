@@ -368,7 +368,7 @@ enum Orientation {
 
 // Colors
 const white: Color = hsl(0, 0, 1),
-    charcoal: Color = hsl(84, 0.02, 0.53);
+    charcoal: Color = hsl(84, 2, 53);
 
 // Thumb
 const defaultThumb: Thumb = Thumb([
@@ -376,7 +376,7 @@ const defaultThumb: Thumb = Thumb([
     height(px(16)),
     Border.rounded(8),
     Border.width(1),
-    Border.color(hsl(0, 0, 0.5)),
+    Border.color(hsl(0, 0, 50)),
     Background.color(white),
 ]);
 
@@ -1913,13 +1913,13 @@ function defaultRadioOption(
                         (() => {
                             switch (status) {
                                 case OptionState.Idle:
-                                    return hsl(0, 0, 0.82);
+                                    return hsl(0, 0, 82);
 
                                 case OptionState.Focused:
-                                    return hsl(0, 0, 0.82);
+                                    return hsl(0, 0, 82);
 
                                 case OptionState.Selected:
-                                    return hsl(211, 0.97, 0.61);
+                                    return hsl(211, 97, 61);
                             }
                         })()
                     ),
@@ -2149,16 +2149,11 @@ function defaultRadioAttrs(checked: boolean): Attribute[] {
         Font.center,
         Border.width(checked ? 0 : 1),
         Border.rounded(3),
-        Border.color(checked ? hsl(211, 0.97, 0.61) : hsl(0, 0, 0.83)),
+        Border.color(checked ? hsl(211, 97, 61) : hsl(0, 0, 83)),
         Border.shadow(
-            Shadow(
-                checked ? hsla(0, 0, 0.93, 0) : hsl(0, 0, 0.93),
-                [0, 0],
-                1,
-                1
-            )
+            Shadow(checked ? hsla(0, 0, 93, 0) : hsl(0, 0, 93), [0, 0], 1, 1)
         ),
-        Background.color(checked ? hsl(211, 0.97, 0.61) : white),
+        Background.color(checked ? hsl(211, 97, 61) : white),
     ];
 }
 

@@ -77,9 +77,9 @@ class HslaColor extends ChannelsColor {
     notation: Notation.Hsl | Notation.Hsla;
     @Max(360, max)
     hue: number;
-    @Max(1, max)
+    @Max(100, max)
     saturation: number;
-    @Max(1, max)
+    @Max(100, max)
     lightness: number;
     @Max(1, max)
     alpha: number;
@@ -241,8 +241,8 @@ function validate(color: any): Color {
 /**
  * Provide the hue, saturation, and lightness values for the color.
  * @param hue takes a value between 0 and 360.
- * @param saturation takes a value between 0 and 1.
- * @param lightness takes a value between 0 and 1.
+ * @param saturation takes a value between 0 and 100.
+ * @param lightness takes a value between 0 and 100.
  */
 function hsl(hue: number, saturation: number, lightness: number): Color {
     const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
@@ -252,8 +252,8 @@ function hsl(hue: number, saturation: number, lightness: number): Color {
 /**
  * Provide the hue, saturation, and lightness values for the color.
  * @param hue takes a value between 0 and 360.
- * @param saturation takes a value between 0 and 1.
- * @param lightness takes a value between 0 and 1.
+ * @param saturation takes a value between 0 and 100.
+ * @param lightness takes a value between 0 and 100.
  * @param alpha takes a value between 0 and 1.
  */
 function hsla(

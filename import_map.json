@@ -1,8 +1,10 @@
 {
     "imports": {
         "elmish": "https://deno.land/x/elmish@v0.0.4/mod.ts",
-        "classValidator": "https://deno.land/x/deno_class_validator@v1.0.0/mod.ts",
-        "preact": "https://esm.sh/preact"
+        "preact": "https://esm.sh/preact@10.13.1",
+        "hooks": "https://esm.sh/preact@10.13.1/hooks",
+        "preact/jsx-runtime": "https://esm.sh/preact@10.13.1/jsx-runtime?dts",
+        "preact/jsx-dev-runtime": "https://esm.sh/preact@10.13.1/jsx-dev-runtime?dts"
     },
     "scopes": {}
 }

@@ -1483,13 +1483,13 @@ function DefaultRadioOption({
                         (() => {
                             switch (status) {
                                 case OptionState.Idle:
-                                    return hsl(0, 0, 0.82);
+                                    return hsl(0, 0, 82);
 
                                 case OptionState.Focused:
-                                    return hsl(0, 0, 0.82);
+                                    return hsl(0, 0, 82);
 
                                 case OptionState.Selected:
-                                    return hsl(211, 0.97, 0.61);
+                                    return hsl(211, 97, 61);
                             }
                         })()
                     ),
