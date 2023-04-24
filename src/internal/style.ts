@@ -584,6 +584,21 @@ const explainer = `\n
 \n
 `;
 
+/** This defines what 1rem is
+ * 1rem = 10px, 10/16 = 62.5%
+ * 1200/16 = 75 == 1200px
+ * 600/16  = 37.5 == 600px
+ */
+const rem = `\n
+html { font-size: 62.5%; } \n
+@media only screen and (max-width: 75em) {
+    html { font-size: 52.5%; }
+}\n
+@media only screen and (max-width: 37.5em) {
+    html { font-size: 45.5%; }
+}\n
+`;
+
 const overrides = `@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {\n${dot(
     classes.any
 )}${dot(classes.row)} > ${dot(
@@ -592,7 +607,7 @@ const overrides = `@media screen and (-ms-high-contrast: active), (-ms-high-cont
     classes.row
 )} > ${dot(classes.any)}${dot(
     classes.container
-)} { flex-basis: auto !important; }} ${inputTextReset}${sliderReset}${trackReset}${thumbReset}${explainer}`;
+)} { flex-basis: auto !important; }} ${inputTextReset}${sliderReset}${trackReset}${thumbReset}${explainer}${rem}`;
 
 const elDescription: Rule[] = [
     Prop('display', 'flex'),

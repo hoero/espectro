@@ -158,7 +158,7 @@
  * @docs html, htmlAttribute
  */
 
-import { elmish, preact } from '../deps.ts';
+import { elmish, preact, hooks } from '../deps.ts';
 import {
     Length,
     Px,
@@ -380,6 +380,48 @@ function jsxAttribute(
     return Attr(attribute);
 }
 
+const debounce = <A extends unknown[]>(
+    callback: (...args: A) => unknown,
+    msDelay: number
+) => {
+    // deno-lint-ignore no-explicit-any
+    let timer: any;
+
+    return (...args: A) => {
+        clearTimeout(timer);
+
+        timer = setTimeout(() => {
+            timer = undefined;
+            callback(...args);
+        }, msDelay);
+    };
+};
+
+function getViewport(msDelay = 100) {
+    const [viewport, setViewport] = hooks.useState({
+        width: self.innerWidth,
+        height: self.innerHeight,
+    });
+
+    hooks.useEffect(() => {
+        const handler =
+            msDelay <= 0 ? updateViewport : debounce(updateViewport, msDelay);
+
+        function updateViewport() {
+            setViewport({
+                width: self.innerWidth,
+                height: self.innerHeight,
+            });
+        }
+
+        self.addEventListener('resize', handler);
+
+        return () => self.removeEventListener('resize', handler);
+    }, []);
+
+    return viewport;
+}
+
 function px(value: number): Px {
     return Px(Math.round(value));
 }
@@ -425,18 +467,20 @@ function fillPortion(value: number): Fill {
     return Fill(value);
 }
 
+const layoutAttrs: Attribute = Internal.htmlClass(
+    `${classes.root} ${classes.any} ${classes.single}`
+);
+
 /** This is your top level node where you can turn `Element` into `JSX`. */
 function layout(attributes: Attribute[], child: Element): preact.JSX.Element {
     return layoutWith(
         [],
-        [layoutWithAttrs, ...Internal.rootStyle.concat(attributes)],
-        child
+        [layoutAttrs, ...Internal.rootStyle.concat(attributes)],
+        child,
+        asEl,
+        Internal.div
     );
 }
-
-const layoutWithAttrs: Attribute = Internal.htmlClass(
-    `${classes.root} ${classes.any} ${classes.single}`
-);
 
 function layoutWith(
     options: Option[],
@@ -445,13 +489,7 @@ function layoutWith(
     context?: LayoutContext,
     node?: NodeName
 ): preact.JSX.Element {
-    return Internal.renderRoot(
-        options,
-        [layoutWithAttrs, ...attributes],
-        child,
-        context,
-        node
-    );
+    return Internal.renderRoot(options, attributes, child, context, node);
 }
 
 function focusStyle(focus: FocusStyle): FocusStyleOption {
@@ -1388,7 +1426,7 @@ export {
     scrollbarY,
     layout,
     layoutWith,
-    layoutWithAttrs,
+    layoutAttrs,
     noStaticStyleSheet,
     forceHover,
     noHover,
@@ -1412,4 +1450,5 @@ export {
     modular,
     jsx,
     jsxAttribute,
+    getViewport,
 };

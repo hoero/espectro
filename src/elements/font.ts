@@ -54,6 +54,7 @@ import {
     FontSize,
     FontWith,
     ImportFont,
+    Lengths,
     Maybe,
     Monospace,
     Property,
@@ -220,9 +221,12 @@ function external({ url, name }: { url: string; name: string }): Font {
     return ImportFont(name, url);
 }
 
-/** Font sizes are always given as `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/
-function size(i: number): Attribute {
-    return StyleClass(Flag.fontSize, FontSize(i));
+/** Font sizes are always given as `px` by default. Use `Pixel.pt` with this to use points, `Pixel.rpx` to use pixels that behaves as rem, and `Pixel.rpxs` or `Pixel.rpts` to provide responsive values for specific device profiles*/
+function size(
+    i: number,
+    unit: Lengths.Px | Lengths.Rem = Lengths.Px
+): Attribute {
+    return StyleClass(Flag.fontSize, FontSize(i, unit));
 }
 
 /** In `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/

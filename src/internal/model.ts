@@ -567,9 +567,9 @@ function transformValue(transform: Transformation): Maybe<string> {
 
         case Transformations.FullTransform:
             if (isPlainObject(transform) && !Array.isArray(transform)) {
-                const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`;
-                const scale = `scale3d(${transform.scale[0]}px, ${transform.scale[1]}px, ${transform.scale[2]}px)`;
-                const rotate = `rotate3d(${transform.rotate[0]}px, ${transform.rotate[1]}px, ${transform.rotate[2]}px)`;
+                const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`,
+                    scale = `scale3d(${transform.scale[0]}, ${transform.scale[1]}, ${transform.scale[2]})`,
+                    rotate = `rotate3d(${transform.rotate[0]}, ${transform.rotate[1]}, ${transform.rotate[2]}, ${transform.angle}rad)`;
                 return Just(`${translate} ${scale} ${rotate}`);
             }
             return Nothing();
@@ -753,7 +753,7 @@ function skippable(flag: Flag.Flag, style: Style) {
 
     switch (style.type) {
         case Styles.FontSize:
-            return style.i >= 8 && style.i <= 32;
+            return style.i >= 8 && style.i <= 32 && style.unit === Lengths.Px;
 
         case Styles.PaddingStyle:
             return (
@@ -2410,7 +2410,7 @@ const rootStyle: Attribute[] = [
             Hsla(0, 0, 0, 1, Notation.Hsla)
         )
     ),
-    StyleClass(Flag.fontSize, FontSize(20)),
+    StyleClass(Flag.fontSize, FontSize(20, Lengths.Px)),
     StyleClass(
         Flag.fontFamily,
         FontFamily(
@@ -2632,15 +2632,7 @@ function toStyleSheet(
             return h(
                 'div',
                 null,
-                h(
-                    'style',
-                    null,
-                    // replaceAll removes errors from the string
-                    toStyleSheetString(options, stylesheet).replaceAll(
-                        '[object Object]',
-                        ''
-                    )
-                )
+                h('style', null, toStyleSheetString(options, stylesheet))
             );
 
         case RenderMode.WithVirtualCss:
@@ -2655,20 +2647,20 @@ function toStyleSheet(
 }
 
 function renderTopLevelValues(rules: [string, Font[]][]): string {
-    function withImport(font: Font): Maybe<string> {
+    function withImport(font: Font): string {
         switch (font.type) {
             case FontFamilyType.ImportFont:
-                return Just(`@import url('${font.url}');`);
+                return `@import url('${font.url}');`;
 
             default:
-                return Nothing();
+                return '';
         }
     }
 
     const allNames: string[] = rules.map((rule) => rule[0]);
 
     function fontImports([_name, typefaces]: [string, Font[]]): string {
-        return typefaces.flatMap((typeface) => withImport(typeface)).join('\n');
+        return typefaces.flatMap(withImport).join('\n');
     }
 
     function fontAdjustments([name, typefaces]: [string, Font[]]): string {
@@ -2910,9 +2902,7 @@ function toStyleSheetString(
         );
     const { rules, topLevel } = rendered_;
 
-    if (rules.length > 0 || topLevel.length > 0)
-        return renderTopLevelValues(topLevel) + rules.join('');
-    return '';
+    return renderTopLevelValues(topLevel) + rules.join('');
 }
 
 function renderStyle(
@@ -3014,9 +3004,21 @@ function renderStyleRule(
         }
 
         case Styles.FontSize:
-            return renderStyle(options, pseudo, '.font-size-' + rule.i, [
-                Property('font-size', rule.i + 'px'),
-            ]);
+            return renderStyle(
+                options,
+                pseudo,
+                '.font-size-' +
+                    (rule.unit === Lengths.Px
+                        ? Math.round(rule.i)
+                        : Math.round(rule.i * 10)) +
+                    (rule.unit === Lengths.Px ? '' : '-rem'),
+                [
+                    Property(
+                        'font-size',
+                        rule.i + (rule.unit === Lengths.Px ? 'px' : 'rem')
+                    ),
+                ]
+            );
 
         case Styles.FontFamily: {
             const features: string[] = rule.typefaces.flatMap((value: Font) => {
@@ -3418,10 +3420,10 @@ function formatColor(
 ): string {
     switch (type) {
         case Notation.Hsl:
-            return `hsl(${a}, ${b * 100}%, ${c * 100}%)`;
+            return `hsl(${a}, ${b}%, ${c}%)`;
 
         case Notation.Hsla:
-            return `hsla(${a}, ${b * 100}%, ${c * 100}%, ${d})`;
+            return `hsla(${a}, ${b}%, ${c}%, ${d})`;
 
         case Notation.Rgb:
             return `rgb(${floatClass(a)}, ${floatClass(b)}, ${floatClass(c)})`;
@@ -3448,10 +3450,10 @@ function formatColorClass(
 ): string {
     switch (type) {
         case Notation.Hsl:
-            return `${a}-${b * 100}-${c * 100}`;
+            return `${a}-${b}-${c}`;
 
         case Notation.Hsla:
-            return `${a}-${b * 100}-${c * 100}-${d * 100}`;
+            return `${a}-${b}-${c}-${d * 100}`;
 
         case Notation.Rgb:
             return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}`;
@@ -3515,7 +3517,11 @@ function getStyleName(style: Style): string {
             return style.name;
 
         case Styles.FontSize:
-            return `font-size-${style.i}`;
+            return `font-size-${
+                style.unit === Lengths.Px
+                    ? Math.round(style.i)
+                    : Math.round(style.i * 10)
+            }${style.unit === Lengths.Px ? '' : '-rem'}`;
 
         case Styles.Single:
             return style.class_;

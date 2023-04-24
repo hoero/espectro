@@ -12,7 +12,8 @@ import * as InputJsx from './src/elements/input.tsx';
 import * as Keyed from './src/elements/keyed.ts';
 import * as Region from './src/elements/region.ts';
 import * as Responsive from './src/responsive.ts';
-import * as Unit from './src/unit.ts';
+import * as Pixel from './src/units/pixel.ts';
+import * as Rem from './src/units/rem.ts';
 
 export * as Attributes from './src/elements/attributes.ts';
 export * as Background from './src/elements/background.ts';
@@ -28,7 +29,8 @@ export * as InputJsx from './src/elements/input.tsx';
 export * as Keyed from './src/elements/keyed.ts';
 export * as Region from './src/elements/region.ts';
 export * as Responsive from './src/responsive.ts';
-export * as Unit from './src/unit.ts';
+export * as Pixel from './src/units/pixel.ts';
+export * as Rem from './src/units/rem.ts';
 
 export default {
     Attributes,
@@ -45,5 +47,6 @@ export default {
     Keyed,
     Region,
     Responsive,
-    Unit,
+    Pixel,
+    Rem,
 };

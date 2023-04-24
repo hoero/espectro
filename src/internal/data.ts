@@ -170,12 +170,14 @@ export function FontFamily(name: string, typefaces: Font[]): FontFamily {
 export interface FontSize {
     type: Styles.FontSize;
     i: number;
+    unit?: Lengths.Px | Lengths.Rem;
 }
 
-export function FontSize(i: number): FontSize {
+export function FontSize(i: number, unit?: Lengths.Px | Lengths.Rem): FontSize {
     return {
         type: Styles.FontSize,
         i,
+        unit,
     };
 }
 

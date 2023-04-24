@@ -1,41 +1,14 @@
-import { Device, DeviceClass } from './responsive.ts';
-import { Breakpoints, respond } from './responsive.ts';
+import { Device, DeviceClass, Breakpoints, respond } from '../responsive.ts';
 
 /** Default browser font size */
 const baseFontSize = 16;
 
 /**
- * This defines what 1rem is.
- * To have 1rem as 10px just divide 10 and the base font size which is 16.
- *
- * #### Desktop
- * 1rem = 10px, 10/16 = 62.5%
- *
- * #### Tablet (1100px)
- * 1rem = 8.4px, 8.4/16 = 52.5%
- *
- * #### Phone (600px)
- * 1rem = 7.28px, 7.28/16 = 45.5%
- */
-function oneRem(device: Device): number {
-    switch (device.class_) {
-        case DeviceClass.Phone:
-            return percentToPx(45.5);
-
-        case DeviceClass.Tablet:
-            return percentToPx(52.5);
-
-        default:
-            return percentToPx(62.5);
-    }
-}
-
-/**
  * This allows the user to use Points for fonts as we usually use in graphics software.
- * The calculation converts the Points value to another one for later use with rem.
+ * The calculation converts the Points value to pixels.
  */
-function pt(device: Device, point: number): number {
-    return remToPx(oneRem(device), point / 7.5);
+function pt(device: Device, value: number): number {
+    return remToPx(oneRem(device), value / 7.5);
 }
 
 /**
@@ -65,6 +38,32 @@ function rpx(device: Device, rem: number): number {
  */
 function rpxs(device: Device, breakpoints: Breakpoints): number {
     return rpx(device, respond(device, breakpoints));
+}
+
+/**
+ * This defines what 1rem is.
+ * To have 1rem as 10px just divide 10 and the base font size which is 16.
+ *
+ * #### Desktop
+ * 1rem = 10px, 10/16 = 62.5%
+ *
+ * #### Tablet (1100px)
+ * 1rem = 8.4px, 8.4/16 = 52.5%
+ *
+ * #### Phone (600px)
+ * 1rem = 7.28px, 7.28/16 = 45.5%
+ */
+function oneRem(device: Device): number {
+    switch (device.class_) {
+        case DeviceClass.Phone:
+            return percentToPx(45.5);
+
+        case DeviceClass.Tablet:
+            return percentToPx(52.5);
+
+        default:
+            return percentToPx(62.5);
+    }
 }
 
 /** Convert a rem value to a pixel value */
