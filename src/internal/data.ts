@@ -1083,6 +1083,8 @@ export enum Axis {
     AllAxis,
 }
 
+// Color
+
 export interface Channels {
     a: number;
     b: number;
@@ -1142,6 +1144,41 @@ export enum Notation {
     Rgba,
     Rgb255,
     Rgba255,
+}
+
+// Gradient
+
+export type Hint = number;
+
+export type Stop = number;
+
+export interface Step {
+    step: Color | Hint;
+    stop?: Stop | [Stop, Stop];
+}
+
+export function Step(step: Color | Hint, stop?: Stop | [Stop, Stop]): Step {
+    return { step, stop };
+}
+
+export interface Gradient {
+    steps: Step[];
+    angle?: number;
+}
+
+export function Gradient(steps: Step[], angle?: number): Gradient {
+    return { steps, angle };
+}
+
+export enum SideOrCorner {
+    Top,
+    Bottom,
+    Left,
+    LeftTop,
+    LeftBottom,
+    Right,
+    RightTop,
+    RightBottom,
 }
 
 export enum NodeNames {

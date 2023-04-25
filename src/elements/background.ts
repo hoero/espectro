@@ -13,7 +13,9 @@ import {
     Color,
     Colored,
     NoAttribute,
+    SideOrCorner,
     Single,
+    Step,
     StyleClass,
 } from '../internal/data.ts';
 import * as Flag from '../internal/flag.ts';
@@ -58,31 +60,76 @@ function tiledY(src: string): Attribute {
     return style('background', `url('${src}') repeat-y`);
 }
 
-function gradient(angle: number, steps: Color[]): Attribute {
+function gradient({
+    steps,
+    angle,
+}: {
+    steps: Step[];
+    angle?: number | SideOrCorner;
+}): Attribute {
     if (isEmpty(steps)) return NoAttribute();
-    if (steps.length === 1) return color(steps[0]);
-    const [stepsCls] = steps.map((clr: Color) => {
-        const [a, b, c, d, e] = Object.values(clr);
-        return Internal.formatColorClass(a, b, c, d, e);
-    });
-    const [stepsColor] = steps.map((clr: Color) => {
-        const [a, b, c, d, e] = Object.values(clr);
-        return Internal.formatColor(a, b, c, d, e);
-    });
-    return (() => {
-        return StyleClass(
-            Flag.bgGradient,
-            Single(
-                `bg-grad-${[Internal.floatClass(angle)]
-                    .concat(stepsCls)
-                    .join('-')}`,
-                'background-image',
-                `linear-gradient(${[angle + 'rad']
-                    .concat(stepsColor)
-                    .join(', ')}`
-            )
-        );
+    if (steps.length === 1 && typeof steps[0].step !== 'number')
+        return color(steps[0].step);
+
+    const [stepsCls] = steps.map((step: Step) => {
+            const [a, b, c, d, e] = Object.values(step.step);
+            return Internal.formatColorClass(a, b, c, d, e);
+        }),
+        stepsColor = steps.map((step: Step) => {
+            if (typeof step.step === 'number')
+                return step.step.toString() + '%';
+
+            const [a, b, c, d, e] = Object.values(step.step),
+                color = Internal.formatColor(a, b, c, d, e);
+
+            if (typeof step.stop === 'number') return `${color} ${step.stop}%`;
+
+            if (typeof step.stop !== 'undefined' && step.stop?.length === 2)
+                return `${color} ${step.stop[0]}% ${step.stop[1]}%`;
+
+            return color;
+        });
+
+    const [angleCls, angle_] = (() => {
+        switch (angle) {
+            case SideOrCorner.Top:
+                return ['to-top', 'to top'];
+
+            case SideOrCorner.Bottom:
+            case undefined:
+                return ['to-bottom', 'to bottom'];
+
+            case SideOrCorner.Left:
+                return ['to-left', 'to left'];
+
+            case SideOrCorner.LeftTop:
+                return ['to-left-top', 'to left top'];
+
+            case SideOrCorner.LeftBottom:
+                return ['to-left-bottom', 'to left bottom'];
+
+            case SideOrCorner.Right:
+                return ['to-right', 'to right'];
+
+            case SideOrCorner.RightTop:
+                return ['to-right-top', 'to right top'];
+
+            case SideOrCorner.RightBottom:
+                return ['to-right-bottom', 'to right bottom'];
+
+            default:
+                return [Internal.floatClass(angle), angle + 'deg'];
+        }
     })();
+
+    return StyleClass(
+        Flag.bgGradient,
+        Single(
+            `bg-lineargrad-${[angleCls].concat(stepsCls).join('-')}`,
+            'background-image',
+            `linear-gradient(${[angle_].concat(stepsColor).join(', ')})`
+        )
+    );
 }
 
 export { color, gradient, image, uncropped, tiled, tiledX, tiledY };
