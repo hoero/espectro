@@ -1152,6 +1152,14 @@ export type Hint = number;
 
 export type Stop = number;
 
+export type HRadius = number;
+
+export type VRadius = number;
+
+export type XPosition = number;
+
+export type YPosition = number;
+
 export interface Step {
     step: Color | Hint;
     stop?: Stop | [Stop, Stop];
@@ -1161,13 +1169,38 @@ export function Step(step: Color | Hint, stop?: Stop | [Stop, Stop]): Step {
     return { step, stop };
 }
 
-export interface Gradient {
+export interface GradientLinear {
+    type: Gradients.Linear;
     steps: Step[];
     angle?: number | SideOrCorner;
 }
 
-export function Gradient(steps: Step[], angle?: number): Gradient {
-    return { steps, angle };
+export function GradientLinear(steps: Step[], angle?: number): GradientLinear {
+    return { type: Gradients.Linear, steps, angle };
+}
+
+export interface GradientRadial {
+    type: Gradients.Radial;
+    steps: Step[];
+    shape?: EndingShape;
+    size?: Size;
+    radius?: [HRadius, VRadius];
+}
+
+export function GradientRadial(
+    steps: Step[],
+    shape?: EndingShape,
+    size?: Size,
+    radius?: [HRadius, VRadius]
+): GradientRadial {
+    return { type: Gradients.Radial, steps, shape, size, radius };
+}
+
+export type Gradient = GradientLinear | GradientRadial;
+
+export enum Gradients {
+    Linear,
+    Radial,
 }
 
 export enum SideOrCorner {
@@ -1179,6 +1212,44 @@ export enum SideOrCorner {
     Right,
     RightTop,
     RightBottom,
+}
+
+export enum Position {
+    Top,
+    Bottom,
+    Left,
+    LeftTop,
+    LeftCenter,
+    LeftBottom,
+    LeftLength,
+    Right,
+    RightTop,
+    RightCenter,
+    RightBottom,
+    RightLength,
+    Center,
+    CenterTop,
+    CenterCenter,
+    CenterBottom,
+    Length,
+    LengthLeft,
+    LengthRight,
+}
+
+export enum EndingShape {
+    Ellipse,
+    Circle,
+}
+
+export enum Size {
+    ClosestSide,
+    ClosestCorner,
+    FarthestSide,
+    FarthestCorner,
+    Px,
+    PxPercentage,
+    Percentage,
+    PercentagePx,
 }
 
 export enum NodeNames {
