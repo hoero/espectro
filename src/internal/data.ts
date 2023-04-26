@@ -1163,7 +1163,7 @@ export function Step(step: Color | Hint, stop?: Stop | [Stop, Stop]): Step {
 
 export interface Gradient {
     steps: Step[];
-    angle?: number;
+    angle?: number | SideOrCorner;
 }
 
 export function Gradient(steps: Step[], angle?: number): Gradient {
