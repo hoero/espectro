@@ -100,11 +100,15 @@ function gradientRadial({
     shape,
     size,
     radius,
+    position,
+    positions,
 }: {
     steps: Step[];
     shape?: EndingShape;
     size?: Size;
     radius?: [HRadius, VRadius];
+    position?: Position;
+    positions?: [XPosition, YPosition];
 }): Attribute {
     if (isEmpty(steps)) return NoAttribute();
     if (steps.length === 1 && typeof steps[0].step !== 'number')
@@ -112,14 +116,24 @@ function gradientRadial({
 
     const [stepsCls, stepsColor] = stepsValues(steps),
         shape_ = endingShape(shape),
-        size_ = getSize(size, radius, shape);
+        size_ = getSize(size, radius, shape),
+        position_ =
+            typeof position === 'undefined'
+                ? position
+                : getPosition(position, positions);
 
     return StyleClass(
         Flag.bgGradient,
         Single(
-            `bg-radialgrad-${[shape_].concat(stepsCls).join('-')}`,
+            `bg-radialgrad-${[shape_, sizeClass(size_)]
+                .concat(stepsCls)
+                .join('-')}`,
             'background-image',
-            `radial-gradient(${[`${shape_} ${size_}`]
+            `radial-gradient(${[
+                `${shape_} ${size_}${
+                    typeof position === 'undefined' ? '' : ' at ' + position_
+                }`,
+            ]
                 .concat(stepsColor)
                 .join(', ')})`
         )
@@ -132,8 +146,8 @@ function gradients(gradients: Gradient[]): Attribute {
     const linear: GradientLinear[] = [],
         radial: GradientRadial[] = [];
     gradients.map((grad) => {
-        if (grad.type === Gradients.Radial) radial.push(grad);
         if (grad.type === Gradients.Linear) linear.push(grad);
+        if (grad.type === Gradients.Radial) radial.push(grad);
     });
 
     if (linear.length > 0) {
@@ -159,7 +173,41 @@ function gradients(gradients: Gradient[]): Attribute {
         );
     } else if (radial.length > 0) {
         if (radial.length === 1) return gradientRadial(radial[0]);
-        return NoAttribute();
+
+        const steps = radial.map(({ steps }) => stepsValues(steps)),
+            shape_ = radial.map(({ shape }) => endingShape(shape)),
+            size_ = radial.map(({ size, radius, shape }) =>
+                getSize(size, radius, shape)
+            ),
+            position_ = radial.map(({ position, positions }) =>
+                typeof position === 'undefined'
+                    ? position
+                    : getPosition(position, positions)
+            );
+
+        return StyleClass(
+            Flag.bgGradient,
+            Single(
+                `bg-radialgrads-${[shape_[0], sizeClass(size_[0])]
+                    .concat(steps[0][0])
+                    .join('-')}`,
+                'background-image',
+                radial
+                    .map(
+                        (_gradient, index) =>
+                            `radial-gradient(${[
+                                `${shape_[index]} ${size_[index]}${
+                                    typeof position_[index] === 'undefined'
+                                        ? ''
+                                        : ' at ' + position_[index]
+                                }`,
+                            ]
+                                .concat(steps[index][1])
+                                .join(', ')})`
+                    )
+                    .join(', ')
+            )
+        );
     } else {
         return NoAttribute();
     }
@@ -353,9 +401,6 @@ function getPosition(
             case Position.CenterTop:
                 return 'center top';
 
-            case Position.CenterCenter:
-                return 'center center';
-
             case Position.CenterBottom:
                 return 'center bottom';
 
@@ -384,6 +429,10 @@ function getPosition(
                 "Don't define positions when positions values that don't include length."
             );
     }
+}
+
+function sizeClass(size: string) {
+    return size.replaceAll('px', '').replaceAll('%', '').replaceAll(' ', '-');
 }
 
 export {

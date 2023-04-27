@@ -1185,15 +1185,34 @@ export interface GradientRadial {
     shape?: EndingShape;
     size?: Size;
     radius?: [HRadius, VRadius];
+    position?: Position;
+    positions?: [XPosition, YPosition];
 }
 
-export function GradientRadial(
-    steps: Step[],
-    shape?: EndingShape,
-    size?: Size,
-    radius?: [HRadius, VRadius]
-): GradientRadial {
-    return { type: Gradients.Radial, steps, shape, size, radius };
+export function GradientRadial({
+    steps,
+    shape,
+    size,
+    radius,
+    position,
+    positions,
+}: {
+    steps: Step[];
+    shape?: EndingShape;
+    size?: Size;
+    radius?: [HRadius, VRadius];
+    position?: Position;
+    positions?: [XPosition, YPosition];
+}): GradientRadial {
+    return {
+        type: Gradients.Radial,
+        steps,
+        shape,
+        size,
+        radius,
+        position,
+        positions,
+    };
 }
 
 export type Gradient = GradientLinear | GradientRadial;
@@ -1229,7 +1248,6 @@ export enum Position {
     RightLength,
     Center,
     CenterTop,
-    CenterCenter,
     CenterBottom,
     Length,
     LengthLeft,
