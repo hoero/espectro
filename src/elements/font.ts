@@ -54,10 +54,11 @@ import {
     FontSize,
     FontWith,
     ImportFont,
-    Lengths,
     Maybe,
     Monospace,
     Property,
+    Px,
+    Rem,
     SansSerif,
     Serif,
     Shadow,
@@ -221,12 +222,9 @@ function external({ url, name }: { url: string; name: string }): Font {
     return ImportFont(name, url);
 }
 
-/** Font sizes are always given as `px` by default. Use `Pixel.pt` with this to use points, `Pixel.rpx` to use pixels that behaves as rem, and `Pixel.rpxs` or `Pixel.rpts` to provide responsive values for specific device profiles*/
-function size(
-    i: number,
-    unit: Lengths.Px | Lengths.Rem = Lengths.Px
-): Attribute {
-    return StyleClass(Flag.fontSize, FontSize(i, unit));
+/** Font sizes are always given as `px` by default. Use `Pixel.pt` with this to use points, `Pixel.rpx` to use pixels that behaves as rem, and `Pixel.rpxs` or `Pixel.rpts` to provide responsive values for specific device profiles. When using rem values, use `Rem.pt` with this to use points, or `Rem.pts` to provide points for specific device profiles*/
+function size(i: number | Px | Rem): Attribute {
+    return StyleClass(Flag.fontSize, FontSize(i));
 }
 
 /** In `px`. Use `Units.pt`, `Units.rpx` or other related function to provide a responsive value*/

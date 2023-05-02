@@ -752,8 +752,13 @@ function skippable(flag: Flag.Flag, style: Style) {
     }
 
     switch (style.type) {
-        case Styles.FontSize:
-            return style.i >= 8 && style.i <= 32 && style.unit === Lengths.Px;
+        case Styles.FontSize: {
+            if (typeof style.i === 'number')
+                return style.i >= 8 && style.i <= 32;
+            if (style.i.type === Lengths.Px)
+                return style.i.px >= 8 && style.i.px <= 32;
+            return false;
+        }
 
         case Styles.PaddingStyle:
             return (
@@ -2410,7 +2415,7 @@ const rootStyle: Attribute[] = [
             Hsla(0, 0, 0, 1, Notation.Hsla)
         )
     ),
-    StyleClass(Flag.fontSize, FontSize(20, Lengths.Px)),
+    StyleClass(Flag.fontSize, FontSize(20)),
     StyleClass(
         Flag.fontFamily,
         FontFamily(
@@ -3003,22 +3008,33 @@ function renderStyleRule(
             ]);
         }
 
-        case Styles.FontSize:
-            return renderStyle(
-                options,
-                pseudo,
-                '.font-size-' +
-                    (rule.unit === Lengths.Px
-                        ? Math.round(rule.i)
-                        : Math.round(rule.i * 10)) +
-                    (rule.unit === Lengths.Px ? '' : '-rem'),
-                [
-                    Property(
-                        'font-size',
-                        rule.i + (rule.unit === Lengths.Px ? 'px' : 'rem')
-                    ),
-                ]
-            );
+        case Styles.FontSize: {
+            if (typeof rule.i === 'number')
+                return renderStyle(
+                    options,
+                    pseudo,
+                    '.font-size-' + Math.round(rule.i),
+                    [Property('font-size', rule.i + 'px')]
+                );
+            switch (rule.i.type) {
+                case Lengths.Px:
+                    return renderStyle(
+                        options,
+                        pseudo,
+                        '.font-size-' + Math.round(rule.i.px),
+                        [Property('font-size', rule.i.px + 'px')]
+                    );
+
+                case Lengths.Rem:
+                    return renderStyle(
+                        options,
+                        pseudo,
+                        '.font-size-' + Math.round(rule.i.rem * 10) + '-rem',
+                        [Property('font-size', rule.i.rem + 'rem')]
+                    );
+            }
+            break;
+        }
 
         case Styles.FontFamily: {
             const features: string[] = rule.typefaces.flatMap((value: Font) => {
@@ -3516,12 +3532,18 @@ function getStyleName(style: Style): string {
         case Styles.FontFamily:
             return style.name;
 
-        case Styles.FontSize:
-            return `font-size-${
-                style.unit === Lengths.Px
-                    ? Math.round(style.i)
-                    : Math.round(style.i * 10)
-            }${style.unit === Lengths.Px ? '' : '-rem'}`;
+        case Styles.FontSize: {
+            if (typeof style.i === 'number')
+                return `font-size-${Math.round(style.i)}`;
+            switch (style.i.type) {
+                case Lengths.Px:
+                    return `font-size-${Math.round(style.i.px)}`;
+
+                case Lengths.Rem:
+                    return `font-size-${Math.round(style.i.rem * 10)}-rem`;
+            }
+            break;
+        }
 
         case Styles.Single:
             return style.class_;
