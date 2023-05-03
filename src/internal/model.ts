@@ -1180,7 +1180,7 @@ function gatherAttrRecursive(
             switch (attribute_.width.type) {
                 case Lengths.Px: {
                     const val = attribute_.width.px;
-                    const name = `width-px-${Math.round(val)}`;
+                    const name = `width-${Math.round(val)}-px`;
                     return gatherAttrRecursive(
                         `${cls.widthExact} ${name} ${classes}`,
                         node,
@@ -1195,7 +1195,7 @@ function gatherAttrRecursive(
 
                 case Lengths.Rem: {
                     const val = attribute_.width.rem;
-                    const name = `width-rem-${Math.round(val * 10)}`;
+                    const name = `width-${Math.round(val * 10)}-rem`;
                     return gatherAttrRecursive(
                         `${cls.widthExact} ${name} ${classes}`,
                         node,
@@ -1287,7 +1287,7 @@ function gatherAttrRecursive(
             switch (attribute_.height.type) {
                 case Lengths.Px: {
                     const val = attribute_.height.px;
-                    const name = `height-px-${Math.round(val)}`;
+                    const name = `height-${Math.round(val)}-px`;
                     return gatherAttrRecursive(
                         `${cls.heightExact} ${name} ${classes}`,
                         node,
@@ -1302,7 +1302,7 @@ function gatherAttrRecursive(
 
                 case Lengths.Rem: {
                     const val = attribute_.height.rem;
-                    const name = `height-rem-${Math.round(val * 10)}`;
+                    const name = `height-${Math.round(val * 10)}-rem`;
                     return gatherAttrRecursive(
                         `${cls.heightExact} ${name} ${classes}`,
                         node,
@@ -1536,7 +1536,7 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
     switch (w.type) {
         case Lengths.Px: {
             const val = w.px;
-            const name = `width-px-${Math.round(val)}`;
+            const name = `width-${Math.round(val)}-px`;
             return [
                 [Flag.none],
                 `${cls.widthExact} ${name}`,
@@ -1546,7 +1546,7 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
 
         case Lengths.Rem: {
             const val = w.rem;
-            const name = `width-rem-${val * 10}`;
+            const name = `width-${val * 10}-rem`;
             return [
                 [Flag.none],
                 `${cls.widthExact} ${name}`,
@@ -1640,7 +1640,7 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
     switch (h.type) {
         case Lengths.Px: {
             const val = h.px;
-            const name = `height-px-${Math.round(val)}`;
+            const name = `height-${Math.round(val)}-px`;
             return [
                 [Flag.none],
                 `${cls.heightExact} ${name}`,
@@ -1650,7 +1650,7 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
 
         case Lengths.Rem: {
             const val = h.rem;
-            const name = `height-rem-${Math.round(val * 10)}`;
+            const name = `height-${Math.round(val * 10)}-rem`;
             return [
                 [Flag.none],
                 `${cls.heightExact} ${name}`,
