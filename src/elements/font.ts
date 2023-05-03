@@ -57,7 +57,6 @@ import {
     Maybe,
     Monospace,
     Property,
-    Px,
     Rem,
     SansSerif,
     Serif,
@@ -223,7 +222,7 @@ function external({ url, name }: { url: string; name: string }): Font {
 }
 
 /** Font sizes are always given as `px` by default. Use `Pixel.pt` with this to use points, `Pixel.rpx` to use pixels that behaves as rem, and `Pixel.rpxs` or `Pixel.rpts` to provide responsive values for specific device profiles. When using rem values, use `Rem.pt` with this to use points, or `Rem.pts` to provide points for specific device profiles*/
-function size(i: number | Px | Rem): Attribute {
+function size(i: number | Rem): Attribute {
     return StyleClass(Flag.fontSize, FontSize(i));
 }
 

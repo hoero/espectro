@@ -755,8 +755,6 @@ function skippable(flag: Flag.Flag, style: Style) {
         case Styles.FontSize: {
             if (typeof style.i === 'number')
                 return style.i >= 8 && style.i <= 32;
-            if (style.i.type === Lengths.Px)
-                return style.i.px >= 8 && style.i.px <= 32;
             return false;
         }
 
@@ -3016,24 +3014,12 @@ function renderStyleRule(
                     '.font-size-' + Math.round(rule.i),
                     [Property('font-size', rule.i + 'px')]
                 );
-            switch (rule.i.type) {
-                case Lengths.Px:
-                    return renderStyle(
-                        options,
-                        pseudo,
-                        '.font-size-' + Math.round(rule.i.px),
-                        [Property('font-size', rule.i.px + 'px')]
-                    );
-
-                case Lengths.Rem:
-                    return renderStyle(
-                        options,
-                        pseudo,
-                        '.font-size-' + Math.round(rule.i.rem * 10) + '-rem',
-                        [Property('font-size', rule.i.rem + 'rem')]
-                    );
-            }
-            break;
+            return renderStyle(
+                options,
+                pseudo,
+                '.font-size-' + Math.round(rule.i.rem * 10) + '-rem',
+                [Property('font-size', rule.i.rem + 'rem')]
+            );
         }
 
         case Styles.FontFamily: {
@@ -3535,14 +3521,7 @@ function getStyleName(style: Style): string {
         case Styles.FontSize: {
             if (typeof style.i === 'number')
                 return `font-size-${Math.round(style.i)}`;
-            switch (style.i.type) {
-                case Lengths.Px:
-                    return `font-size-${Math.round(style.i.px)}`;
-
-                case Lengths.Rem:
-                    return `font-size-${Math.round(style.i.rem * 10)}-rem`;
-            }
-            break;
+            return `font-size-${Math.round(style.i.rem * 10)}-rem`;
         }
 
         case Styles.Single:
