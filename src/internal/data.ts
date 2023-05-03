@@ -260,18 +260,18 @@ export function BorderWidth(
 export interface PaddingStyle {
     type: Styles.PaddingStyle;
     class_: string;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
+    top: number | Rem;
+    right: number | Rem;
+    bottom: number | Rem;
+    left: number | Rem;
 }
 
 export function PaddingStyle(
     class_: string,
-    top: number,
-    right: number,
-    bottom: number,
-    left: number
+    top: number | Rem,
+    right: number | Rem,
+    bottom: number | Rem,
+    left: number | Rem
 ): PaddingStyle {
     return {
         type: Styles.PaddingStyle,
@@ -1443,20 +1443,20 @@ export function Spacing(name: string, x: number, y: number): Spacing {
 
 export interface Padding_ {
     name: string;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
+    top: number | Rem;
+    right: number | Rem;
+    bottom: number | Rem;
+    left: number | Rem;
 }
 
 export type Padding = Padding_;
 
 export function Padding(
     name: string,
-    top: number,
-    right: number,
-    bottom: number,
-    left: number
+    top: number | Rem,
+    right: number | Rem,
+    bottom: number | Rem,
+    left: number | Rem
 ): Padding {
     return { name, top, right, bottom, left };
 }

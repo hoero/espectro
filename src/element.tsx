@@ -267,29 +267,64 @@ function WrappedRow({
                     switch (padded.type) {
                         case MaybeType.Just: {
                             const { top, right, bottom, left } = padded.value;
-                            if (right >= x / 2 && bottom >= y / 2) {
-                                const newTop = top - y / 2,
-                                    newRight = right - x / 2,
-                                    newBottom = bottom - y / 2,
-                                    newLeft = left - x / 2;
-                                return Just(
-                                    StyleClass(
-                                        Flag.padding,
-                                        PaddingStyle(
-                                            Internal.paddingNameFloat(
+                            if (
+                                typeof top === 'number' &&
+                                typeof right === 'number' &&
+                                typeof bottom === 'number' &&
+                                typeof left === 'number'
+                            )
+                                if (right >= x / 2 && bottom >= y / 2) {
+                                    const newTop = top - y / 2,
+                                        newRight = right - x / 2,
+                                        newBottom = bottom - y / 2,
+                                        newLeft = left - x / 2;
+                                    return Just(
+                                        StyleClass(
+                                            Flag.padding,
+                                            PaddingStyle(
+                                                Internal.paddingNameFloat(
+                                                    newTop,
+                                                    newRight,
+                                                    newBottom,
+                                                    newLeft
+                                                ),
                                                 newTop,
                                                 newRight,
                                                 newBottom,
                                                 newLeft
-                                            ),
-                                            newTop,
-                                            newRight,
-                                            newBottom,
-                                            newLeft
+                                            )
                                         )
-                                    )
-                                );
-                            }
+                                    );
+                                }
+                            if (
+                                typeof top !== 'number' &&
+                                typeof right !== 'number' &&
+                                typeof bottom !== 'number' &&
+                                typeof left !== 'number'
+                            )
+                                if (right.rem >= x / 2 && bottom.rem >= y / 2) {
+                                    const newTop = top.rem - y / 2,
+                                        newRight = right.rem - x / 2,
+                                        newBottom = bottom.rem - y / 2,
+                                        newLeft = left.rem - x / 2;
+                                    return Just(
+                                        StyleClass(
+                                            Flag.padding,
+                                            PaddingStyle(
+                                                Internal.paddingNameFloat(
+                                                    newTop,
+                                                    newRight,
+                                                    newBottom,
+                                                    newLeft
+                                                ),
+                                                newTop,
+                                                newRight,
+                                                newBottom,
+                                                newLeft
+                                            )
+                                        )
+                                    );
+                                }
                             return Nothing();
                         }
 

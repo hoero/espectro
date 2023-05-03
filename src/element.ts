@@ -597,29 +597,64 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                     switch (padded.type) {
                         case MaybeType.Just: {
                             const { top, right, bottom, left } = padded.value;
-                            if (right >= x / 2 && bottom >= y / 2) {
-                                const newTop = top - y / 2,
-                                    newRight = right - x / 2,
-                                    newBottom = bottom - y / 2,
-                                    newLeft = left - x / 2;
-                                return Just(
-                                    StyleClass(
-                                        Flag.padding,
-                                        PaddingStyle(
-                                            Internal.paddingNameFloat(
+                            if (
+                                typeof top === 'number' &&
+                                typeof right === 'number' &&
+                                typeof bottom === 'number' &&
+                                typeof left === 'number'
+                            )
+                                if (right >= x / 2 && bottom >= y / 2) {
+                                    const newTop = top - y / 2,
+                                        newRight = right - x / 2,
+                                        newBottom = bottom - y / 2,
+                                        newLeft = left - x / 2;
+                                    return Just(
+                                        StyleClass(
+                                            Flag.padding,
+                                            PaddingStyle(
+                                                Internal.paddingNameFloat(
+                                                    newTop,
+                                                    newRight,
+                                                    newBottom,
+                                                    newLeft
+                                                ),
                                                 newTop,
                                                 newRight,
                                                 newBottom,
                                                 newLeft
-                                            ),
-                                            newTop,
-                                            newRight,
-                                            newBottom,
-                                            newLeft
+                                            )
                                         )
-                                    )
-                                );
-                            }
+                                    );
+                                }
+                            if (
+                                typeof top !== 'number' &&
+                                typeof right !== 'number' &&
+                                typeof bottom !== 'number' &&
+                                typeof left !== 'number'
+                            )
+                                if (right.rem >= x / 2 && bottom.rem >= y / 2) {
+                                    const newTop = top.rem - y / 2,
+                                        newRight = right.rem - x / 2,
+                                        newBottom = bottom.rem - y / 2,
+                                        newLeft = left.rem - x / 2;
+                                    return Just(
+                                        StyleClass(
+                                            Flag.padding,
+                                            PaddingStyle(
+                                                Internal.paddingNameFloat(
+                                                    newTop,
+                                                    newRight,
+                                                    newBottom,
+                                                    newLeft
+                                                ),
+                                                newTop,
+                                                newRight,
+                                                newBottom,
+                                                newLeft
+                                            )
+                                        )
+                                    );
+                                }
                             return Nothing();
                         }
 
@@ -1217,15 +1252,39 @@ function moveLeft(x: number): Attribute {
     return TransformComponent_(Flag.moveX, MoveX(x * -1));
 }
 
-function padding(x: number): Attribute {
-    return StyleClass(Flag.padding, PaddingStyle('p-' + x, x, x, x, x));
+function padding(x: number | Rem): Attribute {
+    return StyleClass(
+        Flag.padding,
+        PaddingStyle(
+            typeof x !== 'number'
+                ? `p-${Math.round(x.rem * 10)}-rem`
+                : 'p-' + x,
+            x,
+            x,
+            x,
+            x
+        )
+    );
 }
 
 /** Set horizontal and vertical padding. */
-function paddingXY(x: number, y: number): Attribute {
+function paddingXY(x: number | Rem, y: number | Rem): Attribute {
     return x === y
         ? padding(x)
-        : StyleClass(Flag.padding, PaddingStyle(`p-${x}-${y}`, y, x, y, x));
+        : StyleClass(
+              Flag.padding,
+              PaddingStyle(
+                  typeof x !== 'number' && typeof y !== 'number'
+                      ? `p-${Math.round(x.rem * 10)}-${Math.round(
+                            y.rem * 10
+                        )}-rem`
+                      : `p-${x}-${y}`,
+                  y,
+                  x,
+                  y,
+                  x
+              )
+          );
 }
 
 /**
@@ -1251,12 +1310,19 @@ function paddingEach({
     right,
     bottom,
     left,
-}: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}): Attribute {
+}:
+    | {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+      }
+    | {
+          top: Rem;
+          right: Rem;
+          bottom: Rem;
+          left: Rem;
+      }): Attribute {
     return top === right && top === bottom && top === left
         ? padding(top)
         : StyleClass(

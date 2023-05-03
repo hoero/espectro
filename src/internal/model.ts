@@ -80,6 +80,7 @@ import {
     StaticRootAndDynamic,
     Px,
     Hsla,
+    Rem,
 } from './data.ts';
 import { isEmpty, isNumber, isPlainObject, isString } from '../utils/utils.ts';
 import { rgba } from '../color.ts';
@@ -758,14 +759,17 @@ function skippable(flag: Flag.Flag, style: Style) {
             return false;
         }
 
-        case Styles.PaddingStyle:
-            return (
-                style.top === style.bottom &&
-                style.top === style.right &&
-                style.top === style.left &&
-                style.top >= 0 &&
-                style.top <= 24
-            );
+        case Styles.PaddingStyle: {
+            if (typeof style.top === 'number')
+                return (
+                    style.top === style.bottom &&
+                    style.top === style.right &&
+                    style.top === style.left &&
+                    style.top >= 0 &&
+                    style.top <= 24
+                );
+            return false;
+        }
 
         // case Styles.SpacingStyle:
         //     return true;
@@ -3161,7 +3165,12 @@ function renderStyleRule(
             return renderStyle(options, pseudo, '.' + rule.class_, [
                 Property(
                     'padding',
-                    `${rule.top}px ${rule.right}px ${rule.bottom}px ${rule.left}px`
+                    typeof rule.top !== 'number' &&
+                        typeof rule.right !== 'number' &&
+                        typeof rule.bottom !== 'number' &&
+                        typeof rule.left !== 'number'
+                        ? `${rule.top.rem}rem ${rule.right.rem}rem ${rule.bottom.rem}rem ${rule.left.rem}rem`
+                        : `${rule.top}px ${rule.right}px ${rule.bottom}px ${rule.left}px`
                 ),
             ]);
 
@@ -3478,11 +3487,20 @@ function spacingName(x: number, y: number): string {
 }
 
 function paddingName(
-    top: number,
-    right: number,
-    bottom: number,
-    left: number
+    top: number | Rem,
+    right: number | Rem,
+    bottom: number | Rem,
+    left: number | Rem
 ): string {
+    if (
+        typeof top !== 'number' &&
+        typeof right !== 'number' &&
+        typeof bottom !== 'number' &&
+        typeof left !== 'number'
+    )
+        return `pad-${Math.round(top.rem * 10)}-${Math.round(
+            right.rem * 10
+        )}-${Math.round(bottom.rem * 10)}-${Math.round(left.rem * 10)}-rem`;
     return `pad-${top}-${right}-${bottom}-${left}`;
 }
 
