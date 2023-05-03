@@ -24,6 +24,7 @@ import {
     Class,
     Color,
     Colored,
+    Rem,
     Shadow,
     Single,
     StyleClass,
@@ -48,15 +49,34 @@ function color(borderColor: Color): Attribute {
     );
 }
 
-function width(v: number): Attribute {
-    return StyleClass(Flag.borderWidth, BorderWidth('b-' + v, v, v, v, v));
+function width(v: number | Rem): Attribute {
+    return StyleClass(
+        Flag.borderWidth,
+        BorderWidth(
+            typeof v !== 'number'
+                ? `b-${Math.round(v.rem * 10)}-rem`
+                : `b-${v}`,
+            v,
+            v,
+            v,
+            v
+        )
+    );
 }
 
 /** Set horizontal and vertical borders. */
-function widthXY(x: number, y: number): Attribute {
+function widthXY(x: number | Rem, y: number | Rem): Attribute {
     return StyleClass(
         Flag.borderWidth,
-        BorderWidth('b-' + x + '-' + y, y, x, y, x)
+        BorderWidth(
+            typeof x !== 'number' && typeof y !== 'number'
+                ? `b-${Math.round(x.rem * 10)}-${Math.round(y.rem * 10)}-rem`
+                : `b-${x}-${y}`,
+            y,
+            x,
+            y,
+            x
+        )
     );
 }
 
@@ -65,34 +85,72 @@ function widthEach({
     left,
     right,
     top,
-}: {
-    bottom: number;
-    left: number;
-    right: number;
-    top: number;
-}): Attribute {
-    if (top === bottom && left === right) {
-        if (top === right) return width(top);
+}:
+    | {
+          bottom: number;
+          left: number;
+          right: number;
+          top: number;
+      }
+    | {
+          bottom: Rem;
+          left: Rem;
+          right: Rem;
+          top: Rem;
+      }): Attribute {
+    if (
+        (top === bottom && left === right) ||
+        (typeof bottom !== 'number' &&
+            typeof left !== 'number' &&
+            typeof right !== 'number' &&
+            typeof top !== 'number' &&
+            top.rem === bottom.rem &&
+            left.rem === right.rem)
+    ) {
+        if (
+            top === right ||
+            (typeof bottom !== 'number' &&
+                typeof left !== 'number' &&
+                typeof right !== 'number' &&
+                typeof top !== 'number' &&
+                top.rem === right.rem)
+        )
+            return width(top);
         return widthXY(left, top);
     } else {
         return StyleClass(
             Flag.borderWidth,
             BorderWidth(
-                `b-${top}-${right}-${bottom}-${left}`,
+                typeof bottom !== 'number' &&
+                    typeof left !== 'number' &&
+                    typeof right !== 'number' &&
+                    typeof top !== 'number'
+                    ? `b-${Math.round(top.rem * 10)}-${Math.round(
+                          right.rem * 10
+                      )}-${Math.round(bottom.rem * 10)}-${Math.round(
+                          left.rem * 10
+                      )}-rem`
+                    : `b-${top}-${right}-${bottom}-${left}`,
                 top,
                 right,
                 bottom,
-                right
+                left
             )
         );
     }
 }
 
 /** Round all corners. */
-function rounded(radius: number): Attribute {
+function rounded(radius: number | Rem): Attribute {
     return StyleClass(
         Flag.borderRound,
-        Single('br-' + radius, 'border-radius', radius + 'px')
+        Single(
+            typeof radius !== 'number'
+                ? `br-${Math.round(radius.rem * 10)}-rem`
+                : `br-${radius}`,
+            'border-radius',
+            typeof radius !== 'number' ? `${radius.rem}rem` : `${radius}px`
+        )
     );
 }
 
@@ -103,15 +161,24 @@ function roundEach({
     bottomLeft,
     bottomRight,
 }: {
-    topLeft: number;
-    topRight: number;
-    bottomLeft: number;
-    bottomRight: number;
+    topLeft: number | Rem;
+    topRight: number | Rem;
+    bottomLeft: number | Rem;
+    bottomRight: number | Rem;
 }): Attribute {
     return StyleClass(
         Flag.borderRound,
         Single(
-            `br-${topLeft}-${topRight}${bottomLeft}-${bottomRight}`,
+            typeof topLeft !== 'number' &&
+                typeof topRight !== 'number' &&
+                typeof bottomLeft !== 'number' &&
+                typeof bottomRight !== 'number'
+                ? `br-${Math.round(topLeft.rem * 10)}-${Math.round(
+                      topRight.rem * 10
+                  )}${Math.round(bottomLeft.rem * 10)}-${Math.round(
+                      bottomRight.rem * 10
+                  )}-rem`
+                : `br-${topLeft}-${topRight}${bottomLeft}-${bottomRight}`,
             'border-radius',
             `${topLeft}px ${topRight}px ${bottomRight}px ${bottomLeft}px `
         )

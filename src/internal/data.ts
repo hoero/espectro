@@ -234,18 +234,18 @@ export function SpacingStyle(
 export interface BorderWidth {
     type: Styles.BorderWidth;
     class_: string;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
+    top: number | Rem;
+    right: number | Rem;
+    bottom: number | Rem;
+    left: number | Rem;
 }
 
 export function BorderWidth(
     class_: string,
-    top: number,
-    right: number,
-    bottom: number,
-    left: number
+    top: number | Rem,
+    right: number | Rem,
+    bottom: number | Rem,
+    left: number | Rem
 ): BorderWidth {
     return {
         type: Styles.BorderWidth,

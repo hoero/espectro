@@ -3213,7 +3213,12 @@ function renderStyleRule(
             return renderStyle(options, pseudo, '.' + rule.class_, [
                 Property(
                     'border-width',
-                    `${rule.top}px ${rule.right}px ${rule.bottom}px ${rule.left}px`
+                    typeof rule.top !== 'number' &&
+                        typeof rule.right !== 'number' &&
+                        typeof rule.bottom !== 'number' &&
+                        typeof rule.left !== 'number'
+                        ? `${rule.top.rem}rem ${rule.right.rem}rem ${rule.bottom.rem}rem ${rule.left.rem}rem`
+                        : `${rule.top}px ${rule.right}px ${rule.bottom}px ${rule.left}px`
                 ),
             ]);
 

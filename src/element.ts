@@ -1290,7 +1290,8 @@ function padding(x: number | Rem): Attribute {
 
 /** Set horizontal and vertical padding. */
 function paddingXY(x: number | Rem, y: number | Rem): Attribute {
-    return x === y
+    return x === y ||
+        (typeof x !== 'number' && typeof y !== 'number' && x.rem === y.rem)
         ? padding(x)
         : StyleClass(
               Flag.padding,
@@ -1344,7 +1345,14 @@ function paddingEach({
           bottom: Rem;
           left: Rem;
       }): Attribute {
-    return top === right && top === bottom && top === left
+    return (top === right && top === bottom && top === left) ||
+        (typeof top !== 'number' &&
+            typeof right !== 'number' &&
+            typeof bottom !== 'number' &&
+            typeof left !== 'number' &&
+            top.rem === right.rem &&
+            top.rem === bottom.rem &&
+            top.rem === left.rem)
         ? padding(top)
         : StyleClass(
               Flag.padding,
