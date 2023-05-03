@@ -214,14 +214,14 @@ export function Colored(class_: string, prop: string, color: Color): Colored {
 export interface SpacingStyle {
     type: Styles.SpacingStyle;
     class_: string;
-    x: number;
-    y: number;
+    x: number | Rem;
+    y: number | Rem;
 }
 
 export function SpacingStyle(
     class_: string,
-    x: number,
-    y: number
+    x: number | Rem,
+    y: number | Rem
 ): SpacingStyle {
     return {
         type: Styles.SpacingStyle,
@@ -1431,13 +1431,17 @@ export type Children<T> = Unkeyed<T> | Keyed<T>;
 
 export interface Spaced {
     name: string;
-    x: number;
-    y: number;
+    x: number | Rem;
+    y: number | Rem;
 }
 
 export type Spacing = Spaced;
 
-export function Spacing(name: string, x: number, y: number): Spacing {
+export function Spacing(
+    name: string,
+    x: number | Rem,
+    y: number | Rem
+): Spacing {
     return { name, x, y };
 }
 

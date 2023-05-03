@@ -2235,15 +2235,15 @@ function extractSpacingAndPadding(
 
 function getSpacing(
     attrs: Attribute[],
-    default_: [number, number]
-): [number, number] {
+    default_: [number | Rem, number | Rem]
+): [number | Rem, number | Rem] {
     return withDefault(
         default_,
         attrs.reduceRight(
             (
-                acc: Maybe<[number, number]>,
+                acc: Maybe<[number | Rem, number | Rem]>,
                 attr: Attribute
-            ): Maybe<[number, number]> => {
+            ): Maybe<[number | Rem, number | Rem]> => {
                 switch (acc.type) {
                     case MaybeType.Just:
                         return acc;
@@ -3060,10 +3060,18 @@ function renderStyleRule(
 
         case Styles.SpacingStyle: {
             const class_: string = '.' + rule.class_,
-                halfX: string = rule.x / 2 + 'px',
-                halfY: string = rule.y / 2 + 'px',
-                xPx: string = rule.x + 'px',
-                yPx: string = rule.y + 'px',
+                halfX = `${
+                    (typeof rule.x === 'number' ? rule.x : rule.x.rem) / 2
+                }${typeof rule.x === 'number' ? 'px' : 'rem'}`,
+                halfY = `${
+                    (typeof rule.y === 'number' ? rule.y : rule.y.rem) / 2
+                }${typeof rule.y === 'number' ? 'px' : 'rem'}`,
+                xPx = `${typeof rule.x === 'number' ? rule.x : rule.x.rem}${
+                    typeof rule.x === 'number' ? 'px' : 'rem'
+                }`,
+                yPx = `${typeof rule.y === 'number' ? rule.y : rule.y.rem}${
+                    typeof rule.y === 'number' ? 'px' : 'rem'
+                }`,
                 row: string = '.' + cls.row,
                 wrappedRow: string = '.' + cls.wrapped + row,
                 column: string = '.' + cls.column,
@@ -3116,11 +3124,26 @@ function renderStyleRule(
                     Property('margin-left', xPx),
                 ]),
                 renderStyle(options, pseudo, `${class_}${paragraph}`, [
-                    Property('line-height', `calc(1em + ${rule.y}px)`),
+                    Property(
+                        'line-height',
+                        `calc(1em + ${
+                            typeof rule.y === 'number' ? rule.y : rule.y.rem
+                        }${typeof rule.y === 'number' ? 'px' : 'rem'})`
+                    ),
                 ]),
                 renderStyle(options, pseudo, `textarea${any}${class_}`, [
-                    Property('line-height', `calc(1em + ${rule.y}px)`),
-                    Property('height', `calc(100% + ${rule.y}px)`),
+                    Property(
+                        'line-height',
+                        `calc(1em + ${
+                            typeof rule.y === 'number' ? rule.y : rule.y.rem
+                        }${typeof rule.y === 'number' ? 'px' : 'rem'})`
+                    ),
+                    Property(
+                        'height',
+                        `calc(100% + ${
+                            typeof rule.y === 'number' ? rule.y : rule.y.rem
+                        }${typeof rule.y === 'number' ? 'px' : 'rem'})`
+                    ),
                 ]),
                 // renderStyle(options, pseudo, `${class_}${paragraph} > ${any}`, [
                 //     { key: 'margin-right', value: xPx },
@@ -3145,7 +3168,13 @@ function renderStyleRule(
                     Property('width', `0`),
                     Property(
                         'margin-top',
-                        Math.floor(-1 * (rule.y / 2)) + 'px'
+                        `${Math.floor(
+                            -1 *
+                                ((typeof rule.y === 'number'
+                                    ? rule.y
+                                    : rule.y.rem) /
+                                    2)
+                        )}${typeof rule.y === 'number' ? 'px' : 'rem'}`
                     ),
                 ]),
                 renderStyle(options, pseudo, `${class_}${paragraph}::before`, [
@@ -3155,7 +3184,13 @@ function renderStyleRule(
                     Property('width', `0`),
                     Property(
                         'margin-top',
-                        Math.floor(-1 * (rule.y / 2)) + 'px'
+                        `${Math.floor(
+                            -1 *
+                                ((typeof rule.y === 'number'
+                                    ? rule.y
+                                    : rule.y.rem) /
+                                    2)
+                        )}${typeof rule.y === 'number' ? 'px' : 'rem'}`
                     ),
                 ])
             );
@@ -3482,7 +3517,11 @@ function formatColorClass(
     }
 }
 
-function spacingName(x: number, y: number): string {
+function spacingName(x: number | Rem, y: number | Rem): string {
+    if (typeof x !== 'number' && typeof y !== 'number')
+        return `spacing-${Math.round(x.rem * 10)}-${Math.round(
+            y.rem * 10
+        )}-rem`;
     return `spacing-${x}-${y}`;
 }
 

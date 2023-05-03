@@ -25,6 +25,7 @@ import {
     Attributes,
     NodeName,
     LayoutContext,
+    Rem,
 } from './internal/data.ts';
 import * as Element_ from './element.ts';
 import * as Internal from './internal/model.ts';
@@ -271,7 +272,9 @@ function WrappedRow({
                                 typeof top === 'number' &&
                                 typeof right === 'number' &&
                                 typeof bottom === 'number' &&
-                                typeof left === 'number'
+                                typeof left === 'number' &&
+                                typeof x === 'number' &&
+                                typeof y === 'number'
                             )
                                 if (right >= x / 2 && bottom >= y / 2) {
                                     const newTop = top - y / 2,
@@ -300,13 +303,18 @@ function WrappedRow({
                                 typeof top !== 'number' &&
                                 typeof right !== 'number' &&
                                 typeof bottom !== 'number' &&
-                                typeof left !== 'number'
+                                typeof left !== 'number' &&
+                                typeof x !== 'number' &&
+                                typeof y !== 'number'
                             )
-                                if (right.rem >= x / 2 && bottom.rem >= y / 2) {
-                                    const newTop = top.rem - y / 2,
-                                        newRight = right.rem - x / 2,
-                                        newBottom = bottom.rem - y / 2,
-                                        newLeft = left.rem - x / 2;
+                                if (
+                                    right.rem >= x.rem / 2 &&
+                                    bottom.rem >= y.rem / 2
+                                ) {
+                                    const newTop = top.rem - y.rem / 2,
+                                        newRight = right.rem - x.rem / 2,
+                                        newBottom = bottom.rem - y.rem / 2,
+                                        newLeft = left.rem - x.rem / 2;
                                     return Just(
                                         StyleClass(
                                             Flag.padding,
@@ -351,8 +359,9 @@ function WrappedRow({
 
                 case MaybeType.Nothing: {
                     // Not enough space in padding to compensate for spacing
-                    const halfX = (x / 2) * -1,
-                        halfY = (y / 2) * -1;
+                    const halfX =
+                            ((typeof x === 'number' ? x : x.rem) / 2) * -1,
+                        halfY = ((typeof y === 'number' ? y : y.rem) / 2) * -1;
                     return (
                         <LayoutWith
                             options={[Element_.noStaticStyleSheet]}
@@ -370,15 +379,22 @@ function WrappedRow({
                                     ),
                                     style(
                                         'margin',
-                                        `${halfY.toString()}px ${halfX.toString()}px`
+                                        typeof x === 'number' &&
+                                            typeof y === 'number'
+                                            ? `${halfY.toString()}px ${halfX.toString()}px`
+                                            : `${halfY.toString()}rem ${halfX.toString()}rem`
                                     ),
                                     style(
                                         'width',
-                                        `calc(100% + ${x.toString()}px)`
+                                        typeof x === 'number'
+                                            ? `calc(100% + ${x.toString()}px)`
+                                            : `calc(100% + ${x.toString()}rem)`
                                     ),
                                     style(
                                         'height',
-                                        `calc(100% + ${y.toString()}px)`
+                                        typeof y === 'number'
+                                            ? `calc(100% + ${y.toString()}px)`
+                                            : `calc(100% + ${y.toString()}rem)`
                                     ),
                                     StyleClass(
                                         Flag.spacing,
@@ -506,7 +522,13 @@ function TableHelper({
     const template: Attribute = StyleClass(
         Flag.gridTemplate,
         GridTemplateStyle(
-            [Px(sX), Px(sY)],
+            (() => {
+                if (typeof sX === 'number' && typeof sY === 'number')
+                    return [Px(sX), Px(sY)];
+                if (typeof sX !== 'number' && typeof sY !== 'number')
+                    return [Rem(sX.rem), Rem(sY.rem)];
+                return [Px(0), Px(0)];
+            })(),
             config.columns.map(columnWidth),
             config.data.map(() => Content())
         )
