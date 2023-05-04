@@ -225,6 +225,7 @@ import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import * as Internal from './internal/model.ts';
 import { style } from './elements/attributes.ts';
+import { oneRem } from './units/rem.ts';
 
 interface Column<T extends Record<string, unknown>> {
     header: Element;
@@ -1278,7 +1279,7 @@ function padding(x: number | Rem): Attribute {
         Flag.padding,
         PaddingStyle(
             typeof x !== 'number'
-                ? `p-${Math.round(x.rem * 10)}-rem`
+                ? `p-${Math.round(x.rem * oneRem)}-rem`
                 : 'p-' + x,
             x,
             x,
@@ -1297,8 +1298,8 @@ function paddingXY(x: number | Rem, y: number | Rem): Attribute {
               Flag.padding,
               PaddingStyle(
                   typeof x !== 'number' && typeof y !== 'number'
-                      ? `p-${Math.round(x.rem * 10)}-${Math.round(
-                            y.rem * 10
+                      ? `p-${Math.round(x.rem * oneRem)}-${Math.round(
+                            y.rem * oneRem
                         )}-rem`
                       : `p-${x}-${y}`,
                   y,

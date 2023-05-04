@@ -32,6 +32,7 @@ import {
 import * as Flag from '../internal/flag.ts';
 import * as Internal from '../internal/model.ts';
 import { classes } from '../internal/style.ts';
+import { oneRem } from '../units/rem.ts';
 
 const solid: Attribute = Class(Flag.borderStyle, classes.borderSolid),
     dashed: Attribute = Class(Flag.borderStyle, classes.borderDashed),
@@ -54,7 +55,7 @@ function width(v: number | Rem): Attribute {
         Flag.borderWidth,
         BorderWidth(
             typeof v !== 'number'
-                ? `b-${Math.round(v.rem * 10)}-rem`
+                ? `b-${Math.round(v.rem * oneRem)}-rem`
                 : `b-${v}`,
             v,
             v,
@@ -70,7 +71,9 @@ function widthXY(x: number | Rem, y: number | Rem): Attribute {
         Flag.borderWidth,
         BorderWidth(
             typeof x !== 'number' && typeof y !== 'number'
-                ? `b-${Math.round(x.rem * 10)}-${Math.round(y.rem * 10)}-rem`
+                ? `b-${Math.round(x.rem * oneRem)}-${Math.round(
+                      y.rem * oneRem
+                  )}-rem`
                 : `b-${x}-${y}`,
             y,
             x,
@@ -125,10 +128,10 @@ function widthEach({
                     typeof left !== 'number' &&
                     typeof right !== 'number' &&
                     typeof top !== 'number'
-                    ? `b-${Math.round(top.rem * 10)}-${Math.round(
-                          right.rem * 10
-                      )}-${Math.round(bottom.rem * 10)}-${Math.round(
-                          left.rem * 10
+                    ? `b-${Math.round(top.rem * oneRem)}-${Math.round(
+                          right.rem * oneRem
+                      )}-${Math.round(bottom.rem * oneRem)}-${Math.round(
+                          left.rem * oneRem
                       )}-rem`
                     : `b-${top}-${right}-${bottom}-${left}`,
                 top,
@@ -146,7 +149,7 @@ function rounded(radius: number | Rem): Attribute {
         Flag.borderRound,
         Single(
             typeof radius !== 'number'
-                ? `br-${Math.round(radius.rem * 10)}-rem`
+                ? `br-${Math.round(radius.rem * oneRem)}-rem`
                 : `br-${radius}`,
             'border-radius',
             typeof radius !== 'number' ? `${radius.rem}rem` : `${radius}px`
@@ -173,10 +176,10 @@ function roundEach({
                 typeof topRight !== 'number' &&
                 typeof bottomLeft !== 'number' &&
                 typeof bottomRight !== 'number'
-                ? `br-${Math.round(topLeft.rem * 10)}-${Math.round(
-                      topRight.rem * 10
-                  )}${Math.round(bottomLeft.rem * 10)}-${Math.round(
-                      bottomRight.rem * 10
+                ? `br-${Math.round(topLeft.rem * oneRem)}-${Math.round(
+                      topRight.rem * oneRem
+                  )}${Math.round(bottomLeft.rem * oneRem)}-${Math.round(
+                      bottomRight.rem * oneRem
                   )}-rem`
                 : `br-${topLeft}-${topRight}${bottomLeft}-${bottomRight}`,
             'border-radius',

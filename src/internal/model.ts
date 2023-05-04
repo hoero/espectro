@@ -84,6 +84,7 @@ import {
 } from './data.ts';
 import { isEmpty, isNumber, isPlainObject, isString } from '../utils/utils.ts';
 import { rgba } from '../color.ts';
+import { oneRem } from '../units/rem.ts';
 
 const { Just, Nothing, map, withDefault, MaybeType } = elmish.Maybe;
 
@@ -1195,7 +1196,7 @@ function gatherAttrRecursive(
 
                 case Lengths.Rem: {
                     const val = attribute_.width.rem;
-                    const name = `width-${Math.round(val * 10)}-rem`;
+                    const name = `width-${Math.round(val * oneRem)}-rem`;
                     return gatherAttrRecursive(
                         `${cls.widthExact} ${name} ${classes}`,
                         node,
@@ -1302,7 +1303,7 @@ function gatherAttrRecursive(
 
                 case Lengths.Rem: {
                     const val = attribute_.height.rem;
-                    const name = `height-${Math.round(val * 10)}-rem`;
+                    const name = `height-${Math.round(val * oneRem)}-rem`;
                     return gatherAttrRecursive(
                         `${cls.heightExact} ${name} ${classes}`,
                         node,
@@ -1546,7 +1547,7 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
 
         case Lengths.Rem: {
             const val = w.rem;
-            const name = `width-${val * 10}-rem`;
+            const name = `width-${val * oneRem}-rem`;
             return [
                 [Flag.none],
                 `${cls.widthExact} ${name}`,
@@ -1650,7 +1651,7 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
 
         case Lengths.Rem: {
             const val = h.rem;
-            const name = `height-${Math.round(val * 10)}-rem`;
+            const name = `height-${Math.round(val * oneRem)}-rem`;
             return [
                 [Flag.none],
                 `${cls.heightExact} ${name}`,
@@ -3021,7 +3022,7 @@ function renderStyleRule(
             return renderStyle(
                 options,
                 pseudo,
-                '.font-size-' + Math.round(rule.i.rem * 10) + '-rem',
+                '.font-size-' + Math.round(rule.i.rem * oneRem) + '-rem',
                 [Property('font-size', rule.i.rem + 'rem')]
             );
         }
@@ -3398,7 +3399,7 @@ function lengthClassName(x: Length): string {
             return `${Math.round(x.px)}px`;
 
         case Lengths.Rem:
-            return `${Math.round(x.rem * 10)}rem`;
+            return `${Math.round(x.rem * oneRem)}rem`;
 
         case Lengths.Content:
             return `auto`;
@@ -3524,8 +3525,8 @@ function formatColorClass(
 
 function spacingName(x: number | Rem, y: number | Rem): string {
     if (typeof x !== 'number' && typeof y !== 'number')
-        return `spacing-${Math.round(x.rem * 10)}-${Math.round(
-            y.rem * 10
+        return `spacing-${Math.round(x.rem * oneRem)}-${Math.round(
+            y.rem * oneRem
         )}-rem`;
     return `spacing-${x}-${y}`;
 }
@@ -3542,9 +3543,11 @@ function paddingName(
         typeof bottom !== 'number' &&
         typeof left !== 'number'
     )
-        return `pad-${Math.round(top.rem * 10)}-${Math.round(
-            right.rem * 10
-        )}-${Math.round(bottom.rem * 10)}-${Math.round(left.rem * 10)}-rem`;
+        return `pad-${Math.round(top.rem * oneRem)}-${Math.round(
+            right.rem * oneRem
+        )}-${Math.round(bottom.rem * oneRem)}-${Math.round(
+            left.rem * oneRem
+        )}-rem`;
     return `pad-${top}-${right}-${bottom}-${left}`;
 }
 
@@ -3560,10 +3563,10 @@ function paddingNameFloat(
         typeof bottom !== 'number' &&
         typeof left !== 'number'
     )
-        return `pad-${floatClass(Math.round(top.rem * 10))}-${floatClass(
-            Math.round(right.rem * 10)
-        )}-${floatClass(Math.round(bottom.rem * 10))}-${floatClass(
-            Math.round(left.rem * 10)
+        return `pad-${floatClass(Math.round(top.rem * oneRem))}-${floatClass(
+            Math.round(right.rem * oneRem)
+        )}-${floatClass(Math.round(bottom.rem * oneRem))}-${floatClass(
+            Math.round(left.rem * oneRem)
         )}`;
     if (
         typeof top === 'number' &&
@@ -3601,7 +3604,7 @@ function getStyleName(style: Style): string {
         case Styles.FontSize: {
             if (typeof style.i === 'number')
                 return `font-size-${Math.round(style.i)}`;
-            return `font-size-${Math.round(style.i.rem * 10)}-rem`;
+            return `font-size-${Math.round(style.i.rem * oneRem)}-rem`;
         }
 
         case Styles.Single:

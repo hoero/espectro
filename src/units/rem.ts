@@ -1,5 +1,8 @@
 import { Device, Breakpoints, respond } from '../responsive.ts';
 
+/**This defines what 1rem is. */
+const oneRem = 10;
+
 /**
  * This allows the user to use Points for fonts as we usually use in graphics software.
  * The calculation converts the Points value to pixels for later use with rem.
@@ -21,4 +24,4 @@ function unitless(point: number, value: number): number {
     return pt(point) * value;
 }
 
-export { pt, rpts, unitless };
+export { oneRem, pt, rpts, unitless };
