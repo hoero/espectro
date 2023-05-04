@@ -3549,14 +3549,32 @@ function paddingName(
 }
 
 function paddingNameFloat(
-    top: number,
-    right: number,
-    bottom: number,
-    left: number
+    top: number | Rem,
+    right: number | Rem,
+    bottom: number | Rem,
+    left: number | Rem
 ): string {
-    return `pad-${floatClass(top)}-${floatClass(right)}-${floatClass(
-        bottom
-    )}-${floatClass(left)}`;
+    if (
+        typeof top !== 'number' &&
+        typeof right !== 'number' &&
+        typeof bottom !== 'number' &&
+        typeof left !== 'number'
+    )
+        return `pad-${floatClass(Math.round(top.rem * 10))}-${floatClass(
+            Math.round(right.rem * 10)
+        )}-${floatClass(Math.round(bottom.rem * 10))}-${floatClass(
+            Math.round(left.rem * 10)
+        )}`;
+    if (
+        typeof top === 'number' &&
+        typeof right === 'number' &&
+        typeof bottom === 'number' &&
+        typeof left === 'number'
+    )
+        return `pad-${floatClass(top)}-${floatClass(right)}-${floatClass(
+            bottom
+        )}-${floatClass(left)}`;
+    return '';
 }
 
 function getStyleName(style: Style): string {

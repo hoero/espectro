@@ -41,6 +41,7 @@ import {
     Class,
     asRow,
     MinContent,
+    Rem,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
 import * as Internal from '../internal/model.ts';
@@ -462,10 +463,8 @@ function Slider({
                 return true;
             return false;
         })(),
-        [spacingX, spacingY]: [number, number] = Internal.getSpacing(
-            attributes,
-            [5, 5]
-        ),
+        [spacingX, spacingY]: [number | Rem, number | Rem] =
+            Internal.getSpacing(attributes, [5, 5]),
         factor = (value - min) / (max - min),
         thumbWidthString: string = (() => {
             const w: number = withDefault(0, Internal.getLength(width_));
@@ -995,18 +994,55 @@ function TextHelper({
                         // The - 3 is here to prevent accidental triggering of scrollbars
                         // when things are off by a pixel or two.
                         // (or at least when the browser *thinks* it's off by a pixel or two)
-                        return Just({
-                            top: Math.max(0, Math.floor(attr.style.top - 3)),
-                            right: Math.max(
-                                0,
-                                Math.floor(attr.style.right - 3)
-                            ),
-                            bottom: Math.max(
-                                0,
-                                Math.floor(attr.style.bottom - 3)
-                            ),
-                            left: Math.max(0, Math.floor(attr.style.left - 3)),
-                        });
+                        if (
+                            typeof attr.style.top === 'number' &&
+                            typeof attr.style.right === 'number' &&
+                            typeof attr.style.bottom === 'number' &&
+                            typeof attr.style.left === 'number'
+                        )
+                            return Just({
+                                top: Math.max(
+                                    0,
+                                    Math.floor(attr.style.top - 3)
+                                ),
+                                right: Math.max(
+                                    0,
+                                    Math.floor(attr.style.right - 3)
+                                ),
+                                bottom: Math.max(
+                                    0,
+                                    Math.floor(attr.style.bottom - 3)
+                                ),
+                                left: Math.max(
+                                    0,
+                                    Math.floor(attr.style.left - 3)
+                                ),
+                            });
+                        if (
+                            typeof attr.style.top !== 'number' &&
+                            typeof attr.style.right !== 'number' &&
+                            typeof attr.style.bottom !== 'number' &&
+                            typeof attr.style.left !== 'number'
+                        )
+                            return Just({
+                                top: Math.max(
+                                    0,
+                                    Math.floor(attr.style.top.rem - 3)
+                                ),
+                                right: Math.max(
+                                    0,
+                                    Math.floor(attr.style.right.rem - 3)
+                                ),
+                                bottom: Math.max(
+                                    0,
+                                    Math.floor(attr.style.bottom.rem - 3)
+                                ),
+                                left: Math.max(
+                                    0,
+                                    Math.floor(attr.style.left.rem - 3)
+                                ),
+                            });
+                        return Nothing();
 
                     default:
                         return Nothing();
@@ -1151,7 +1187,7 @@ function NewPassword({
     );
 }
 
-function currentPassword({
+function CurrentPassword({
     attributes,
     text,
     placeholder,
@@ -1777,7 +1813,7 @@ export {
     Placeholder,
     Username,
     NewPassword,
-    currentPassword,
+    CurrentPassword,
     Email,
     Search,
     SpellChecked,

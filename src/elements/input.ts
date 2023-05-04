@@ -167,6 +167,7 @@ import {
     paddingXY,
     pointer,
     px,
+    rem,
     rotate,
     row as row_,
     scrollbarY,
@@ -204,6 +205,7 @@ import {
     asRow,
     MinContent,
     Color,
+    Rem,
 } from '../internal/data.ts';
 import { classes } from '../internal/style.ts';
 import * as Internal from '../internal/model.ts';
@@ -706,10 +708,8 @@ function slider(
                 return true;
             return false;
         })(),
-        [spacingX, spacingY]: [number, number] = Internal.getSpacing(
-            attributes,
-            [5, 5]
-        ),
+        [spacingX, spacingY]: [number | Rem, number | Rem] =
+            Internal.getSpacing(attributes, [5, 5]),
         factor = (input.value - input.min) / (input.max - input.min),
         thumbWidthString: string = (() => {
             const w: number = withDefault(0, Internal.getLength(width_));
@@ -1167,18 +1167,55 @@ function textHelper(
                         // The - 3 is here to prevent accidental triggering of scrollbars
                         // when things are off by a pixel or two.
                         // (or at least when the browser *thinks* it's off by a pixel or two)
-                        return Just({
-                            top: Math.max(0, Math.floor(attr.style.top - 3)),
-                            right: Math.max(
-                                0,
-                                Math.floor(attr.style.right - 3)
-                            ),
-                            bottom: Math.max(
-                                0,
-                                Math.floor(attr.style.bottom - 3)
-                            ),
-                            left: Math.max(0, Math.floor(attr.style.left - 3)),
-                        });
+                        if (
+                            typeof attr.style.top === 'number' &&
+                            typeof attr.style.right === 'number' &&
+                            typeof attr.style.bottom === 'number' &&
+                            typeof attr.style.left === 'number'
+                        )
+                            return Just({
+                                top: Math.max(
+                                    0,
+                                    Math.floor(attr.style.top - 3)
+                                ),
+                                right: Math.max(
+                                    0,
+                                    Math.floor(attr.style.right - 3)
+                                ),
+                                bottom: Math.max(
+                                    0,
+                                    Math.floor(attr.style.bottom - 3)
+                                ),
+                                left: Math.max(
+                                    0,
+                                    Math.floor(attr.style.left - 3)
+                                ),
+                            });
+                        if (
+                            typeof attr.style.top !== 'number' &&
+                            typeof attr.style.right !== 'number' &&
+                            typeof attr.style.bottom !== 'number' &&
+                            typeof attr.style.left !== 'number'
+                        )
+                            return Just({
+                                top: Math.max(
+                                    0,
+                                    Math.floor(attr.style.top.rem - 3)
+                                ),
+                                right: Math.max(
+                                    0,
+                                    Math.floor(attr.style.right.rem - 3)
+                                ),
+                                bottom: Math.max(
+                                    0,
+                                    Math.floor(attr.style.bottom.rem - 3)
+                                ),
+                                left: Math.max(
+                                    0,
+                                    Math.floor(attr.style.left.rem - 3)
+                                ),
+                            });
+                        return Nothing();
 
                     default:
                         return Nothing();
@@ -1270,16 +1307,16 @@ function renderPlaceholder(
 /** Because textareas are now shadowed, where they're rendered twice, we need to move the literal text area up because spacing is based on line height.
  */
 function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
-    const gathered: Maybe<number> = attributes.reduceRight(
-        (acc: Maybe<number>, attr: Attribute) => {
+    const gathered: Maybe<number | Rem> = attributes.reduceRight(
+        (acc: Maybe<number | Rem>, attr: Attribute) => {
             return gatherSpacing(attr, acc);
         },
         Nothing()
     );
     function gatherSpacing(
         attr: Attribute,
-        found: Maybe<number>
-    ): Maybe<number> {
+        found: Maybe<number | Rem>
+    ): Maybe<number | Rem> {
         switch (attr.type) {
             case Attributes.StyleClass:
                 switch (attr.style.type) {
@@ -1305,7 +1342,13 @@ function calcMoveToCompensateForPadding(attributes: Attribute[]): Attribute {
             return NoAttribute();
 
         case MaybeType.Just:
-            return moveUp(Math.floor(gathered.value / 2));
+            return moveUp(
+                Math.floor(
+                    (typeof gathered.value === 'number'
+                        ? gathered.value
+                        : gathered.value.rem) / 2
+                )
+            );
     }
 }
 
@@ -1523,39 +1566,97 @@ function redistributeOver(
                         els.cover = [attr, ...els.cover];
                         return els;
                     } else {
-                        const newHeight = style(
+                        const [top, right, bottom, left] = (() => {
+                                if (
+                                    typeof attr.style.top === 'number' &&
+                                    typeof attr.style.right === 'number' &&
+                                    typeof attr.style.bottom === 'number' &&
+                                    typeof attr.style.left === 'number'
+                                )
+                                    return [
+                                        attr.style.top,
+                                        attr.style.right,
+                                        attr.style.bottom,
+                                        attr.style.left,
+                                    ];
+                                return [0, 0, 0, 0];
+                            })(),
+                            [topRem, rightRem, bottomRem, leftRem] = (() => {
+                                if (
+                                    typeof attr.style.top !== 'number' &&
+                                    typeof attr.style.right !== 'number' &&
+                                    typeof attr.style.bottom !== 'number' &&
+                                    typeof attr.style.left !== 'number'
+                                )
+                                    return [
+                                        attr.style.top.rem,
+                                        attr.style.right.rem,
+                                        attr.style.bottom.rem,
+                                        attr.style.left.rem,
+                                    ];
+                                return [0, 0, 0, 0];
+                            })(),
+                            newHeight = style(
                                 'height',
-                                `calc(1.0em + ${
-                                    2 *
-                                    Math.min(attr.style.top, attr.style.bottom)
-                                }px)"`
+                                typeof attr.style.top === 'number' &&
+                                    typeof attr.style.bottom === 'number'
+                                    ? `calc(1.0em + ${
+                                          2 * Math.min(top, bottom)
+                                      }px)`
+                                    : `calc(1.0em + ${
+                                          2 * Math.min(topRem, bottomRem)
+                                      }rem)`
                             ),
                             newLineHeight = style(
                                 'line-height',
-                                `calc(1.0em + ${
-                                    2 *
-                                    Math.min(attr.style.top, attr.style.bottom)
-                                }px)"`
+                                typeof attr.style.top === 'number' &&
+                                    typeof attr.style.bottom === 'number'
+                                    ? `calc(1.0em + ${
+                                          2 * Math.min(top, bottom)
+                                      }px)`
+                                    : `calc(1.0em + ${
+                                          2 * Math.min(topRem, bottomRem)
+                                      }rem)`
                             ),
                             newTop =
-                                attr.style.top -
-                                Math.min(attr.style.top, attr.style.bottom),
+                                typeof attr.style.top === 'number' &&
+                                typeof attr.style.bottom === 'number'
+                                    ? top - Math.min(top, bottom)
+                                    : topRem - Math.min(topRem, bottomRem),
                             newBottom =
-                                attr.style.bottom -
-                                Math.min(attr.style.top, attr.style.bottom),
+                                typeof attr.style.top === 'number' &&
+                                typeof attr.style.bottom === 'number'
+                                    ? bottom - Math.min(top, bottom)
+                                    : bottomRem - Math.min(topRem, bottomRem),
                             reducedVerticalPadding = StyleClass(
                                 Flag.padding,
                                 PaddingStyle(
                                     Internal.paddingNameFloat(
-                                        newTop,
-                                        attr.style.right,
-                                        newBottom,
-                                        attr.style.left
+                                        typeof attr.style.top === 'number'
+                                            ? newTop
+                                            : rem(newTop),
+                                        typeof attr.style.right === 'number'
+                                            ? right
+                                            : rem(rightRem),
+                                        typeof attr.style.bottom === 'number'
+                                            ? newBottom
+                                            : rem(newBottom),
+                                        typeof attr.style.left === 'number'
+                                            ? left
+                                            : rem(leftRem)
                                     ),
-                                    newTop,
-                                    attr.style.right,
-                                    newBottom,
-                                    attr.style.left
+                                    typeof attr.style.top === 'number'
+                                        ? newTop
+                                        : rem(newTop),
+                                    typeof attr.style.right === 'number'
+                                        ? right
+                                        : rem(rightRem),
+                                    typeof attr.style.bottom === 'number'
+                                        ? newBottom
+                                        : rem(newBottom),
+                                    typeof attr.style.left === 'number'
+                                        ? left
+                                        : rem(leftRem)
                                 )
                             );
                         els.parent = [reducedVerticalPadding, ...els.parent];
