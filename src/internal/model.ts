@@ -800,13 +800,37 @@ function gatherAttrRecursive(
 
         switch (class_.type) {
             case MaybeType.Nothing: {
-                const classes_ = attrs.class;
+                const classes_ = (() => {
+                    if (typeof attrs.class === 'string') return attrs.class;
+                    if (
+                        !!attrs.class &&
+                        typeof attrs.class === 'object' &&
+                        attrs.class.constructor === Object
+                    ) {
+                        if (typeof attrs.class.value === 'string')
+                            return attrs.class.value;
+                        return '';
+                    }
+                    return '';
+                })();
                 attrs.class = classes + ' ' + classes_;
                 return Gathered(node, attrs, styles, children, has);
             }
 
             case MaybeType.Just: {
-                const classes_ = attrs.class;
+                const classes_ = (() => {
+                    if (typeof attrs.class === 'string') return attrs.class;
+                    if (
+                        !!attrs.class &&
+                        typeof attrs.class === 'object' &&
+                        attrs.class.constructor === Object
+                    ) {
+                        if (typeof attrs.class.value === 'string')
+                            return attrs.class.value;
+                        return '';
+                    }
+                    return '';
+                })();
                 attrs.class = classes + ' ' + class_.value + ' ' + classes_;
                 return Gathered(
                     node,
@@ -834,7 +858,35 @@ function gatherAttrRecursive(
                 remaining
             );
 
-        case Attributes.Attr:
+        case Attributes.Attr: {
+            const classes_ = (() => {
+                if (typeof attrs.class === 'string') return attrs.class;
+                if (
+                    !!attrs.class &&
+                    typeof attrs.class === 'object' &&
+                    attrs.class.constructor === Object
+                ) {
+                    if (typeof attrs.class.value === 'string')
+                        return attrs.class.value;
+                    return '';
+                }
+                return '';
+            })();
+            const attrClasses_ = (() => {
+                if (typeof attribute_.attr.class === 'string')
+                    return attribute_.attr.class;
+                if (
+                    !!attribute_.attr.class &&
+                    typeof attribute_.attr.class === 'object' &&
+                    attribute_.attr.class.constructor === Object
+                ) {
+                    if (typeof attribute_.attr.class.value === 'string')
+                        return attribute_.attr.class.value;
+                    return '';
+                }
+                return '';
+            })();
+            attribute_.attr.class = attrClasses_ + ' ' + classes_;
             return gatherAttrRecursive(
                 classes,
                 node,
@@ -845,6 +897,7 @@ function gatherAttrRecursive(
                 children,
                 remaining
             );
+        }
 
         case Attributes.Describe:
             switch (attribute_.description.type) {
