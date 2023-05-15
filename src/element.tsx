@@ -388,13 +388,13 @@ function WrappedRow({
                                         'width',
                                         typeof x === 'number'
                                             ? `calc(100% + ${x.toString()}px)`
-                                            : `calc(100% + ${x.toString()}rem)`
+                                            : `calc(100% + ${x.rem.toString()}rem)`
                                     ),
                                     style(
                                         'height',
                                         typeof y === 'number'
                                             ? `calc(100% + ${y.toString()}px)`
-                                            : `calc(100% + ${y.toString()}rem)`
+                                            : `calc(100% + ${y.rem.toString()}rem)`
                                     ),
                                     StyleClass(
                                         Flag.spacing,

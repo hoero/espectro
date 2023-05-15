@@ -886,14 +886,14 @@ function gatherAttrRecursive(
                 }
                 return '';
             })();
-            attribute_.attr.class = attrClasses_ + ' ' + classes_;
+            attrs.class = attrClasses_ + ' ' + classes_;
             return gatherAttrRecursive(
                 classes,
                 node,
                 has,
                 transform,
                 styles,
-                { ...attrs, ...attribute_.attr },
+                { ...attribute_.attr, ...attrs },
                 children,
                 remaining
             );
