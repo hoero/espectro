@@ -220,6 +220,7 @@ import {
     PseudoSelector,
     PseudoClass,
     LayoutContext,
+    Viewport,
 } from './internal/data.ts';
 import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
@@ -315,6 +316,9 @@ const minContent: MinContent = MinContent();
 
 /** Set supported CSS property to max-content */
 const maxContent: MaxContent = MaxContent();
+
+/** Grow element to fit the viewport. */
+const viewport: Length = Viewport();
 
 /**
  * Elm UI embeds two StyleSheets, one that is constant, and one that changes dynamically based on styles collected from the elements being rendered.
@@ -466,6 +470,11 @@ function maximum(value: number, length: Length): Max {
  */
 function fillPortion(value: number): Fill {
     return Fill(value);
+}
+
+/** Sets the dimension based on the viewport dimensions.*/
+function vp(value: number): Viewport {
+    return Viewport(Math.round(value));
 }
 
 const layoutAttrs: Attribute = Internal.htmlClass(
@@ -1492,6 +1501,8 @@ export {
     fillPortion,
     maximum,
     minimum,
+    vp,
+    viewport,
     explain,
     padding,
     paddingXY,

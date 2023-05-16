@@ -992,6 +992,7 @@ export enum Lengths {
     Max,
     MinContent,
     MaxContent,
+    Viewport,
 }
 
 export interface Px {
@@ -1065,6 +1066,15 @@ export function MaxContent(): MaxContent {
     return { type: Lengths.MaxContent };
 }
 
+export interface Viewport {
+    type: Lengths.Viewport;
+    i?: number;
+}
+
+export function Viewport(i?: number): Viewport {
+    return { type: Lengths.Viewport, i };
+}
+
 export type Length =
     | Px
     | Rem
@@ -1073,7 +1083,8 @@ export type Length =
     | Min
     | Max
     | MinContent
-    | MaxContent;
+    | MaxContent
+    | Viewport;
 
 export enum Axis {
     XAxis,

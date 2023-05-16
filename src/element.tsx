@@ -147,6 +147,11 @@ function LayoutWith({
     );
 }
 
+/** When you want to render exactly nothing. */
+function None() {
+    return <Text>{''}</Text>;
+}
+
 /**
  * Create some plain text. This component is used by default on the El component to render any value that is not a node as a string.
  *
@@ -740,7 +745,7 @@ function Paragraph({
     children,
 }: {
     attributes: Attribute[];
-    children: preact.ComponentChild;
+    children: preact.ComponentChild[];
 }) {
     return (
         <LayoutWith
@@ -973,6 +978,7 @@ function DownloadCore({
 export {
     Layout,
     LayoutWith,
+    None,
     Text,
     El,
     Row,

@@ -1687,6 +1687,24 @@ function renderWidth(w: Length): [Flag.Field[], string, Style[]] {
             const name = 'max-width';
             return [[Flag.none], name, [Single(name, name, 'max-content')]];
         }
+
+        case Lengths.Viewport: {
+            const name =
+                typeof w.i === 'undefined'
+                    ? 'width-100-vw'
+                    : `width-${Math.round(w.i)}-vw`;
+            return [
+                [Flag.none],
+                name,
+                [
+                    Single(
+                        name,
+                        'width',
+                        typeof w.i === 'undefined' ? '100vw' : `${w.i}vw`
+                    ),
+                ],
+            ];
+        }
     }
 }
 
@@ -1800,6 +1818,26 @@ function renderHeight(h: Length): [Flag.Field[], string, Style[]] {
         case Lengths.MaxContent: {
             const name = 'max-height';
             return [[Flag.none], name, [Single(name, name, 'max-content')]];
+        }
+
+        case Lengths.Viewport: {
+            const name =
+                typeof h.i === 'undefined'
+                    ? 'height-100-vh'
+                    : `height-${Math.round(h.i)}-vh`;
+            return [
+                [Flag.none],
+                name,
+                [
+                    Single(
+                        name,
+                        'min-height',
+                        typeof h.i === 'undefined'
+                            ? '100vh !important'
+                            : `${h.i}vh !important`
+                    ),
+                ],
+            ];
         }
     }
 }
@@ -3365,6 +3403,9 @@ function renderStyleRule(
 
                     case Lengths.MaxContent:
                         return 'max-content';
+
+                    case Lengths.Viewport:
+                        return '';
                 }
                 return '';
             };
@@ -3471,6 +3512,9 @@ function lengthClassName(x: Length): string {
 
         case Lengths.MaxContent:
             return `max-content`;
+
+        case Lengths.Viewport:
+            return typeof x.i === 'undefined' ? 'vp' : `${Math.round(x.i)}vp`;
     }
 }
 
