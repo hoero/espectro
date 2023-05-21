@@ -406,6 +406,8 @@ function getViewport(msDelay = 100) {
     const [viewport, setViewport] = hooks.useState({
         width: self.innerWidth,
         height: self.innerHeight,
+        x: self.scrollX,
+        y: self.scrollY,
     });
 
     hooks.useEffect(() => {
@@ -416,10 +418,13 @@ function getViewport(msDelay = 100) {
             setViewport({
                 width: self.innerWidth,
                 height: self.innerHeight,
+                x: self.scrollX,
+                y: self.scrollY,
             });
         }
 
         self.addEventListener('resize', handler);
+        self.addEventListener('scroll', handler);
 
         return () => self.removeEventListener('resize', handler);
     }, []);
@@ -428,7 +433,7 @@ function getViewport(msDelay = 100) {
 }
 
 function px(value: number): Px {
-    return Px(Math.round(value));
+    return Px(value);
 }
 
 function rem(value: number): Rem {
