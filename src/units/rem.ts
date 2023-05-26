@@ -1,7 +1,16 @@
+import { Rem } from '../internal/data.ts';
 import { Device, Breakpoints, respond } from '../responsive.ts';
 
-/**This defines what 1rem is. */
+/**This defines what 1rem is in pixels. */
 const oneRem = 10;
+
+/**
+ * #### Responsive rems
+ * Same as rem function, but in this one you can define rems for specific device profiles using breakpoints.
+ */
+function rrems(device: Device, breakpoints: Breakpoints): Rem {
+    return Rem(respond(device, breakpoints));
+}
 
 /**
  * This allows the user to use Points for fonts as we usually use in graphics software.
@@ -24,4 +33,4 @@ function unitless(point: number, value: number): number {
     return pt(point) * value;
 }
 
-export { oneRem, pt, rpts, unitless };
+export { oneRem, rrems, pt, rpts, unitless };

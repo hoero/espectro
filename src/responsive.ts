@@ -139,7 +139,11 @@ function isBigDesktopLandscape(device: Device): boolean {
 function respond(device: Device, bps: Breakpoints): any {
     switch (device.class_) {
         case DeviceClass.Phone:
-            if (bps.phone || bps.phonePortrait || bps.phoneLandscape) {
+            if (
+                typeof bps.phone !== 'undefined' ||
+                typeof bps.phonePortrait !== 'undefined' ||
+                typeof bps.phoneLandscape !== 'undefined'
+            ) {
                 switch (device.orientation) {
                     case Orientation.Portrait:
                         return bps.phonePortrait
@@ -155,7 +159,11 @@ function respond(device: Device, bps: Breakpoints): any {
             return bps.default;
 
         case DeviceClass.Tablet:
-            if (bps.tablet || bps.tabletPortrait || bps.tabletLandscape) {
+            if (
+                typeof bps.tablet !== 'undefined' ||
+                typeof bps.tabletPortrait !== 'undefined' ||
+                typeof bps.tabletLandscape !== 'undefined'
+            ) {
                 switch (device.orientation) {
                     case Orientation.Portrait:
                         return bps.tabletPortrait
@@ -172,7 +180,11 @@ function respond(device: Device, bps: Breakpoints): any {
             return bps.default;
 
         case DeviceClass.Desktop:
-            if (bps.desktop || bps.desktopPortrait || bps.desktopLandscape) {
+            if (
+                typeof bps.desktop !== 'undefined' ||
+                typeof bps.desktopPortrait !== 'undefined' ||
+                typeof bps.desktopLandscape !== 'undefined'
+            ) {
                 switch (device.orientation) {
                     case Orientation.Portrait:
                         return bps.desktopPortrait
@@ -190,9 +202,9 @@ function respond(device: Device, bps: Breakpoints): any {
 
         case DeviceClass.BigDesktop:
             if (
-                bps.bigDesktop ||
-                bps.bigDesktopPortrait ||
-                bps.bigDesktopLandscape
+                typeof bps.bigDesktop !== 'undefined' ||
+                typeof bps.bigDesktopPortrait !== 'undefined' ||
+                typeof bps.bigDesktopLandscape !== 'undefined'
             ) {
                 switch (device.orientation) {
                     case Orientation.Portrait:
