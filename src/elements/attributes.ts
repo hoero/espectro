@@ -76,8 +76,24 @@ function orient(orientation: string): Attribute {
     return Attr({ orient: orientation });
 }
 
+function id(id: string): Attribute {
+    return Attr({ id: id });
+}
+
 function class_(className: string): Attribute {
     return Attr({ class: className });
+}
+
+function classList(classes: [string, boolean][]): Attribute {
+    const classes_: string[] = [];
+
+    classes.forEach((item) => {
+        if (item[1]) {
+            classes_.push(item[0]);
+        }
+    });
+
+    return class_(classes_.join(' '));
 }
 
 function style(property: string, value: string): Attribute {
@@ -103,4 +119,6 @@ export {
     orient,
     style,
     class_,
+    classList,
+    id,
 };

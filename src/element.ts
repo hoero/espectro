@@ -1563,4 +1563,5 @@ export {
     jsx,
     jsxAttribute,
     getViewport,
+    debounce,
 };
