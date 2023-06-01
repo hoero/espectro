@@ -1272,20 +1272,24 @@ function rotate(angle: number): Attribute {
     return TransformComponent_(Flag.rotate, Rotate([0, 0, 1], angle));
 }
 
-function moveUp(y: number): Attribute {
-    return TransformComponent_(Flag.moveY, MoveY(y * -1));
+function moveUp(y: number | Rem): Attribute {
+    if (typeof y === 'number')
+        return TransformComponent_(Flag.moveY, MoveY(y * -1));
+    return TransformComponent_(Flag.moveY, MoveY(Rem(y.rem * -1)));
 }
 
-function moveDown(y: number): Attribute {
+function moveDown(y: number | Rem): Attribute {
     return TransformComponent_(Flag.moveY, MoveY(y));
 }
 
-function moveRight(x: number): Attribute {
+function moveRight(x: number | Rem): Attribute {
     return TransformComponent_(Flag.moveX, MoveX(x));
 }
 
-function moveLeft(x: number): Attribute {
-    return TransformComponent_(Flag.moveX, MoveX(x * -1));
+function moveLeft(x: number | Rem): Attribute {
+    if (typeof x === 'number')
+        return TransformComponent_(Flag.moveX, MoveX(x * -1));
+    return TransformComponent_(Flag.moveX, MoveX(Rem(x.rem * -1)));
 }
 
 function padding(x: number | Rem): Attribute {

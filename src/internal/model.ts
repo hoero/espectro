@@ -526,29 +526,71 @@ function transformClass(transform: Transformation): Maybe<string> {
 
         case Transformations.Moved:
             if (Array.isArray(transform.xyz)) {
-                return Just(
-                    `mv-${floatClass(transform.xyz[0])}-${floatClass(
-                        transform.xyz[1]
-                    )}-${floatClass(transform.xyz[2])}`
-                );
+                if (
+                    typeof transform.xyz[0] !== 'number' &&
+                    typeof transform.xyz[1] !== 'number' &&
+                    typeof transform.xyz[2] !== 'number'
+                )
+                    return Just(
+                        `mv-${floatClass(
+                            transform.xyz[0].rem * oneRem
+                        )}-${floatClass(
+                            transform.xyz[1].rem * oneRem
+                        )}-${floatClass(transform.xyz[2].rem * oneRem)}`
+                    );
+                if (
+                    typeof transform.xyz[0] === 'number' &&
+                    typeof transform.xyz[1] === 'number' &&
+                    typeof transform.xyz[2] === 'number'
+                )
+                    return Just(
+                        `mv-${floatClass(transform.xyz[0])}-${floatClass(
+                            transform.xyz[1]
+                        )}-${floatClass(transform.xyz[2])}`
+                    );
             }
             return Nothing();
 
         case Transformations.FullTransform:
             if (isPlainObject(transform) && !Array.isArray(transform)) {
-                return Just(
-                    `tfrm-${floatClass(transform.translate[0])}-${floatClass(
-                        transform.translate[1]
-                    )}-${floatClass(transform.translate[2])}-${floatClass(
-                        transform.scale[0]
-                    )}-${floatClass(transform.scale[1])}-${floatClass(
-                        transform.scale[2]
-                    )}-${floatClass(transform.rotate[0])}-${floatClass(
-                        transform.rotate[1]
-                    )}-${floatClass(transform.rotate[2])}-${floatClass(
-                        transform.angle
-                    )}`
-                );
+                if (
+                    typeof transform.translate[0] !== 'number' &&
+                    typeof transform.translate[1] !== 'number' &&
+                    typeof transform.translate[2] !== 'number'
+                )
+                    return Just(
+                        `tfrm-${floatClass(
+                            transform.translate[0].rem * oneRem
+                        )}-${floatClass(
+                            transform.translate[1].rem * oneRem
+                        )}-${floatClass(
+                            transform.translate[2].rem * oneRem
+                        )}-${floatClass(transform.scale[0])}-${floatClass(
+                            transform.scale[1]
+                        )}-${floatClass(transform.scale[2])}-${floatClass(
+                            transform.rotate[0]
+                        )}-${floatClass(transform.rotate[1])}-${floatClass(
+                            transform.rotate[2]
+                        )}-${floatClass(transform.angle)}`
+                    );
+                if (
+                    typeof transform.translate[0] === 'number' &&
+                    typeof transform.translate[1] === 'number' &&
+                    typeof transform.translate[2] === 'number'
+                )
+                    return Just(
+                        `tfrm-${floatClass(
+                            transform.translate[0]
+                        )}-${floatClass(transform.translate[1])}-${floatClass(
+                            transform.translate[2]
+                        )}-${floatClass(transform.scale[0])}-${floatClass(
+                            transform.scale[1]
+                        )}-${floatClass(transform.scale[2])}-${floatClass(
+                            transform.rotate[0]
+                        )}-${floatClass(transform.rotate[1])}-${floatClass(
+                            transform.rotate[2]
+                        )}-${floatClass(transform.angle)}`
+                    );
             }
             return Nothing();
     }
@@ -561,6 +603,14 @@ function transformValue(transform: Transformation): Maybe<string> {
 
         case Transformations.Moved:
             if (Array.isArray(transform.xyz)) {
+                if (
+                    typeof transform.xyz[0] !== 'number' &&
+                    typeof transform.xyz[1] !== 'number' &&
+                    typeof transform.xyz[2] !== 'number'
+                )
+                    return Just(
+                        `translate3d(${transform.xyz[0].rem}rem, ${transform.xyz[1].rem}rem, ${transform.xyz[2].rem}rem)`
+                    );
                 return Just(
                     `translate3d(${transform.xyz[0]}px, ${transform.xyz[1]}px, ${transform.xyz[2]}px)`
                 );
@@ -569,7 +619,12 @@ function transformValue(transform: Transformation): Maybe<string> {
 
         case Transformations.FullTransform:
             if (isPlainObject(transform) && !Array.isArray(transform)) {
-                const translate = `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`,
+                const translate =
+                        typeof transform.translate[0] !== 'number' &&
+                        typeof transform.translate[1] !== 'number' &&
+                        typeof transform.translate[2] !== 'number'
+                            ? `translate3d(${transform.translate[0].rem}rem, ${transform.translate[1].rem}rem, ${transform.translate[2].rem}rem)`
+                            : `translate3d(${transform.translate[0]}px, ${transform.translate[1]}px, ${transform.translate[2]}px)`,
                     scale = `scale3d(${transform.scale[0]}, ${transform.scale[1]}, ${transform.scale[2]})`,
                     rotate = `rotate3d(${transform.rotate[0]}, ${transform.rotate[1]}, ${transform.rotate[2]}, ${transform.angle}rad)`;
                 return Just(`${translate} ${scale} ${rotate}`);
@@ -585,14 +640,23 @@ function composeTransformation(
     switch (transform.type) {
         case Transformations.Untransformed:
             switch (component.type) {
-                case TransformComponents.MoveX:
-                    return Moved([component.x, 0, 0]);
+                case TransformComponents.MoveX: {
+                    if (typeof component.x === 'number')
+                        return Moved([component.x, 0, 0]);
+                    return Moved([component.x, Rem(0), Rem(0)]);
+                }
 
-                case TransformComponents.MoveY:
-                    return Moved([0, component.y, 0]);
+                case TransformComponents.MoveY: {
+                    if (typeof component.y === 'number')
+                        return Moved([0, component.y, 0]);
+                    return Moved([Rem(0), component.y, Rem(0)]);
+                }
 
-                case TransformComponents.MoveZ:
-                    return Moved([0, 0, component.z]);
+                case TransformComponents.MoveZ: {
+                    if (typeof component.z === 'number')
+                        return Moved([0, 0, component.z]);
+                    return Moved([Rem(0), Rem(0), component.z]);
+                }
 
                 case TransformComponents.MoveXYZ:
                     return Moved(component.xyz);
@@ -619,25 +683,79 @@ function composeTransformation(
             if (Array.isArray(transform.xyz)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
-                        return Moved([
-                            component.x,
-                            transform.xyz[1],
-                            transform.xyz[2],
-                        ]);
+                        {
+                            if (
+                                typeof component.x === 'number' &&
+                                typeof transform.xyz[1] === 'number' &&
+                                typeof transform.xyz[2] === 'number'
+                            )
+                                return Moved([
+                                    component.x,
+                                    transform.xyz[1],
+                                    transform.xyz[2],
+                                ]);
+                            if (
+                                typeof component.x !== 'number' &&
+                                typeof transform.xyz[1] !== 'number' &&
+                                typeof transform.xyz[2] !== 'number'
+                            )
+                                return Moved([
+                                    component.x,
+                                    transform.xyz[1],
+                                    transform.xyz[2],
+                                ]);
+                        }
+                        break;
 
                     case TransformComponents.MoveY:
-                        return Moved([
-                            transform.xyz[0],
-                            component.y,
-                            transform.xyz[2],
-                        ]);
+                        {
+                            if (
+                                typeof component.y === 'number' &&
+                                typeof transform.xyz[0] === 'number' &&
+                                typeof transform.xyz[2] === 'number'
+                            )
+                                return Moved([
+                                    transform.xyz[0],
+                                    component.y,
+                                    transform.xyz[2],
+                                ]);
+                            if (
+                                typeof component.y !== 'number' &&
+                                typeof transform.xyz[0] !== 'number' &&
+                                typeof transform.xyz[2] !== 'number'
+                            )
+                                return Moved([
+                                    transform.xyz[0],
+                                    component.y,
+                                    transform.xyz[2],
+                                ]);
+                        }
+                        break;
 
                     case TransformComponents.MoveZ:
-                        return Moved([
-                            transform.xyz[0],
-                            transform.xyz[1],
-                            component.z,
-                        ]);
+                        {
+                            if (
+                                typeof component.z === 'number' &&
+                                typeof transform.xyz[0] === 'number' &&
+                                typeof transform.xyz[1] === 'number'
+                            )
+                                return Moved([
+                                    transform.xyz[0],
+                                    transform.xyz[1],
+                                    component.z,
+                                ]);
+                            if (
+                                typeof component.z !== 'number' &&
+                                typeof transform.xyz[0] !== 'number' &&
+                                typeof transform.xyz[1] !== 'number'
+                            )
+                                return Moved([
+                                    transform.xyz[0],
+                                    transform.xyz[1],
+                                    component.z,
+                                ]);
+                        }
+                        break;
 
                     case TransformComponents.MoveXYZ:
                         return Moved(component.xyz);
@@ -665,40 +783,109 @@ function composeTransformation(
             if (isPlainObject(transform) && !Array.isArray(transform)) {
                 switch (component.type) {
                     case TransformComponents.MoveX:
-                        return FullTransform(
-                            [
-                                component.x,
-                                transform.translate[1],
-                                transform.translate[2],
-                            ],
-                            transform.scale,
-                            transform.rotate,
-                            transform.angle
-                        );
+                        {
+                            if (
+                                typeof component.x === 'number' &&
+                                typeof transform.translate[1] === 'number' &&
+                                typeof transform.translate[2] === 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        component.x,
+                                        transform.translate[1],
+                                        transform.translate[2],
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                            if (
+                                typeof component.x !== 'number' &&
+                                typeof transform.translate[1] !== 'number' &&
+                                typeof transform.translate[2] !== 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        component.x,
+                                        transform.translate[1],
+                                        transform.translate[2],
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                        }
+                        break;
 
                     case TransformComponents.MoveY:
-                        return FullTransform(
-                            [
-                                transform.translate[0],
-                                component.y,
-                                transform.translate[2],
-                            ],
-                            transform.scale,
-                            transform.rotate,
-                            transform.angle
-                        );
+                        {
+                            if (
+                                typeof component.y === 'number' &&
+                                typeof transform.translate[0] === 'number' &&
+                                typeof transform.translate[2] === 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        transform.translate[0],
+                                        component.y,
+                                        transform.translate[2],
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                            if (
+                                typeof component.y !== 'number' &&
+                                typeof transform.translate[0] !== 'number' &&
+                                typeof transform.translate[2] !== 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        transform.translate[0],
+                                        component.y,
+                                        transform.translate[2],
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                        }
+                        break;
 
                     case TransformComponents.MoveZ:
-                        return FullTransform(
-                            [
-                                transform.translate[0],
-                                transform.translate[1],
-                                component.z,
-                            ],
-                            transform.scale,
-                            transform.rotate,
-                            transform.angle
-                        );
+                        {
+                            if (
+                                typeof component.z === 'number' &&
+                                typeof transform.translate[0] === 'number' &&
+                                typeof transform.translate[1] === 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        transform.translate[0],
+                                        transform.translate[1],
+                                        component.z,
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                            if (
+                                typeof component.z !== 'number' &&
+                                typeof transform.translate[0] !== 'number' &&
+                                typeof transform.translate[1] !== 'number'
+                            )
+                                return FullTransform(
+                                    [
+                                        transform.translate[0],
+                                        transform.translate[1],
+                                        component.z,
+                                    ],
+                                    transform.scale,
+                                    transform.rotate,
+                                    transform.angle
+                                );
+                        }
+                        break;
 
                     case TransformComponents.MoveXYZ:
                         return FullTransform(

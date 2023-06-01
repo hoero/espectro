@@ -417,10 +417,10 @@ export function Untransformed(): Untransformed {
 
 export interface Moved {
     type: Transformations.Moved;
-    xyz: XYZ;
+    xyz: XYZ | [Rem, Rem, Rem];
 }
 
-export function Moved(xyz: XYZ): Moved {
+export function Moved(xyz: XYZ | [Rem, Rem, Rem]): Moved {
     return {
         type: Transformations.Moved,
         xyz,
@@ -429,14 +429,14 @@ export function Moved(xyz: XYZ): Moved {
 
 export interface FullTransform {
     type: Transformations.FullTransform;
-    translate: XYZ;
+    translate: XYZ | [Rem, Rem, Rem];
     scale: XYZ;
     rotate: XYZ;
     angle: Angle;
 }
 
 export function FullTransform(
-    translate: XYZ,
+    translate: XYZ | [Rem, Rem, Rem],
     scale: XYZ,
     rotate: XYZ,
     angle: Angle
@@ -815,37 +815,37 @@ export enum TransformComponents {
 
 export interface MoveX {
     type: TransformComponents.MoveX;
-    x: number;
+    x: number | Rem;
 }
 
-export function MoveX(x: number): MoveX {
+export function MoveX(x: number | Rem): MoveX {
     return { type: TransformComponents.MoveX, x };
 }
 
 export interface MoveY {
     type: TransformComponents.MoveY;
-    y: number;
+    y: number | Rem;
 }
 
-export function MoveY(y: number): MoveY {
+export function MoveY(y: number | Rem): MoveY {
     return { type: TransformComponents.MoveY, y };
 }
 
 export interface MoveZ {
     type: TransformComponents.MoveZ;
-    z: number;
+    z: number | Rem;
 }
 
-export function MoveZ(z: number): MoveZ {
+export function MoveZ(z: number | Rem): MoveZ {
     return { type: TransformComponents.MoveZ, z };
 }
 
 export interface MoveXYZ {
     type: TransformComponents.MoveXYZ;
-    xyz: XYZ;
+    xyz: XYZ | [Rem, Rem, Rem];
 }
 
-export function MoveXYZ(xyz: XYZ): MoveXYZ {
+export function MoveXYZ(xyz: XYZ | [Rem, Rem, Rem]): MoveXYZ {
     return { type: TransformComponents.MoveXYZ, xyz };
 }
 
