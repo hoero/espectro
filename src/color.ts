@@ -274,7 +274,17 @@ function hsla(
 
 /**
  * Create a color from a Hsla object.
- * Example: hsl(...fromHsl({ hue: 0, saturation: 0, lightness: 0, alpha: 1 }));
+ * Example:
+ * ```ts
+ * const [hue, saturation, lightness] = fromHsl({
+ *      hue: 0,
+ *      saturation: 0,
+ *      lightness: 100,
+ *      alpha: 1,
+ *      type: Notation.Hsl,
+ * });
+ * hsl(hue, saturation, lightness);
+ * ```
  * @param hsl e.g { hue: 0, saturation: 0, lightness: 0, alpha: 1 }
  * @returns an array with each channel.
  */
@@ -284,7 +294,10 @@ function fromHsl({ hue, saturation, lightness }: Hsla): Colour {
 
 /**
  * Create a color from a Hsla object.
- * Example: hsla(...fromHsla({ hue: 0, saturation: 0, lightness: 0, alpha: 1 }));
+ * Example:
+ * ```ts
+ * hsla(...fromHsla({ hue: 0, saturation: 0, lightness: 0, alpha: 1, type: Notation.Hsla }));
+ * ```
  * @param hsla e.g { hue: 0, saturation: 0, lightness: 0, alpha: 1 }
  * @returns an array with each channel.
  */
@@ -297,14 +310,17 @@ function fromHsla({ hue, saturation, lightness, alpha }: Hsla): Colour {
  * @param colour an array with each channel.
  */
 function toHsl(colour: Colour): Color {
-    const [hue, saturation, lightness, alpha] = colour;
-    const color = new HslaColor(
-        Notation.Hsl,
-        hue,
-        saturation,
-        lightness,
-        alpha
-    );
+    const [hue, saturation, lightness] = colour;
+    const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
+    return validate(color);
+}
+
+/**
+ * Deconstruct a `Color` into its hsla channels.
+ * @param colour an array with each channel.
+ */
+function toHsla(colour: Colour): Color {
+    const color = new HslaColor(Notation.Hsla, ...colour);
     return validate(color);
 }
 
@@ -361,7 +377,11 @@ function rgba255(
 
 /**
  * Create a color from a Rgba object.
- * Example: rgb(...fromRgb({ red: 0, green: 0, blue: 0, alpha: 1 }));
+ * Example:
+ * ```ts
+ * const [red, green, blue] = fromRgb(Rgba(0, 0, 0, 1, Notation.Rgb));
+ * rgb(red, green, blue);
+ * ```
  * @param rgb e.g. { red: 0, green: 0, blue: 0, alpha: 1 }
  * @returns  an array with each channel.
  */
@@ -371,7 +391,10 @@ function fromRgb({ red, green, blue }: Rgba): Colour {
 
 /**
  * Create a color from a Rgba object.
- * Example: rgba(...fromRgba({ red: 0, green: 0, blue: 0, alpha: 1 }));
+ * Example:
+ * ```ts
+ * rgba(...fromRgba({ red: 0, green: 0, blue: 0, alpha: 1, Notation.Rgba }));
+ * ```
  * @param rgba e.g. { red: 0, green: 0, blue: 0, alpha: 1 }
  * @returns  an array with each channel.
  */
@@ -384,8 +407,36 @@ function fromRgba({ red, green, blue, alpha }: Rgba): Colour {
  * @param colour an array with each channel.
  */
 function toRgb(colour: Colour): Color {
-    const [red, green, blue, alpha] = colour;
-    const color = new RgbaColor(Notation.Rgb, red, green, blue, alpha);
+    const [red, green, blue] = colour;
+    const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
+    return validate(color);
+}
+
+/**
+ * Deconstruct a `Color` into its rgba channels.
+ * @param colour an array with each channel.
+ */
+function toRgba(colour: Colour): Color {
+    const color = new RgbaColor(Notation.Rgba, ...colour);
+    return validate(color);
+}
+
+/**
+ * Deconstruct a `Color` into its rgb channels.
+ * @param colour an array with each channel.
+ */
+function toRgb255(colour: Colour): Color {
+    const [red, green, blue] = colour;
+    const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
+    return validate(color);
+}
+
+/**
+ * Deconstruct a `Color` into its rgba channels.
+ * @param colour an array with each channel.
+ */
+function toRgba255(colour: Colour): Color {
+    const color = new Rgba255Color(Notation.Rgba255, ...colour);
     return validate(color);
 }
 
@@ -399,6 +450,7 @@ export {
     fromHsl,
     fromHsla,
     toHsl,
+    toHsla,
     rgb,
     rgba,
     rgb255,
@@ -406,4 +458,7 @@ export {
     fromRgb,
     fromRgba,
     toRgb,
+    toRgba,
+    toRgb255,
+    toRgba255,
 };
