@@ -199,10 +199,10 @@ function isValid(obj: any): boolean {
     return isValid;
 }
 
-function validate(color: any): Color {
-    const objValidatorConfig = registeredValidators[color.constructor.name];
-    const isValid_: boolean = isValid(color);
-    let color_ = Hsla(0, 0, 0, 0, Notation.Hsla);
+function validate(color: any): any {
+    const objValidatorConfig = registeredValidators[color.constructor.name],
+        isValid_: boolean = isValid(color);
+
     for (const prop in objValidatorConfig) {
         for (const validator of objValidatorConfig[prop]) {
             switch (validator[0]) {
@@ -216,9 +216,9 @@ function validate(color: any): Color {
                                 .replace('$constraint', constraint)
                                 .replace('$value', val)
                         );
-                    color_ = color.color;
-                    break;
+                    return color.color;
                 }
+
                 case 'max': {
                     const msg = <string>validator[1].message,
                         val = `${color[prop]}`,
@@ -229,13 +229,14 @@ function validate(color: any): Color {
                                 .replace('$constraint', constraint)
                                 .replace('$value', val)
                         );
-                    color_ = color.color;
-                    break;
+                    return color.color;
                 }
+
+                default:
+                    return color.color;
             }
         }
     }
-    return color_;
 }
 
 /**
@@ -244,7 +245,7 @@ function validate(color: any): Color {
  * @param saturation takes a value between 0 and 100.
  * @param lightness takes a value between 0 and 100.
  */
-function hsl(hue: number, saturation: number, lightness: number): Color {
+function hsl(hue: number, saturation: number, lightness: number): Hsla {
     const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
     return validate(color);
 }
@@ -261,7 +262,7 @@ function hsla(
     saturation: number,
     lightness: number,
     alpha: number
-): Color {
+): Hsla {
     const color = new HslaColor(
         Notation.Hsla,
         hue,
@@ -309,7 +310,7 @@ function fromHsla({ hue, saturation, lightness, alpha }: Hsla): Colour {
  * Deconstruct a `Color` into its hsl channels.
  * @param colour an array with each channel.
  */
-function toHsl(colour: Colour): Color {
+function toHsl(colour: Colour): Hsla {
     const [hue, saturation, lightness] = colour;
     const color = new HslaColor(Notation.Hsl, hue, saturation, lightness, 1);
     return validate(color);
@@ -319,7 +320,7 @@ function toHsl(colour: Colour): Color {
  * Deconstruct a `Color` into its hsla channels.
  * @param colour an array with each channel.
  */
-function toHsla(colour: Colour): Color {
+function toHsla(colour: Colour): Hsla {
     const color = new HslaColor(Notation.Hsla, ...colour);
     return validate(color);
 }
@@ -330,7 +331,7 @@ function toHsla(colour: Colour): Color {
  * @param green takes a value between 0 and 1.
  * @param blue takes a value between 0 and 1.
  */
-function rgb(red: number, green: number, blue: number): Color {
+function rgb(red: number, green: number, blue: number): Rgba {
     const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
     return validate(color);
 }
@@ -342,7 +343,7 @@ function rgb(red: number, green: number, blue: number): Color {
  * @param blue takes a value between 0 and 1.
  * @param alpha takes a value between 0 and 1.
  */
-function rgba(red: number, green: number, blue: number, alpha: number): Color {
+function rgba(red: number, green: number, blue: number, alpha: number): Rgba {
     const color = new RgbaColor(Notation.Rgba, red, green, blue, alpha);
     return validate(color);
 }
@@ -353,7 +354,7 @@ function rgba(red: number, green: number, blue: number, alpha: number): Color {
  * @param green takes a value between 0 and 255.
  * @param blue takes a value between 0 and 255.
  */
-function rgb255(red: number, green: number, blue: number): Color {
+function rgb255(red: number, green: number, blue: number): Rgba {
     const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
     return validate(color);
 }
@@ -370,7 +371,7 @@ function rgba255(
     green: number,
     blue: number,
     alpha: number
-): Color {
+): Rgba {
     const color = new Rgba255Color(Notation.Rgba255, red, green, blue, alpha);
     return validate(color);
 }
@@ -406,7 +407,7 @@ function fromRgba({ red, green, blue, alpha }: Rgba): Colour {
  * Deconstruct a `Color` into its rgb channels.
  * @param colour an array with each channel.
  */
-function toRgb(colour: Colour): Color {
+function toRgb(colour: Colour): Rgba {
     const [red, green, blue] = colour;
     const color = new RgbaColor(Notation.Rgb, red, green, blue, 1);
     return validate(color);
@@ -416,7 +417,7 @@ function toRgb(colour: Colour): Color {
  * Deconstruct a `Color` into its rgba channels.
  * @param colour an array with each channel.
  */
-function toRgba(colour: Colour): Color {
+function toRgba(colour: Colour): Rgba {
     const color = new RgbaColor(Notation.Rgba, ...colour);
     return validate(color);
 }
@@ -425,7 +426,7 @@ function toRgba(colour: Colour): Color {
  * Deconstruct a `Color` into its rgb channels.
  * @param colour an array with each channel.
  */
-function toRgb255(colour: Colour): Color {
+function toRgb255(colour: Colour): Rgba {
     const [red, green, blue] = colour;
     const color = new Rgba255Color(Notation.Rgb255, red, green, blue, 1);
     return validate(color);
@@ -435,7 +436,7 @@ function toRgb255(colour: Colour): Color {
  * Deconstruct a `Color` into its rgba channels.
  * @param colour an array with each channel.
  */
-function toRgba255(colour: Colour): Color {
+function toRgba255(colour: Colour): Rgba {
     const color = new Rgba255Color(Notation.Rgba255, ...colour);
     return validate(color);
 }

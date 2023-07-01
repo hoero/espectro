@@ -58,6 +58,11 @@ Deno.test('To hsla', () => {
     asserts.assertStrictEquals(color.type, Notation.Hsla);
 });
 
+Deno.test('Is white?', () => {
+    const { hue, saturation, lightness } = hsl(0, 0, 100);
+    asserts.assertArrayIncludes([0, 0, 100], [hue, saturation, lightness]);
+});
+
 // RGB
 
 Deno.test('Is rgb', () => {
@@ -110,4 +115,14 @@ Deno.test('To rgb255', () => {
 Deno.test('To rgba255', () => {
     const color = toRgba255([0, 0, 0, 1]);
     asserts.assertStrictEquals(color.type, Notation.Rgba255);
+});
+
+Deno.test('Is black?', () => {
+    const { red, green, blue } = rgb(0, 0, 0);
+    asserts.assertArrayIncludes([0, 0, 0], [red, green, blue]);
+});
+
+Deno.test('Is gray?', () => {
+    const { red, green, blue } = rgb255(100, 100, 100);
+    asserts.assertArrayIncludes([100, 100, 100], [red, green, blue]);
 });
