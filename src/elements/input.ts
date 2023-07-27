@@ -369,7 +369,7 @@ enum Orientation {
 }
 
 // Colors
-const white: Color = hsl(0, 0, 1),
+const white: Color = hsl(0, 0, 100),
     charcoal: Color = hsl(84, 2, 53);
 
 // Thumb

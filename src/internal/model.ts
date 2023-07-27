@@ -3705,41 +3705,51 @@ function lengthClassName(x: Length): string {
     }
 }
 
-function formatDropShadow(shadow: Shadow): string {
+function formatShadow(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
-    return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
-        shadow.blur
-    )}px ${formatColor(a, b, c, d, e)}`;
-}
-
-function formatTextShadow(shadow: Shadow): string {
-    const [a, b, c, d, e] = Object.values(shadow.color);
-    return `${shadow.offset[0]}px ${shadow.offset[1]}px ${floatClass(
-        shadow.blur
-    )}px ${formatColor(a, b, c, d, e)}`;
+    return [
+        `${shadow.offset[0]}px`,
+        `${shadow.offset[1]}px`,
+        `${shadow.blur}px`,
+        `${formatColor(a, b, c, d, e)}`,
+    ].join(' ');
 }
 
 function textShadowClass(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
-    return `txt${floatClass(shadow.offset[0])}px${floatClass(
-        shadow.offset[1]
-    )}px${floatClass(shadow.blur)}px${formatColorClass(a, b, c, d, e)}`;
+    return [
+        'txt',
+        `${floatClass(shadow.offset[0])}`,
+        `${floatClass(shadow.offset[1])}`,
+        `${floatClass(shadow.blur)}`,
+        `${formatColorClass(a, b, c, d, e)}`,
+    ].join('-');
 }
 
 function formatBoxShadow(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
-    return `${shadow.inset ? 'inset' : ''} ${shadow.offset[0]}px ${
-        shadow.offset[1]
-    }px ${shadow.blur}px ${shadow.size}px ${formatColor(a, b, c, d, e)}`;
+    return [
+        `${shadow.inset ? 'inset' : ''}`,
+        `${shadow.offset[0]}px`,
+        `${shadow.offset[1]}px`,
+        `${shadow.blur}px`,
+        `${shadow.size}px`,
+        `${formatColor(a, b, c, d, e)}`,
+    ]
+        .join(' ')
+        .trim();
 }
 
 function boxShadowClass(shadow: Shadow): string {
     const [a, b, c, d, e] = Object.values(shadow.color);
-    return `${shadow.inset ? 'box-inset' : 'box-'}${floatClass(
-        shadow.offset[0]
-    )}px${floatClass(shadow.offset[1])}px${floatClass(
-        shadow.blur
-    )}px${floatClass(shadow.size)}px${formatColorClass(a, b, c, d, e)}`;
+    return [
+        `${shadow.inset ? 'box-inset' : 'box'}`,
+        `${floatClass(shadow.offset[0])}`,
+        `${floatClass(shadow.offset[1])}`,
+        `${floatClass(shadow.blur)}`,
+        `${floatClass(shadow.size)}`,
+        `${formatColorClass(a, b, c, d, e)}`,
+    ].join('-');
 }
 
 function floatClass(x: number): string {
@@ -4074,8 +4084,7 @@ export {
     formatBoxShadow,
     formatColor,
     formatColorClass,
-    formatDropShadow,
-    formatTextShadow,
+    formatShadow,
     gatherAttrRecursive,
     get,
     getHeight,

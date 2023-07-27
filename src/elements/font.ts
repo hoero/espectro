@@ -265,7 +265,7 @@ function shadow({
         Single(
             Internal.textShadowClass(shade),
             'text-shadow',
-            Internal.formatTextShadow(shade)
+            Internal.formatShadow(shade)
         )
     );
 }
@@ -278,7 +278,7 @@ function glow(color: Color, i: number): Attribute {
         Single(
             Internal.textShadowClass(shade),
             'text-shadow',
-            Internal.formatTextShadow(shade)
+            Internal.formatShadow(shade)
         )
     );
 }

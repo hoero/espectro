@@ -1456,7 +1456,6 @@ const commonValues: Class[] = [
     fontVariant('frac'),
 ].flat();
 
-// For some reason this gives an error with the function syntax
 const rules = (): string => {
     return overrides + renderCompact(baseSheet.concat(commonValues));
 };
