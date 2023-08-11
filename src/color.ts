@@ -24,13 +24,13 @@ const max =
 
 class ChannelsColor {
     private _notation: Notation;
-    @Min(0, min)
+    // @Min(0, min)
     private a: number;
-    @Min(0, min)
+    // @Min(0, min)
     private b: number;
-    @Min(0, min)
+    // @Min(0, min)
     private c: number;
-    @Min(0, min)
+    // @Min(0, min)
     private d: number;
 
     constructor(
@@ -75,13 +75,13 @@ class ChannelsColor {
 
 class HslaColor extends ChannelsColor {
     notation: Notation.Hsl | Notation.Hsla;
-    @Max(360, max)
+    // @Max(360, max)
     hue: number;
-    @Max(100, max)
+    // @Max(100, max)
     saturation: number;
-    @Max(100, max)
+    // @Max(100, max)
     lightness: number;
-    @Max(1, max)
+    // @Max(1, max)
     alpha: number;
 
     constructor(
@@ -102,13 +102,13 @@ class HslaColor extends ChannelsColor {
 
 class RgbaColor extends ChannelsColor {
     notation: Notation.Rgb | Notation.Rgba;
-    @Max(1, max)
+    // @Max(1, max)
     red: number;
-    @Max(1, max)
+    // @Max(1, max)
     green: number;
-    @Max(1, max)
+    // @Max(1, max)
     blue: number;
-    @Max(1, max)
+    // @Max(1, max)
     alpha: number;
 
     constructor(
@@ -129,13 +129,13 @@ class RgbaColor extends ChannelsColor {
 
 class Rgba255Color extends ChannelsColor {
     notation: Notation.Rgb255 | Notation.Rgba255;
-    @Max(255, max)
+    // @Max(255, max)
     red: number;
-    @Max(255, max)
+    // @Max(255, max)
     green: number;
-    @Max(255, max)
+    // @Max(255, max)
     blue: number;
-    @Max(1, max)
+    // @Max(1, max)
     alpha: number;
 
     constructor(
@@ -200,43 +200,46 @@ function isValid(obj: any): boolean {
 }
 
 function validate(color: any): any {
-    const objValidatorConfig = registeredValidators[color.constructor.name],
-        isValid_: boolean = isValid(color);
+    // TODO: Uncomment when decorators are supported
 
-    for (const prop in objValidatorConfig) {
-        for (const validator of objValidatorConfig[prop]) {
-            switch (validator[0]) {
-                case 'min': {
-                    const msg = <string>validator[1].message,
-                        val = `${color[prop]}`,
-                        constraint = `${validator[1].val}`;
-                    if (!isValid_)
-                        throw new Error(
-                            msg
-                                .replace('$constraint', constraint)
-                                .replace('$value', val)
-                        );
-                    return color.color;
-                }
+    // const objValidatorConfig = registeredValidators[color.constructor.name],
+    //     isValid_: boolean = isValid(color);
 
-                case 'max': {
-                    const msg = <string>validator[1].message,
-                        val = `${color[prop]}`,
-                        constraint = `${validator[1].val}`;
-                    if (!isValid_)
-                        throw new Error(
-                            msg
-                                .replace('$constraint', constraint)
-                                .replace('$value', val)
-                        );
-                    return color.color;
-                }
+    // for (const prop in objValidatorConfig) {
+    //     for (const validator of objValidatorConfig[prop]) {
+    //         switch (validator[0]) {
+    //             case 'min': {
+    //                 const msg = <string>validator[1].message,
+    //                     val = `${color[prop]}`,
+    //                     constraint = `${validator[1].val}`;
+    //                 if (!isValid_)
+    //                     throw new Error(
+    //                         msg
+    //                             .replace('$constraint', constraint)
+    //                             .replace('$value', val)
+    //                     );
+    //                 return color.color;
+    //             }
 
-                default:
-                    return color.color;
-            }
-        }
-    }
+    //             case 'max': {
+    //                 const msg = <string>validator[1].message,
+    //                     val = `${color[prop]}`,
+    //                     constraint = `${validator[1].val}`;
+    //                 if (!isValid_)
+    //                     throw new Error(
+    //                         msg
+    //                             .replace('$constraint', constraint)
+    //                             .replace('$value', val)
+    //                     );
+    //                 return color.color;
+    //             }
+
+    //             default:
+    //                 return color.color;
+    //         }
+    //     }
+    // }
+    return color.color;
 }
 
 /**
