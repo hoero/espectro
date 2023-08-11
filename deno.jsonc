@@ -18,6 +18,6 @@
     "asserts": "https://deno.land/std@0.192.0/testing/asserts.ts"
   },
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dev": "deno run --watch mod.ts"
   }
 }
