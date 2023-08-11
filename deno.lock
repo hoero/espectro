@@ -9,7 +9,10 @@
     "https://deno.land/x/elmish@v0.0.4/mod.ts": "4bae35473e7f17b36c0d1296e2bcb0a133aa7ad0ad676b9ecf3363eef30d528c",
     "https://deno.land/x/elmish@v0.0.4/result.ts": "15aa153ea0ba2d18ccc128a10d5a8950bfbb16affdbcd2cb0c1fe7d2f8445519",
     "https://esm.sh/preact@10.13.1": "e72c5e037748bde21484de9cf08289d4cae48ee13314da591b4f74b897c0c9ad",
+    "https://esm.sh/preact@10.15.1": "2b79349676a4942fbcf835c4efa909791c2f0aeca195225bf22bac9866e94b4e",
     "https://esm.sh/stable/preact@10.13.1/denonext/hooks.js": "6c902177dfa67b280bb52cd974e847acd0fea7877650bdefdcfa4227362be74e",
-    "https://esm.sh/stable/preact@10.13.1/denonext/preact.mjs": "9a6d35a7eb7f3a0367425a507d20bc1006327c546047bb650b356ba9784d069e"
+    "https://esm.sh/stable/preact@10.13.1/denonext/preact.mjs": "9a6d35a7eb7f3a0367425a507d20bc1006327c546047bb650b356ba9784d069e",
+    "https://esm.sh/stable/preact@10.15.1/denonext/hooks.js": "5c989ad368cf4f2cb3a5d7d1801843d9348c599fe3e7731d04728f7b845d724e",
+    "https://esm.sh/stable/preact@10.15.1/denonext/preact.mjs": "30710ac1d5ff3711ae0c04eddbeb706f34f82d97489f61aaf09897bc75d2a628"
   }
 }

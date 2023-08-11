@@ -6,9 +6,9 @@
         "strict": true
     },
     "imports": {
-        "preact": "https://esm.sh/preact@10.13.1",
-        "preact/jsx-runtime": "https://esm.sh/preact@10.13.1/jsx-runtime?dts",
-        "preact/jsx-dev-runtime": "https://esm.sh/preact@10.13.1/jsx-dev-runtime?dts",
+        "preact": "https://esm.sh/preact@10.15.1",
+        "preact/jsx-runtime": "https://esm.sh/preact@10.15.1/jsx-runtime?dts",
+        "preact/jsx-dev-runtime": "https://esm.sh/preact@10.15.1/jsx-dev-runtime?dts",
         "asserts": "https://deno.land/std@0.192.0/testing/asserts.ts"
     },
     "tasks": {
