@@ -2,7 +2,7 @@
     "imports": {
         "elmish": "https://deno.land/x/elmish@v0.0.4/mod.ts",
         "preact": "https://esm.sh/preact@10.13.1",
-        "hooks": "https://esm.sh/preact@10.13.1/hooks",
+        "preact/": "https://esm.sh/preact@10.13.1/",
         "preact/jsx-runtime": "https://esm.sh/preact@10.13.1/jsx-runtime?dts",
         "preact/jsx-dev-runtime": "https://esm.sh/preact@10.13.1/jsx-dev-runtime?dts",
         "asserts": "https://deno.land/std@0.192.0/testing/asserts.ts"
