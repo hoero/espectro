@@ -154,52 +154,163 @@ class Rgba255Color extends ChannelsColor {
     }
 }
 
-function Min(min: number, message: string) {
-    return function (target: any, propName: string) {
-        registeredValidators[target.constructor.name] = {
-            ...registeredValidators[target.constructor.name],
-            [propName]: [
-                ...(registeredValidators[target.constructor.name]?.[propName] ??
-                    []),
-                ['min', { val: min, message }],
-            ],
-        };
-    };
-}
+function Min(color: ChannelsColor) {
+    // return function (target: any, propName: string) {
+    //     registeredValidators[target.constructor.name] = {
+    //         ...registeredValidators[target.constructor.name],
+    //         [propName]: [
+    //             ...(registeredValidators[target.constructor.name]?.[propName] ??
+    //                 []),
+    //             ['min', { val: min, message }],
+    //         ],
+    //     };
+    // };
 
-function Max(max: number, message: string) {
-    return function (target: any, propName: string) {
-        registeredValidators[target.constructor.name] = {
-            ...registeredValidators[target.constructor.name],
-            [propName]: [
-                ...(registeredValidators[target.constructor.name]?.[propName] ??
-                    []),
-                ['max', { val: max, message }],
-            ],
-        };
-    };
-}
+    function msg(val: number) {
+        if (!(val >= 0))
+            throw new Error(
+                min
+                    .replace('$constraint', '0')
+                    .replace('$value', val.toString())
+            );
+    }
 
-function isValid(obj: any): boolean {
-    const objValidatorConfig = registeredValidators[obj.constructor.name];
-    if (!objValidatorConfig) return true;
-    let isValid = true;
-    for (const prop in objValidatorConfig) {
-        for (const validator of objValidatorConfig[prop]) {
-            switch (validator[0]) {
-                case 'min':
-                    isValid = isValid && obj[prop] >= <number>validator[1].val;
-                    break;
-                case 'max':
-                    isValid = isValid && obj[prop] <= <number>validator[1].val;
-                    break;
+    switch (color.color.type) {
+        case Notation.Hsl:
+            {
+                msg(color.color.hue);
+                msg(color.color.saturation);
+                msg(color.color.lightness);
             }
+            break;
+
+        case Notation.Hsla:
+            {
+                msg(color.color.hue);
+                msg(color.color.saturation);
+                msg(color.color.lightness);
+                msg(color.color.alpha);
+            }
+            break;
+
+        case Notation.Rgb:
+        case Notation.Rgb255:
+            {
+                msg(color.color.red);
+                msg(color.color.green);
+                msg(color.color.blue);
+                msg(color.color.alpha);
+            }
+            break;
+
+        case Notation.Rgba:
+        case Notation.Rgba255: {
+            msg(color.color.red);
+            msg(color.color.green);
+            msg(color.color.blue);
+            msg(color.color.alpha);
         }
     }
+}
+
+function Max(color: ChannelsColor) {
+    // return function (target: any, propName: string) {
+    //     registeredValidators[target.constructor.name] = {
+    //         ...registeredValidators[target.constructor.name],
+    //         [propName]: [
+    //             ...(registeredValidators[target.constructor.name]?.[propName] ??
+    //                 []),
+    //             ['max', { val: max, message }],
+    //         ],
+    //     };
+    // };
+
+    function msg(val: number, max_: number) {
+        if (!(val <= max_))
+            throw new Error(
+                max
+                    .replace('$constraint', max_.toString())
+                    .replace('$value', val.toString())
+            );
+    }
+
+    switch (color.color.type) {
+        case Notation.Hsl:
+            {
+                msg(color.color.hue, 360);
+                msg(color.color.saturation, 100);
+                msg(color.color.lightness, 100);
+            }
+            break;
+
+        case Notation.Hsla:
+            {
+                msg(color.color.hue, 360);
+                msg(color.color.saturation, 100);
+                msg(color.color.lightness, 100);
+                msg(color.color.alpha, 1);
+            }
+            break;
+
+        case Notation.Rgb:
+            {
+                msg(color.color.red, 1);
+                msg(color.color.green, 1);
+                msg(color.color.blue, 1);
+            }
+            break;
+
+        case Notation.Rgba:
+            {
+                msg(color.color.red, 1);
+                msg(color.color.green, 1);
+                msg(color.color.blue, 1);
+                msg(color.color.alpha, 1);
+            }
+            break;
+
+        case Notation.Rgb255:
+            {
+                msg(color.color.red, 255);
+                msg(color.color.green, 255);
+                msg(color.color.blue, 255);
+                msg(color.color.alpha, 1);
+            }
+            break;
+
+        case Notation.Rgba255: {
+            msg(color.color.red, 255);
+            msg(color.color.green, 255);
+            msg(color.color.blue, 255);
+            msg(color.color.alpha, 1);
+        }
+    }
+}
+
+function isValid(color: ChannelsColor, obj?: any): boolean {
+    // const objValidatorConfig = registeredValidators[obj.constructor.name];
+    // if (!objValidatorConfig) return true;
+    let isValid = true;
+    // for (const prop in objValidatorConfig) {
+    //     for (const validator of objValidatorConfig[prop]) {
+    //         switch (validator[0]) {
+    //             case 'min':
+    //                 isValid = isValid && obj[prop] >= <number>validator[1].val;
+    //                 break;
+    //             case 'max':
+    //                 isValid = isValid && obj[prop] <= <number>validator[1].val;
+    //                 break;
+    //         }
+    //     }
+    // }
+
+    Min(color);
+    Max(color);
+
     return isValid;
 }
 
-function validate(color: any): any {
+function validate(color: ChannelsColor): any {
     // TODO: Uncomment when decorators are supported
 
     // const objValidatorConfig = registeredValidators[color.constructor.name],
@@ -239,6 +350,13 @@ function validate(color: any): any {
     //         }
     //     }
     // }
+
+    // if (!isValid(color))
+    //     throw new Error(
+    //         msg.replace('$constraint', constraint).replace('$value', val)
+    //     );
+    if (!isValid(color)) return;
+
     return color.color;
 }
 
