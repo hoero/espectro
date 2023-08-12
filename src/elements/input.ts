@@ -331,10 +331,7 @@ export interface TextInput {
 }
 
 interface Text {
-    onChange: (
-        text: string,
-        event: preact.JSX.TargetedEvent<EventTarget>
-    ) => preact.JSX.GenericEventHandler<EventTarget>;
+    onChange: (text: string) => void;
     text: string;
     placeholder: Maybe<Placeholder>;
     label: Label;
@@ -572,16 +569,8 @@ const checkboxAttrs: Attribute[] = [
  */
 function checkbox(
     attributes: Attribute[],
-    {
-        label,
-        icon,
-        checked,
-        onChange,
-    }: {
-        onChange: (
-            checked: boolean,
-            event: preact.JSX.TargetedEvent
-        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
+    options: {
+        onChange: (checked: boolean) => void;
         icon: (checked: boolean) => Element;
         checked: boolean;
         label: Label;
@@ -590,17 +579,17 @@ function checkbox(
     return applyLabel(
         [
             ...checkboxAttrs,
-            ariaChecked(checked ? true : false),
-            hiddenLabelAttribute(label),
-            isHiddenLabel(label) ? NoAttribute() : spacing(6),
-            Events.onClick((event) => onChange(!checked, event)),
+            ariaChecked(options.checked ? true : false),
+            hiddenLabelAttribute(options.label),
+            isHiddenLabel(options.label) ? NoAttribute() : spacing(6),
+            Events.onClick(() => options.onChange(!options.checked)),
             Region.announce,
             Events.onKeyLookUp((event) => {
                 const { key } = event;
                 switch (key) {
                     case Events.enter:
                     case Events.space:
-                        onChange(!checked, event);
+                        options.onChange(!options.checked);
                         break;
                     default:
                         break;
@@ -608,12 +597,12 @@ function checkbox(
             }),
             ...attributes,
         ],
-        label,
+        options.label,
         Internal.element(
             asEl,
             Internal.div,
             [centerY, height(fill), width(shrink)],
-            Unkeyed([icon(checked)])
+            Unkeyed([options.icon(options.checked)])
         )
     );
 }
@@ -668,11 +657,8 @@ function thumb(attributes: Attribute[]): Thumb {
  */
 function slider(
     attributes: Attribute[],
-    input: {
-        onChange: (
-            value: number,
-            event: preact.JSX.TargetedEvent<EventTarget>
-        ) => preact.JSX.GenericEventHandler<EventTarget>;
+    options: {
+        onChange: (value: number) => void;
         label: Label;
         min: number;
         max: number;
@@ -681,7 +667,7 @@ function slider(
         step: Maybe<number>;
     }
 ): Element {
-    const thumbAttributes: Attribute[] = input.thumb.attributes,
+    const thumbAttributes: Attribute[] = options.thumb.attributes,
         width_: Maybe<Length> = Internal.getWidth(thumbAttributes),
         height_: Maybe<Length> = Internal.getHeight(thumbAttributes),
         trackWidth: Maybe<Length> = Internal.getWidth(attributes),
@@ -710,7 +696,7 @@ function slider(
         })(),
         [spacingX, spacingY]: [number | Rem, number | Rem] =
             Internal.getSpacing(attributes, [5, 5]),
-        factor = (input.value - input.min) / (input.max - input.min),
+        factor = (options.value - options.min) / (options.max - options.min),
         thumbWidthString: string = (() => {
             const w: number = withDefault(0, Internal.getLength(width_));
             switch (width_.type) {
@@ -772,7 +758,7 @@ function slider(
         ];
     return applyLabel(
         [
-            isHiddenLabel(input.label)
+            isHiddenLabel(options.label)
                 ? NoAttribute()
                 : spacingXY(spacingX, spacingY),
             Region.announce,
@@ -814,7 +800,7 @@ function slider(
                 })()
             ),
         ],
-        input.label,
+        options.label,
         row_(
             [
                 width(withDefault(fill, trackWidth)),
@@ -825,7 +811,7 @@ function slider(
                     asEl,
                     NodeName('input'),
                     [
-                        hiddenLabelAttribute(input.label),
+                        hiddenLabelAttribute(options.label),
                         StyleClass(
                             Flag.active,
                             Style_(
@@ -851,14 +837,11 @@ function slider(
                         Events.onInput((event) => {
                             const { data } = <InputEvent>event;
                             const data_ = typeof data === 'string' ? data : '0';
-                            return input.onChange(
-                                Number.parseFloat(data_),
-                                event
-                            );
+                            return options.onChange(Number.parseFloat(data_));
                         }),
                         type('range'),
                         step(
-                            input.step.type === MaybeType.Nothing
+                            options.step.type === MaybeType.Nothing
                                 ? // Note: If we set `any` here,
                                   // Firefox makes a single press of the arrows keys equal to 1
                                   // We could set the step manually to the effective range / 100
@@ -866,11 +849,11 @@ function slider(
                                   // Which matches Chrome's default behavior
                                   // HOWEVER, that means manually moving a slider with the mouse will snap to that interval.
                                   'any'
-                                : input.step.value
+                                : options.step.value
                         ),
-                        min(input.min),
-                        max(input.max),
-                        value(input.value),
+                        min(options.min),
+                        max(options.max),
+                        value(options.value),
                         vertical ? orient('vertical') : NoAttribute(),
                         width(
                             vertical
@@ -1039,7 +1022,7 @@ function textHelper(
                 Events.onInput((event) => {
                     const { data } = <InputEvent>event;
                     const data_ = typeof data === 'string' ? data : '';
-                    return textOptions.onChange(data_, event);
+                    return textOptions.onChange(data_);
                 }),
                 hiddenLabelAttribute(textOptions.label),
                 spellcheck(textInput.spellchecked),
@@ -1758,11 +1741,8 @@ function search(attributes: Attribute[], textOptions: Text): Element {
 
 function newPassword(
     attributes: Attribute[],
-    pass: {
-        onChange: (
-            text: string,
-            event: preact.JSX.TargetedEvent<EventTarget>
-        ) => preact.JSX.GenericEventHandler<EventTarget>;
+    options: {
+        onChange: (text: string) => void;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1771,27 +1751,24 @@ function newPassword(
 ): Element {
     return textHelper(
         {
-            input: TextInputNode(pass.show ? 'text' : 'password'),
+            input: TextInputNode(options.show ? 'text' : 'password'),
             spellchecked: false,
             autofill: Just('new-password'),
         },
         attributes,
         {
-            onChange: pass.onChange,
-            text: pass.text,
-            placeholder: pass.placeholder,
-            label: pass.label,
+            onChange: options.onChange,
+            text: options.text,
+            placeholder: options.placeholder,
+            label: options.label,
         }
     );
 }
 
 function currentPassword(
     attributes: Attribute[],
-    pass: {
-        onChange: (
-            text: string,
-            event: preact.JSX.TargetedEvent<EventTarget>
-        ) => preact.JSX.GenericEventHandler<EventTarget>;
+    options: {
+        onChange: (text: string) => void;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1800,21 +1777,21 @@ function currentPassword(
 ): Element {
     return textHelper(
         {
-            input: TextInputNode(pass.show ? 'text' : 'password'),
+            input: TextInputNode(options.show ? 'text' : 'password'),
             spellchecked: false,
             autofill: Just('current-password'),
         },
         attributes,
         {
-            onChange: pass.onChange,
-            text: pass.text,
-            placeholder: pass.placeholder,
-            label: pass.label,
+            onChange: options.onChange,
+            text: options.text,
+            placeholder: options.placeholder,
+            label: options.label,
         }
     );
 }
 
-function username(attributes: Attribute[], textOptions: Text): Element {
+function username(attributes: Attribute[], options: Text): Element {
     return textHelper(
         {
             input: TextInputNode('text'),
@@ -1822,11 +1799,11 @@ function username(attributes: Attribute[], textOptions: Text): Element {
             autofill: Just('username'),
         },
         attributes,
-        textOptions
+        options
     );
 }
 
-function email(attributes: Attribute[], textOptions: Text): Element {
+function email(attributes: Attribute[], options: Text): Element {
     return textHelper(
         {
             input: TextInputNode('email'),
@@ -1834,17 +1811,14 @@ function email(attributes: Attribute[], textOptions: Text): Element {
             autofill: Just('email'),
         },
         attributes,
-        textOptions
+        options
     );
 }
 
 function multiline(
     attributes: Attribute[],
-    multi: {
-        onChange: (
-            text: string,
-            event: preact.JSX.TargetedEvent<EventTarget>
-        ) => preact.JSX.GenericEventHandler<EventTarget>;
+    options: {
+        onChange: (text: string) => void;
         text: string;
         placeholder: Maybe<Placeholder>;
         label: Label;
@@ -1854,15 +1828,15 @@ function multiline(
     return textHelper(
         {
             input: TextArea(),
-            spellchecked: multi.spellcheck,
+            spellchecked: options.spellcheck,
             autofill: Nothing(),
         },
         attributes,
         {
-            onChange: multi.onChange,
-            text: multi.text,
-            placeholder: multi.placeholder,
-            label: multi.label,
+            onChange: options.onChange,
+            text: options.text,
+            placeholder: options.placeholder,
+            label: options.label,
         }
     );
 }
@@ -1951,33 +1925,27 @@ function optionWith(value: any, view: (x: OptionState) => Element): Option {
 
 function radio(
     attributes: Attribute[],
-    input: {
-        onChange: (
-            option: any,
-            event: preact.JSX.TargetedEvent
-        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
+    options: {
+        onChange: (option: any) => void;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
     }
 ): Element {
-    return radioHelper(Orientation.Column, attributes, input);
+    return radioHelper(Orientation.Column, attributes, options);
 }
 
 /** Same as radio, but displayed as a row */
 function radioRow(
     attributes: Attribute[],
-    input: {
-        onChange: (
-            option: any,
-            event: preact.JSX.TargetedEvent
-        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
+    options: {
+        onChange: (option: any) => void;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
     }
 ): Element {
-    return radioHelper(Orientation.Row, attributes, input);
+    return radioHelper(Orientation.Row, attributes, options);
 }
 
 function defaultRadioOption(
@@ -2043,11 +2011,8 @@ const radioAttrs: Attribute[] = [
 function radioHelper(
     orientation: Orientation,
     attributes: Attribute[],
-    input: {
-        onChange: (
-            option: any,
-            event: preact.JSX.TargetedEvent
-        ) => preact.JSX.EventHandler<preact.JSX.TargetedEvent>;
+    options: {
+        onChange: (option: any) => void;
         options: Option[];
         selected: Maybe<any>;
         label: Label;
@@ -2056,30 +2021,30 @@ function radioHelper(
     const optionArea: Element = (() => {
             switch (orientation) {
                 case Orientation.Row: {
-                    const [children] = input.options.map((x: Option) =>
+                    const [children] = options.options.map((x: Option) =>
                         renderOption(x)
                     );
                     return row(
-                        [hiddenLabelAttribute(input.label), ...attributes],
+                        [hiddenLabelAttribute(options.label), ...attributes],
                         [children]
                     );
                 }
 
                 case Orientation.Column: {
-                    const [children] = input.options.map((x: Option) =>
+                    const [children] = options.options.map((x: Option) =>
                         renderOption(x)
                     );
                     return column(
-                        [hiddenLabelAttribute(input.label), ...attributes],
+                        [hiddenLabelAttribute(options.label), ...attributes],
                         [children]
                     );
                 }
             }
         })(),
         prevNext: Maybe<[any, any]> = (() => {
-            if (isEmpty(input.options)) return Nothing();
+            if (isEmpty(options.options)) return Nothing();
 
-            const val: any = input.options[0].value;
+            const val: any = options.options[0].value;
             return (([found, b, a]) => {
                 switch (found) {
                     case Found.NotFound:
@@ -2092,7 +2057,7 @@ function radioHelper(
                         return Just([b, a]);
                 }
             })(
-                input.options.reduce(
+                options.options.reduce(
                     (
                         acc: [Found, any, any],
                         option: Option
@@ -2121,7 +2086,7 @@ function radioHelper(
 
     function renderOption({ value, view }: Option): Element {
         const status =
-            Just(value) === input.selected
+            Just(value) === options.selected
                 ? OptionState.Selected
                 : OptionState.Idle;
         return el(
@@ -2146,7 +2111,7 @@ function radioHelper(
                     }
                 })(),
                 role('radio'),
-                Events.onClick((event) => input.onChange(value, event)),
+                Events.onClick(() => options.onChange(value)),
             ],
             view(status)
         );
@@ -2160,7 +2125,7 @@ function radioHelper(
             default:
                 switch (found) {
                     case Found.NotFound:
-                        if (Just(opt.value) === input.selected) {
+                        if (Just(opt.value) === options.selected) {
                             return [Found.BeforeFound, prev, next];
                         } else {
                             return [found, opt.value, next];
@@ -2191,18 +2156,18 @@ function radioHelper(
                             case Events.leftArrow_:
                             case Events.upArrow:
                             case Events.upArrow_:
-                                input.onChange(prev, event);
+                                options.onChange(prev);
                                 break;
                             case Events.rightArrow:
                             case Events.rightArrow_:
                             case Events.downArrow:
                             case Events.downArrow_:
-                                input.onChange(next, event);
+                                options.onChange(next);
                                 break;
                             case Events.space:
-                                switch (input.selected.type) {
+                                switch (options.selected.type) {
                                     case MaybeType.Nothing:
-                                        input.onChange(prev, event);
+                                        options.onChange(prev);
                                         break;
                                     default:
                                         break;
@@ -2216,7 +2181,7 @@ function radioHelper(
             }),
             ...events,
         ],
-        input.label,
+        options.label,
         optionArea
     );
 }
@@ -2239,7 +2204,7 @@ function row(attributes: Attribute[], children: Element[]): Element {
     );
 }
 
-function defaultRadioAttrs(checked: boolean): Attribute[] {
+function defaultCheckboxAttrs(checked: boolean): Attribute[] {
     return [
         Internal.htmlClass('focusable'),
         width(px(14)),
@@ -2258,7 +2223,7 @@ function defaultRadioAttrs(checked: boolean): Attribute[] {
     ];
 }
 
-function defaultRadioInFrontAttrs(checked: boolean): Attribute[] {
+function defaultCheckboxInFrontAttrs(checked: boolean): Attribute[] {
     return [
         height(px(6)),
         width(px(9)),
@@ -2287,8 +2252,8 @@ function defaultRadioInFrontAttrs(checked: boolean): Attribute[] {
 function defaultCheckbox(checked: boolean): Element {
     return el(
         [
-            ...defaultRadioAttrs(checked),
-            inFront(el(defaultRadioInFrontAttrs(checked), none)),
+            ...defaultCheckboxAttrs(checked),
+            inFront(el(defaultCheckboxInFrontAttrs(checked), none)),
         ],
         none
     );
@@ -2321,8 +2286,8 @@ export {
     defaultThumb,
     radio,
     radioAttrs,
-    defaultRadioAttrs,
-    defaultRadioInFrontAttrs,
+    defaultCheckboxAttrs,
+    defaultCheckboxInFrontAttrs,
     radioRow,
     Option,
     option,
