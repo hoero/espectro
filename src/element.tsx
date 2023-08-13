@@ -33,7 +33,7 @@ import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
 import { style } from './elements/attributes.ts';
 
-interface Column_<T extends Record<string, unknown>> {
+interface Column_<T extends Record<string, any>> {
     header: preact.ComponentChild;
     width: Length;
     view: (record: T) => preact.ComponentChild;
@@ -42,12 +42,12 @@ interface Column_<T extends Record<string, unknown>> {
 function Column_(
     header: preact.ComponentChild,
     width: Length,
-    view: (record: Record<string, unknown>) => preact.ComponentChild
-): Column_<Record<string, unknown>> {
+    view: (record: Record<string, any>) => preact.ComponentChild
+): Column_<Record<string, any>> {
     return { header, width, view };
 }
 
-interface IndexedColumn<T extends Record<string, unknown>> {
+interface IndexedColumn<T extends Record<string, any>> {
     header: preact.ComponentChild;
     width: Length;
     view: (a: number, record: T) => preact.ComponentChild;
@@ -56,20 +56,20 @@ interface IndexedColumn<T extends Record<string, unknown>> {
 function IndexedColumn(
     header: preact.ComponentChild,
     width: Length,
-    view: (a: number, record: Record<string, unknown>) => preact.ComponentChild
-): IndexedColumn<Record<string, unknown>> {
+    view: (a: number, record: Record<string, any>) => preact.ComponentChild
+): IndexedColumn<Record<string, any>> {
     return { header, width, view };
 }
 
-interface InternalTable<T extends Record<string, unknown>> {
+interface InternalTable<T extends Record<string, any>> {
     data: T[];
     columns: InternalTableColumn[];
 }
 
 function _InternalTable(
-    data: Record<string, unknown>[],
+    data: Record<string, any>[],
     columns: InternalTableColumn[]
-): InternalTable<Record<string, unknown>> {
+): InternalTable<Record<string, any>> {
     return { data, columns };
 }
 
@@ -80,11 +80,11 @@ enum InternalTableColumns {
 
 interface InternalIndexedColumn {
     type: InternalTableColumns.InternalIndexedColumn;
-    column: IndexedColumn<Record<string, unknown>>;
+    column: IndexedColumn<Record<string, any>>;
 }
 
 function InternalIndexedColumn(
-    column: IndexedColumn<Record<string, unknown>>
+    column: IndexedColumn<Record<string, any>>
 ): InternalIndexedColumn {
     return {
         type: InternalTableColumns.InternalIndexedColumn,
@@ -94,12 +94,10 @@ function InternalIndexedColumn(
 
 interface InternalColumn {
     type: InternalTableColumns.InternalColumn;
-    column: Column_<Record<string, unknown>>;
+    column: Column_<Record<string, any>>;
 }
 
-function InternalColumn(
-    column: Column_<Record<string, unknown>>
-): InternalColumn {
+function InternalColumn(column: Column_<Record<string, any>>): InternalColumn {
     return {
         type: InternalTableColumns.InternalColumn,
         column,
@@ -109,7 +107,7 @@ function InternalColumn(
 type InternalTableColumn = InternalIndexedColumn | InternalColumn;
 
 const { Just, Nothing, MaybeType } = elmish.Maybe;
-const { h, Fragment } = preact;
+const { Fragment } = preact;
 
 /** This is your top level node where you can turn `Element` into `JSX`. */
 function Layout({
@@ -466,8 +464,8 @@ function Table({
 }: {
     attributes: Attribute[];
     config: {
-        data: Record<string, unknown>[];
-        columns: Element_.Column<Record<string, unknown>>[];
+        data: Record<string, any>[];
+        columns: Column_<Record<string, any>>[];
     };
 }) {
     return (
@@ -488,8 +486,8 @@ function IndexedTable({
 }: {
     attributes: Attribute[];
     config: {
-        data: Record<string, unknown>[];
-        columns: Element_.IndexedColumn<Record<string, unknown>>[];
+        data: Record<string, any>[];
+        columns: IndexedColumn<Record<string, any>>[];
     };
 }) {
     return (
@@ -508,18 +506,21 @@ function TableHelper({
     config,
 }: {
     attributes: Attribute[];
-    config: InternalTable<Record<string, unknown>>;
+    config: InternalTable<Record<string, any>>;
 }) {
     const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
 
-    const maybeHeaders: Maybe<preact.ComponentChild> = ((
+    const maybeHeaders: Maybe<preact.ComponentChild[]> = ((
         headers: preact.ComponentChild[]
     ) => {
-        const [headers_] = headers.map(
+        const headers_ = headers.map(
             (header: preact.ComponentChild, col: number) =>
                 onGrid(1, col + 1, header)
         );
-        return headers.some((value: preact.ComponentChild) => value === '')
+        return headers.some(
+            (value: preact.ComponentChild) =>
+                value === undefined || value === null
+        )
             ? Nothing()
             : Just(headers_);
     })(config.columns.map(columnHeader));
@@ -535,7 +536,7 @@ function TableHelper({
                 return [Px(0), Px(0)];
             })(),
             config.columns.map(columnWidth),
-            config.data.map(() => Content())
+            [].concat(...new Array(config.data.length).fill([Content()]))
         )
     );
 
@@ -550,7 +551,7 @@ function TableHelper({
                 column: number;
                 row: number;
             },
-            data: Record<string, unknown>
+            data: Record<string, any>
         ) => build(config.columns, data, acc),
         {
             elements: [],
@@ -593,6 +594,7 @@ function TableHelper({
                         GridPosition(rowLevel, columnLevel, 1, 1)
                     ),
                 ]}
+                context={asEl}
             >
                 {elem}
             </LayoutWith>
@@ -600,7 +602,7 @@ function TableHelper({
     }
 
     function add(
-        cell: Record<string, unknown>,
+        cell: Record<string, any>,
         columnConfig: InternalTableColumn,
         cursor: {
             elements: preact.ComponentChild[];
@@ -645,7 +647,7 @@ function TableHelper({
 
     function build(
         columns: InternalTableColumn[],
-        rowData: Record<string, unknown>,
+        rowData: Record<string, any>,
         cursor: {
             elements: preact.ComponentChild[];
             column: number;
@@ -671,12 +673,10 @@ function TableHelper({
             ) => add(rowData, column, acc),
             cursor
         );
-        const cursor_ = cursor;
-        const newCursor_ = newCursor;
 
         return {
-            elements: newCursor_.elements,
-            row: cursor_.row + 1,
+            elements: newCursor.elements,
+            row: cursor.row + 1,
             column: 1,
         };
     }
@@ -697,10 +697,9 @@ function TableHelper({
                         return children.elements;
 
                     case MaybeType.Just:
-                        return [
-                            maybeHeaders.value,
-                            ...children.elements.reverse(),
-                        ];
+                        return maybeHeaders.value.concat(
+                            children.elements.reverse()
+                        );
                 }
             })()}
         </LayoutWith>

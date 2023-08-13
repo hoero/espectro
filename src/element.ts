@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * # Basic Elements
  *
@@ -228,7 +229,7 @@ import * as Internal from './internal/model.ts';
 import { style } from './elements/attributes.ts';
 import { oneRem } from './units/rem.ts';
 
-interface Column<T extends Record<string, unknown>> {
+interface Column<T extends Record<string, any>> {
     header: Element;
     width: Length;
     view: (record: T) => Element;
@@ -237,12 +238,12 @@ interface Column<T extends Record<string, unknown>> {
 function Column(
     header: Element,
     width: Length,
-    view: (record: Record<string, unknown>) => Element
-): Column<Record<string, unknown>> {
+    view: (record: Record<string, any>) => Element
+): Column<Record<string, any>> {
     return { header, width, view };
 }
 
-interface IndexedColumn<T extends Record<string, unknown>> {
+interface IndexedColumn<T extends Record<string, any>> {
     header: Element;
     width: Length;
     view: (a: number, record: T) => Element;
@@ -251,20 +252,20 @@ interface IndexedColumn<T extends Record<string, unknown>> {
 function IndexedColumn(
     header: Element,
     width: Length,
-    view: (a: number, record: Record<string, unknown>) => Element
-): IndexedColumn<Record<string, unknown>> {
+    view: (a: number, record: Record<string, any>) => Element
+): IndexedColumn<Record<string, any>> {
     return { header, width, view };
 }
 
-interface InternalTable<T extends Record<string, unknown>> {
+interface InternalTable<T extends Record<string, any>> {
     data: T[];
     columns: InternalTableColumn[];
 }
 
 function _InternalTable(
-    data: Record<string, unknown>[],
+    data: Record<string, any>[],
     columns: InternalTableColumn[]
-): InternalTable<Record<string, unknown>> {
+): InternalTable<Record<string, any>> {
     return { data, columns };
 }
 
@@ -275,11 +276,11 @@ enum InternalTableColumns {
 
 interface InternalIndexedColumn {
     type: InternalTableColumns.InternalIndexedColumn;
-    column: IndexedColumn<Record<string, unknown>>;
+    column: IndexedColumn<Record<string, any>>;
 }
 
 function InternalIndexedColumn(
-    column: IndexedColumn<Record<string, unknown>>
+    column: IndexedColumn<Record<string, any>>
 ): InternalIndexedColumn {
     return {
         type: InternalTableColumns.InternalIndexedColumn,
@@ -289,12 +290,10 @@ function InternalIndexedColumn(
 
 interface InternalColumn {
     type: InternalTableColumns.InternalColumn;
-    column: Column<Record<string, unknown>>;
+    column: Column<Record<string, any>>;
 }
 
-function InternalColumn(
-    column: Column<Record<string, unknown>>
-): InternalColumn {
+function InternalColumn(column: Column<Record<string, any>>): InternalColumn {
     return {
         type: InternalTableColumns.InternalColumn,
         column,
@@ -389,7 +388,6 @@ const debounce = <A extends unknown[]>(
     callback: (...args: A) => unknown,
     msDelay: number
 ) => {
-    // deno-lint-ignore no-explicit-any
     let timer: any;
 
     return (...args: A) => {
@@ -796,8 +794,8 @@ function explain(): Attribute {
 function table(
     attributes: Attribute[],
     config: {
-        data: Record<string, unknown>[];
-        columns: Column<Record<string, unknown>>[];
+        data: Record<string, any>[];
+        columns: Column<Record<string, any>>[];
     }
 ): Element {
     return tableHelper(attributes, {
@@ -810,8 +808,8 @@ function table(
 function indexedTable(
     attributes: Attribute[],
     config: {
-        data: Record<string, unknown>[];
-        columns: IndexedColumn<Record<string, unknown>>[];
+        data: Record<string, any>[];
+        columns: IndexedColumn<Record<string, any>>[];
     }
 ): Element {
     return tableHelper(attributes, {
@@ -822,12 +820,12 @@ function indexedTable(
 
 function tableHelper(
     attributes: Attribute[],
-    config: InternalTable<Record<string, unknown>>
+    config: InternalTable<Record<string, any>>
 ): Element {
     const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
 
-    const maybeHeaders: Maybe<Element> = ((headers: Element[]) => {
-        const [headers_] = headers.map((header: Element, col: number) =>
+    const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
+        const headers_ = headers.map((header: Element, col: number) =>
             onGrid(1, col + 1, header)
         );
         return headers.some((value: Element) => value === Empty())
@@ -846,7 +844,7 @@ function tableHelper(
                 return [Px(0), Px(0)];
             })(),
             config.columns.map(columnWidth),
-            config.data.map(() => Content())
+            [].concat(...new Array(config.data.length).fill([Content()]))
         )
     );
 
@@ -861,7 +859,7 @@ function tableHelper(
                 column: number;
                 row: number;
             },
-            data: Record<string, unknown>
+            data: Record<string, any>
         ) => build(config.columns, data, acc),
         {
             elements: [],
@@ -909,7 +907,7 @@ function tableHelper(
     }
 
     function add(
-        cell: Record<string, unknown>,
+        cell: Record<string, any>,
         columnConfig: InternalTableColumn,
         cursor: { elements: Element[]; row: number; column: number }
     ): { elements: Element[]; row: number; column: number } {
@@ -950,7 +948,7 @@ function tableHelper(
 
     function build(
         columns: InternalTableColumn[],
-        rowData: Record<string, unknown>,
+        rowData: Record<string, any>,
         cursor: {
             elements: Element[];
             column: number;
@@ -976,12 +974,10 @@ function tableHelper(
             ) => add(rowData, column, acc),
             cursor
         );
-        const cursor_ = cursor;
-        const newCursor_ = newCursor;
 
         return {
-            elements: newCursor_.elements,
-            row: cursor_.row + 1,
+            elements: newCursor.elements,
+            row: cursor.row + 1,
             column: 1,
         };
     }
@@ -997,10 +993,9 @@ function tableHelper(
                         return children.elements;
 
                     case MaybeType.Just:
-                        return [
-                            maybeHeaders.value,
-                            ...children.elements.reverse(),
-                        ];
+                        return maybeHeaders.value.concat(
+                            children.elements.reverse()
+                        );
                 }
             })()
         )
