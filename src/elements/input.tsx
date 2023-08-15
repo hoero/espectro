@@ -592,9 +592,9 @@ function Slider({
                         ),
                         class_(className + ' ui-slide-bar focusable-parent'),
                         Events.onInput((event) => {
-                            const { data } = event as InputEvent;
-                            const data_ = typeof data === 'string' ? data : '0';
-                            return options.onChange(Number.parseFloat(data_));
+                            return options.onChange(
+                                Number.parseFloat(event.target.value)
+                            );
                         }),
                         type('range'),
                         step_(
@@ -816,9 +816,7 @@ function TextHelper({
                 })().concat([
                     value_(textOptions.text),
                     Events.onInput((event) => {
-                        const { data } = event as InputEvent;
-                        const data_ = typeof data === 'string' ? data : '';
-                        return textOptions.onChange(data_);
+                        return textOptions.onChange(event.target.value);
                     }),
                     hiddenLabelAttribute(textOptions.label),
                     spellcheck(textInput.spellchecked),
