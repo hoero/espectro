@@ -35,30 +35,34 @@ import { style } from './elements/attributes.ts';
 
 interface Column_<T extends Record<string, any>> {
     header: preact.ComponentChild;
+    footer: preact.ComponentChild;
     width: Length;
     view: (record: T) => preact.ComponentChild;
 }
 
 function Column_(
     header: preact.ComponentChild,
+    footer: preact.ComponentChild,
     width: Length,
     view: (record: Record<string, any>) => preact.ComponentChild
 ): Column_<Record<string, any>> {
-    return { header, width, view };
+    return { header, footer, width, view };
 }
 
 interface IndexedColumn<T extends Record<string, any>> {
     header: preact.ComponentChild;
+    footer: preact.ComponentChild;
     width: Length;
     view: (a: number, record: T) => preact.ComponentChild;
 }
 
 function IndexedColumn(
     header: preact.ComponentChild,
+    footer: preact.ComponentChild,
     width: Length,
     view: (a: number, record: Record<string, any>) => preact.ComponentChild
 ): IndexedColumn<Record<string, any>> {
-    return { header, width, view };
+    return { header, footer, width, view };
 }
 
 interface InternalTable<T extends Record<string, any>> {
@@ -525,6 +529,21 @@ function TableHelper({
             : Just(headers_);
     })(config.columns.map(columnHeader));
 
+    const maybeFooters: Maybe<preact.ComponentChild[]> = ((
+        footers: preact.ComponentChild[]
+    ) => {
+        const footers_ = footers.map(
+            (footer: preact.ComponentChild, col: number) =>
+                onGrid(config.data.length + 2, col + 1, footer)
+        );
+        return footers.some(
+            (value: preact.ComponentChild) =>
+                value === undefined || value === null
+        )
+            ? Nothing()
+            : Just(footers_);
+    })(config.columns.map(columnFooter));
+
     const template: Attribute = StyleClass(
         Flag.gridTemplate,
         GridTemplateStyle(
@@ -567,6 +586,16 @@ function TableHelper({
 
             case InternalTableColumns.InternalColumn:
                 return col.column.header;
+        }
+    }
+
+    function columnFooter(col: InternalTableColumn): preact.ComponentChild {
+        switch (col.type) {
+            case InternalTableColumns.InternalIndexedColumn:
+                return col.column.footer;
+
+            case InternalTableColumns.InternalColumn:
+                return col.column.footer;
         }
     }
 
@@ -694,12 +723,32 @@ function TableHelper({
             {(() => {
                 switch (maybeHeaders.type) {
                     case MaybeType.Nothing:
-                        return children.elements;
+                        {
+                            switch (maybeFooters.type) {
+                                case MaybeType.Nothing:
+                                    return children.elements;
 
-                    case MaybeType.Just:
-                        return maybeHeaders.value.concat(
-                            children.elements.reverse()
-                        );
+                                case MaybeType.Just:
+                                    return children.elements.concat(
+                                        maybeFooters.value
+                                    );
+                            }
+                        }
+                        break;
+
+                    case MaybeType.Just: {
+                        switch (maybeFooters.type) {
+                            case MaybeType.Nothing:
+                                return maybeHeaders.value.concat(
+                                    children.elements.reverse()
+                                );
+
+                            case MaybeType.Just:
+                                return maybeHeaders.value
+                                    .concat(children.elements.reverse())
+                                    .concat(maybeFooters.value);
+                        }
+                    }
                 }
             })()}
         </LayoutWith>

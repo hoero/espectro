@@ -231,30 +231,34 @@ import { oneRem } from './units/rem.ts';
 
 interface Column<T extends Record<string, any>> {
     header: Element;
+    footer: Element;
     width: Length;
     view: (record: T) => Element;
 }
 
 function Column(
     header: Element,
+    footer: Element,
     width: Length,
     view: (record: Record<string, any>) => Element
 ): Column<Record<string, any>> {
-    return { header, width, view };
+    return { header, footer, width, view };
 }
 
 interface IndexedColumn<T extends Record<string, any>> {
     header: Element;
+    footer: Element;
     width: Length;
     view: (a: number, record: T) => Element;
 }
 
 function IndexedColumn(
     header: Element,
+    footer: Element,
     width: Length,
     view: (a: number, record: Record<string, any>) => Element
 ): IndexedColumn<Record<string, any>> {
-    return { header, width, view };
+    return { header, footer, width, view };
 }
 
 interface InternalTable<T extends Record<string, any>> {
@@ -833,6 +837,15 @@ function tableHelper(
             : Just(headers_);
     })(config.columns.map(columnHeader));
 
+    const maybeFooters: Maybe<Element[]> = ((footers: Element[]) => {
+        const footers_ = footers.map((footer: Element, col: number) =>
+            onGrid(config.data.length + 2, col + 1, footer)
+        );
+        return footers.some((value: Element) => value === Empty())
+            ? Nothing()
+            : Just(footers_);
+    })(config.columns.map(columnFooter));
+
     const template: Attribute = StyleClass(
         Flag.gridTemplate,
         GridTemplateStyle(
@@ -875,6 +888,16 @@ function tableHelper(
 
             case InternalTableColumns.InternalColumn:
                 return col.column.header;
+        }
+    }
+
+    function columnFooter(col: InternalTableColumn): Element {
+        switch (col.type) {
+            case InternalTableColumns.InternalIndexedColumn:
+                return col.column.footer;
+
+            case InternalTableColumns.InternalColumn:
+                return col.column.footer;
         }
     }
 
@@ -990,12 +1013,32 @@ function tableHelper(
             (() => {
                 switch (maybeHeaders.type) {
                     case MaybeType.Nothing:
-                        return children.elements;
+                        {
+                            switch (maybeFooters.type) {
+                                case MaybeType.Nothing:
+                                    return children.elements;
 
-                    case MaybeType.Just:
-                        return maybeHeaders.value.concat(
-                            children.elements.reverse()
-                        );
+                                case MaybeType.Just:
+                                    return children.elements.concat(
+                                        maybeFooters.value
+                                    );
+                            }
+                        }
+                        break;
+
+                    case MaybeType.Just: {
+                        switch (maybeFooters.type) {
+                            case MaybeType.Nothing:
+                                return maybeHeaders.value.concat(
+                                    children.elements.reverse()
+                                );
+
+                            case MaybeType.Just:
+                                return maybeHeaders.value
+                                    .concat(children.elements.reverse())
+                                    .concat(maybeFooters.value);
+                        }
+                    }
                 }
             })()
         )
