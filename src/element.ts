@@ -404,7 +404,12 @@ const debounce = <A extends unknown[]>(
     };
 };
 
-function getViewport(msDelay = 100) {
+function getViewport(msDelay = 100): {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+} {
     const [viewport, setViewport] = hooks.useState({
         width: self.innerWidth,
         height: self.innerHeight,

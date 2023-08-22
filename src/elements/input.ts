@@ -835,9 +835,9 @@ function slider(
                         ),
                         class_(className + ' ui-slide-bar focusable-parent'),
                         Events.onInput((event) => {
-                            const { data } = <InputEvent>event;
-                            const data_ = typeof data === 'string' ? data : '0';
-                            return options.onChange(Number.parseFloat(data_));
+                            return options.onChange(
+                                Number.parseFloat(event.target.value)
+                            );
                         }),
                         type('range'),
                         step(
@@ -1020,9 +1020,7 @@ function textHelper(
             })().concat([
                 value(textOptions.text),
                 Events.onInput((event) => {
-                    const { data } = <InputEvent>event;
-                    const data_ = typeof data === 'string' ? data : '';
-                    return textOptions.onChange(data_);
+                    return textOptions.onChange(event.target.value);
                 }),
                 hiddenLabelAttribute(textOptions.label),
                 spellcheck(textInput.spellchecked),
@@ -2018,6 +2016,11 @@ function radioHelper(
         label: Label;
     }
 ): Element {
+    let selected_: any;
+    if (options.selected.type === MaybeType.Just) {
+        selected_ = options.selected.value;
+    }
+
     const optionArea: Element = (() => {
             switch (orientation) {
                 case Orientation.Row: {
@@ -2086,9 +2089,7 @@ function radioHelper(
 
     function renderOption({ value, view }: Option): Element {
         const status =
-            Just(value) === options.selected
-                ? OptionState.Selected
-                : OptionState.Idle;
+            value === selected_ ? OptionState.Selected : OptionState.Idle;
         return el(
             [
                 pointer,
@@ -2125,7 +2126,7 @@ function radioHelper(
             default:
                 switch (found) {
                     case Found.NotFound:
-                        if (Just(opt.value) === options.selected) {
+                        if (opt.value === selected_) {
                             return [Found.BeforeFound, prev, next];
                         } else {
                             return [found, opt.value, next];

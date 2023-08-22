@@ -80,7 +80,6 @@ import {
     TextInputNode,
     TextKinds,
     Thumb,
-    button,
     buttonAttrs,
     calcMoveToCompensateForPadding,
     checkboxAttrs,
@@ -1383,7 +1382,7 @@ function ApplyLabel({
 
 /** Add a choice to your radio element. This will be rendered with the default radio icon. */
 function Option(value: any, text: preact.ComponentChild): Option {
-    return Option(value, (status: OptionState) => (
+    return Option_(value, (status: OptionState) => (
         <DefaultRadioOption status={status}>{text}</DefaultRadioOption>
     ));
 }
@@ -1393,7 +1392,7 @@ function OptionWith(
     value: any,
     view: (x: OptionState) => preact.ComponentChild
 ): Option {
-    return Option(value, view);
+    return Option_(value, view);
 }
 
 function Radio({
@@ -1490,7 +1489,9 @@ function DefaultRadioOption({
                 {}
             </El>
             <El attributes={[width(fill), Internal.htmlClass('unfocusable')]}>
-                {ElementJsx.Text({ children })}
+                {typeof children === 'string'
+                    ? ElementJsx.Text({ children })
+                    : children}
             </El>
         </ElementJsx.Row>
     );
@@ -1510,6 +1511,11 @@ function RadioHelper({
         label: Label;
     };
 }) {
+    let selected_: any;
+    if (options.selected.type === MaybeType.Just) {
+        selected_ = options.selected.value;
+    }
+
     const optionArea = (() => {
             switch (orientation) {
                 case Orientation.Row: {
@@ -1546,7 +1552,7 @@ function RadioHelper({
             }
         })(),
         prevNext: Maybe<[any, any]> = (() => {
-            if (isEmpty(options)) return Nothing();
+            if (isEmpty(options.options)) return Nothing();
 
             const val: any = options.options[0].value;
             return (([found, b, a]) => {
@@ -1590,9 +1596,7 @@ function RadioHelper({
 
     function renderOption({ value, view }: Option) {
         const status =
-            Just(value) === options.selected
-                ? OptionState.Selected
-                : OptionState.Idle;
+            value === selected_ ? OptionState.Selected : OptionState.Idle;
         return (
             <El
                 attributes={[
@@ -1632,7 +1636,7 @@ function RadioHelper({
             default:
                 switch (found) {
                     case Found.NotFound:
-                        if (Just(opt.value) === options.selected) {
+                        if (opt.value === selected_) {
                             return [Found.BeforeFound, prev, next];
                         } else {
                             return [found, opt.value, next];
