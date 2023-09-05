@@ -288,17 +288,21 @@ function Button({
                             const handler = onPress.value;
                             return [
                                 Events.onClick(handler),
-                                Events.onKeyLookUp((event) => {
-                                    const { key } = event;
-                                    switch (key) {
-                                        case Events.enter:
-                                        case Events.space:
-                                            handler(event);
-                                            break;
-                                        default:
-                                            break;
+                                Events.onKeyLookUp(
+                                    (
+                                        event: preact.JSX.TargetedKeyboardEvent<EventTarget>
+                                    ) => {
+                                        const { key } = event;
+                                        switch (key) {
+                                            case Events.enter:
+                                            case Events.space:
+                                                handler(event);
+                                                break;
+                                            default:
+                                                break;
+                                        }
                                     }
-                                }),
+                                ),
                                 ...attributes,
                             ];
                         }

@@ -24,7 +24,7 @@
  * - bigDesktopLandscape
  */
 
-interface Breakpoints {
+export interface Breakpoints {
     default?: any;
     phone?: any;
     phonePortrait?: any;
@@ -40,19 +40,35 @@ interface Breakpoints {
     bigDesktopLandscape?: any;
 }
 
-enum DeviceClass {
+const breakpoints: Breakpoints = {
+    default: undefined,
+    phone: undefined,
+    phonePortrait: undefined,
+    phoneLandscape: undefined,
+    tablet: undefined,
+    tabletPortrait: undefined,
+    tabletLandscape: undefined,
+    desktop: undefined,
+    desktopPortrait: undefined,
+    desktopLandscape: undefined,
+    bigDesktop: undefined,
+    bigDesktopPortrait: undefined,
+    bigDesktopLandscape: undefined,
+};
+
+export enum DeviceClass {
     Phone,
     Tablet,
     Desktop,
     BigDesktop,
 }
 
-enum Orientation {
+export enum Orientation {
     Portrait,
     Landscape,
 }
 
-interface Device {
+export interface Device {
     class_: DeviceClass;
     orientation: Orientation;
 }
@@ -258,8 +274,6 @@ function classifyDevice(window: { width: number; height: number }): Device {
 }
 
 export {
-    DeviceClass,
-    Orientation,
     isPhone,
     isPhonePortrait,
     isPhoneLandscape,
@@ -275,5 +289,6 @@ export {
     respond,
     deviceData,
     classifyDevice,
+    breakpoints,
+    Device,
 };
-export type { Breakpoints, Device };
