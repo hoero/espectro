@@ -218,6 +218,18 @@ function shadow({
     );
 }
 
+function shadows(shadows: Shadow[]): Attribute {
+    const shade = shadows[0];
+    return StyleClass(
+        Flag.shadows,
+        Single(
+            'shadows-' + Internal.boxShadowClass(shade),
+            'box-shadow',
+            shadows.map((shade) => Internal.formatBoxShadow(shade)).join(', ')
+        )
+    );
+}
+
 function innerShadow({
     offset,
     size,
@@ -254,4 +266,5 @@ export {
     innerGlow,
     shadow,
     innerShadow,
+    shadows,
 };

@@ -3799,7 +3799,7 @@ function formatColorClass(
             return `${a}-${b}-${c}`;
 
         case Notation.Hsla:
-            return `${a}-${b}-${c}-${d * 100}`;
+            return `${a}-${b}-${c}-${floatClass(d)}`;
 
         case Notation.Rgb:
             return `${floatClass(a)}-${floatClass(b)}-${floatClass(c)}`;
@@ -3813,7 +3813,7 @@ function formatColorClass(
             return `${a}-${b}-${c}`;
 
         case Notation.Rgba255:
-            return `${a}-${b}-${c}-${d * 100}`;
+            return `${a}-${b}-${c}-${floatClass(d)}`;
     }
 }
 
