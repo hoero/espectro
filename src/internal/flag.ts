@@ -64,7 +64,7 @@ function add(myFlag: Flag, fields: Field[]): Field[] {
 }
 
 function flag(i: number): Flag {
-    if (i > 31) return Second(i - 32);
+    if (i > 31) return Second(i === 32 ? 1 : i - 32 + 1);
     return Flag(i);
 }
 

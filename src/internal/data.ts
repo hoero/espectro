@@ -655,7 +655,6 @@ export enum Attributes {
     Height,
     Nearby,
     TransformComponent,
-    Event,
 }
 
 export interface NoAttribute {
