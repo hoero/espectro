@@ -404,7 +404,7 @@ const debounce = <A extends unknown[]>(
     };
 };
 
-function getViewport(msDelay = 100): {
+function useViewport(msDelay = 100): {
     width: number;
     height: number;
     x: number;
@@ -1609,6 +1609,6 @@ export {
     modular,
     jsx,
     jsxAttribute,
-    getViewport,
+    useViewport,
     debounce,
 };
