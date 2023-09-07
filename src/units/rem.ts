@@ -1,8 +1,15 @@
+import { modular } from '../element.ts';
 import { Rem } from '../internal/data.ts';
 import { Device, Breakpoints, respond } from '../responsive.ts';
+import { baseFontSize } from './pixel.ts';
 
 /**This defines what 1rem is in pixels. */
 const oneRem = 10;
+
+/** Modular scale */
+function scaled(rescale: number) {
+    return modular(baseFontSize, 1.25, rescale) / 10;
+}
 
 /**
  * #### Responsive rems
@@ -33,4 +40,4 @@ function unitless(point: number, value: number): number {
     return pt(point) * value;
 }
 
-export { oneRem, rrems, pt, rpts, unitless };
+export { oneRem, rrems, pt, rpts, unitless, scaled };

@@ -1,7 +1,13 @@
+import { modular } from '../element.ts';
 import { Device, DeviceClass, Breakpoints, respond } from '../responsive.ts';
 
 /** Default browser font size */
 const baseFontSize = 16;
+
+/** Modular scale */
+function scaled(rescale: number) {
+    return modular(baseFontSize, 1.25, rescale);
+}
 
 /**
  * This allows the user to use Points for fonts as we usually use in graphics software.
@@ -76,4 +82,4 @@ function percentToPx(percent: number): number {
     return (percent * baseFontSize) / 100;
 }
 
-export { pt, rpts, unitless, rpx, rpxs };
+export { pt, rpts, unitless, rpx, rpxs, scaled, baseFontSize };
