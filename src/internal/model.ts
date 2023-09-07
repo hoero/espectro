@@ -2356,7 +2356,11 @@ function staticRoot(options: OptionObject): preact.JSX.Element {
     switch (options.mode) {
         case RenderMode.Layout:
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
-            return h('div', null, h('style', null, rules()));
+            return h(
+                'div',
+                { style: 'position: absolute; top: -9999px; left: -9999px;' },
+                h('style', null, rules())
+            );
 
         case RenderMode.NoStaticStyleSheet:
             return h('', null, null);
@@ -2917,7 +2921,7 @@ function toStyleSheet(
             // wrap the style node in a div to prevent `Dark Reader` from blowin up the dom.
             return h(
                 'div',
-                null,
+                { style: 'position: absolute; top: -9999px; left: -9999px;' },
                 h('style', null, toStyleSheetString(options, stylesheet))
             );
 

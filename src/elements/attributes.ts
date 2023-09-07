@@ -97,7 +97,7 @@ function classList(classes: [string, boolean][]): Attribute {
 }
 
 function style(property: string, value: string): Attribute {
-    return Attr({ style: `${property}: ${value}` });
+    return Attr({ style: `${property}: ${value};` });
 }
 
 export {
