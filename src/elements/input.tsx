@@ -1356,7 +1356,7 @@ function ApplyLabel({
                                 Internal.htmlClass(classes.inputLabel),
                                 ...attributes,
                             ]}
-                            context={asColumn}
+                            context={asRow}
                             node={NodeName('label')}
                         >
                             {children}
@@ -1372,7 +1372,7 @@ function ApplyLabel({
                                 Internal.htmlClass(classes.inputLabel),
                                 ...attributes,
                             ]}
-                            context={asColumn}
+                            context={asRow}
                             node={NodeName('label')}
                         >
                             {labelElement}

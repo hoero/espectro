@@ -1891,7 +1891,7 @@ function applyLabel(
 
                 case LabelLocation.OnRight:
                     return Internal.element(
-                        asColumn,
+                        asRow,
                         NodeName('label'),
                         [Internal.htmlClass(classes.inputLabel), ...attributes],
                         Unkeyed([input, labelElement])
@@ -1899,7 +1899,7 @@ function applyLabel(
 
                 case LabelLocation.OnLeft:
                     return Internal.element(
-                        asColumn,
+                        asRow,
                         NodeName('label'),
                         [Internal.htmlClass(classes.inputLabel), ...attributes],
                         Unkeyed([labelElement, input])
