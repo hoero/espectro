@@ -375,45 +375,6 @@ function finalizeNode(
                 return html;
             }
 
-        case LayoutContext.AsEl:
-            if (
-                Flag.present(Flag.alignRight, has) ||
-                Flag.present(Flag.alignBottom, has)
-            ) {
-                return h(
-                    'u',
-                    {
-                        class: [
-                            cls.any,
-                            cls.single,
-                            cls.container,
-                            cls.contentCenterY,
-                            cls.alignContainerRight,
-                        ].join(' '),
-                    },
-                    html
-                );
-            } else if (
-                Flag.present(Flag.centerX, has) ||
-                Flag.present(Flag.centerY, has)
-            ) {
-                return h(
-                    's',
-                    {
-                        class: [
-                            cls.any,
-                            cls.single,
-                            cls.container,
-                            cls.contentCenterY,
-                            cls.alignContainerCenterX,
-                        ].join(' '),
-                    },
-                    html
-                );
-            } else {
-                return html;
-            }
-
         default:
             return html;
     }

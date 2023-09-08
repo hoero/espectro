@@ -968,7 +968,6 @@ const baseSheet: Class[] = [
 
             // This may be necessary..should it move to classes.heightFIll?
             // Child(dot(classes.heightFillBetween), [
-            //     // alignTop, centerY, and alignBottom need to be disabled
             //     Prop('align-self', 'stretch'),
             //     Descriptor('.aligned-vertically', [Prop('height', '100%')]),
             // ]),
@@ -1005,7 +1004,7 @@ const baseSheet: Class[] = [
             // lonely centerX
             Child('s:only-of-type.' + classes.alignContainerCenterX, [
                 Prop('flex-grow', '1'),
-                Child(dot(classes.alignCenterX), [
+                Child(dot(classes.alignCenterY), [
                     Prop('margin-top', 'auto !important'),
                     Prop('margin-bottom', 'auto !important'),
                 ]),
