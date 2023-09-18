@@ -337,7 +337,7 @@ interface Text {
     label: Label;
 }
 
-enum OptionState {
+export enum OptionState {
     Idle,
     Focused,
     Selected,
@@ -2293,7 +2293,6 @@ export {
     Option,
     option,
     optionWith,
-    OptionState,
     Label,
     LabelLocation,
     Labels,

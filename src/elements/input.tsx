@@ -1787,7 +1787,6 @@ export {
     Option,
     Option_,
     OptionWith,
-    OptionState,
     Label,
     labelAbove,
     labelBelow,

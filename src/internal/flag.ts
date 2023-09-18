@@ -70,7 +70,7 @@ function flag(i: number): Flag {
 
 // Used for Style invalidation
 
-const transparency = flag(0);
+const transparency = flag(1);
 
 const padding = flag(2);
 
