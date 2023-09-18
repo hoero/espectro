@@ -9,7 +9,6 @@ import * as Events from './src/elements/events.ts';
 import * as Font from './src/elements/font.ts';
 import * as Input from './src/elements/input.ts';
 import * as InputJsx from './src/elements/input.tsx';
-import * as Keyed from './src/elements/keyed.ts';
 import * as Region from './src/elements/region.ts';
 import * as Responsive from './src/responsive.ts';
 import * as Pixel from './src/units/pixel.ts';
@@ -26,7 +25,6 @@ export * as Events from './src/elements/events.ts';
 export * as Font from './src/elements/font.ts';
 export * as Input from './src/elements/input.ts';
 export * as InputJsx from './src/elements/input.tsx';
-export * as Keyed from './src/elements/keyed.ts';
 export * as Region from './src/elements/region.ts';
 export * as Responsive from './src/responsive.ts';
 export * as Pixel from './src/units/pixel.ts';
@@ -44,7 +42,6 @@ export default {
     Font,
     Input,
     InputJsx,
-    Keyed,
     Region,
     Responsive,
     Pixel,

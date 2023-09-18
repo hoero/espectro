@@ -2612,13 +2612,20 @@ function renderRoot(
     attributes: Attribute[],
     child: Element,
     context: LayoutContext = asEl,
-    node: NodeName = div
+    node: NodeName = div,
+    key?: string
 ): preact.JSX.Element {
     const options: OptionObject = optionsToObject(optionList);
 
     return toHtml(
         (s: Style[]) => embedStyle(options, s),
-        element(context, node, attributes, Unkeyed([child]), options)
+        element(
+            context,
+            node,
+            attributes,
+            key ? Keyed([[key, child]]) : Unkeyed([child]),
+            options
+        )
     );
 }
 

@@ -111,7 +111,6 @@ function InternalColumn(column: Column_<Record<string, any>>): InternalColumn {
 type InternalTableColumn = InternalIndexedColumn | InternalColumn;
 
 const { Just, Nothing, MaybeType } = elmish.Maybe;
-const { Fragment } = preact;
 
 /** This is your top level node where you can turn `Element` into `JSX`. */
 function Layout({
@@ -121,10 +120,7 @@ function Layout({
     attributes: Attribute[];
     children: preact.ComponentChild;
 }) {
-    return Element_.layout(
-        attributes,
-        Element_.jsx(<Fragment>{children}</Fragment>)
-    );
+    return Element_.layout(attributes, Element_.jsx(<>{children}</>));
 }
 
 function LayoutWith({
@@ -133,19 +129,22 @@ function LayoutWith({
     children,
     context,
     node,
+    key,
 }: {
     options: Option[];
     attributes: Attribute[];
     children: preact.ComponentChild;
     context?: LayoutContext;
     node?: NodeName;
+    key?: string;
 }) {
     return Element_.layoutWith(
         options,
         attributes,
-        Element_.jsx(<Fragment>{children}</Fragment>),
+        Element_.jsx(<>{children}</>),
         context,
-        node
+        node,
+        key
     );
 }
 
@@ -170,7 +169,7 @@ function Text({ children }: { children: preact.ComponentChild }) {
                 typeof children === 'boolean'
             )
                 return Element_.text(children.toString());
-            return Element_.jsx(<Fragment>{children}</Fragment>);
+            return Element_.jsx(<>{children}</>);
         })()
     );
 }
@@ -195,15 +194,18 @@ function Text({ children }: { children: preact.ComponentChild }) {
  */
 function El({
     attributes,
+    key,
     children,
 }: {
     attributes: Attribute[];
+    key?: string;
     children: preact.ComponentChild;
 }) {
     return (
         <LayoutWith
             options={[Element_.noStaticStyleSheet]}
             attributes={[...Element_.elAttrs, ...attributes]}
+            key={key}
         >
             {Text({ children })}
         </LayoutWith>
@@ -212,9 +214,11 @@ function El({
 
 function Row({
     attributes,
+    keys,
     children,
 }: {
     attributes: Attribute[];
+    keys?: string[];
     children: preact.ComponentChild[];
 }) {
     return (
@@ -223,16 +227,20 @@ function Row({
             attributes={[...Element_.rowAttrs, ...attributes]}
             context={asRow}
         >
-            {children}
+            {children.map((c, i) =>
+                typeof c === 'object' && keys ? { ...c, key: keys.at(i) } : c
+            )}
         </LayoutWith>
     );
 }
 
 function Column({
     attributes,
+    keys,
     children,
 }: {
     attributes: Attribute[];
+    keys?: string[];
     children: preact.ComponentChild[];
 }) {
     return (
@@ -241,7 +249,9 @@ function Column({
             attributes={[...Element_.columnAttrs, ...attributes]}
             context={asColumn}
         >
-            {children}
+            {children.map((c, i) =>
+                typeof c === 'object' && keys ? { ...c, key: keys.at(i) } : c
+            )}
         </LayoutWith>
     );
 }
@@ -249,9 +259,11 @@ function Column({
 /** Same as `Row`, but will wrap if it takes up too much horizontal space. */
 function WrappedRow({
     attributes,
+    keys,
     children,
 }: {
     attributes: Attribute[];
+    keys?: string[];
     children: preact.ComponentChild[];
 }) {
     const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
@@ -265,7 +277,11 @@ function WrappedRow({
                     attributes={[...Element_.wrappedRowAttrs, ...attributes]}
                     context={asRow}
                 >
-                    {children}
+                    {children.map((c, i) =>
+                        typeof c === 'object' && keys
+                            ? { ...c, key: keys.at(i) }
+                            : c
+                    )}
                 </LayoutWith>
             );
 
@@ -360,7 +376,11 @@ function WrappedRow({
                             ]}
                             context={asRow}
                         >
-                            {children}
+                            {children.map((c, i) =>
+                                typeof c === 'object' && keys
+                                    ? { ...c, key: keys.at(i) }
+                                    : c
+                            )}
                         </LayoutWith>
                     );
 
@@ -410,7 +430,11 @@ function WrappedRow({
                                 ]}
                                 context={asRow}
                             >
-                                {children}
+                                {children.map((c, i) =>
+                                    typeof c === 'object' && keys
+                                        ? { ...c, key: keys.at(i) }
+                                        : c
+                                )}
                             </LayoutWith>
                         </LayoutWith>
                     );
@@ -790,9 +814,11 @@ function TableHelper({
  */
 function Paragraph({
     attributes,
+    keys,
     children,
 }: {
     attributes: Attribute[];
+    keys?: string[];
     children: preact.ComponentChild[];
 }) {
     return (
@@ -801,7 +827,9 @@ function Paragraph({
             attributes={[...Element_.paragraphAttrs, ...attributes]}
             context={asParagraph}
         >
-            {children}
+            {children.map((c, i) =>
+                typeof c === 'object' && keys ? { ...c, key: keys.at(i) } : c
+            )}
         </LayoutWith>
     );
 }
@@ -831,10 +859,12 @@ function Paragraph({
  */
 function TextColumn({
     attributes,
+    keys,
     children,
 }: {
     attributes: Attribute[];
-    children: preact.ComponentChild;
+    keys?: string[];
+    children: preact.ComponentChild[];
 }) {
     return (
         <LayoutWith
@@ -842,7 +872,9 @@ function TextColumn({
             attributes={[...Element_.textColumnAttrs, ...attributes]}
             context={asTextColumn}
         >
-            {children}
+            {children.map((c, i) =>
+                typeof c === 'object' && keys ? { ...c, key: keys.at(i) } : c
+            )}
         </LayoutWith>
     );
 }

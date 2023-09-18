@@ -222,6 +222,7 @@ import {
     PseudoClass,
     LayoutContext,
     Viewport,
+    Keyed,
 } from './internal/data.ts';
 import * as Flag from './internal/flag.ts';
 import { classes } from './internal/style.ts';
@@ -509,9 +510,10 @@ function layoutWith(
     attributes: Attribute[],
     child: Element,
     context?: LayoutContext,
-    node?: NodeName
+    node?: NodeName,
+    key?: string
 ): preact.JSX.Element {
-    return Internal.renderRoot(options, attributes, child, context, node);
+    return Internal.renderRoot(options, attributes, child, context, node, key);
 }
 
 function focusStyle(focus: FocusStyle): FocusStyleOption {
@@ -548,12 +550,12 @@ const elAttrs: Attribute[] = [width(shrink), height(shrink)];
  *  Element.text("You've made a stylish element!"))
  * ```
  */
-function el(attributes: Attribute[], child: Element): Element {
+function el(attributes: Attribute[], child: Element, key?: string): Element {
     return Internal.element(
         asEl,
         Internal.div,
         [...elAttrs, ...attributes],
-        Unkeyed([child])
+        key ? Keyed([[key, child]]) : Unkeyed([child])
     );
 }
 
@@ -563,12 +565,18 @@ const rowAttrs: Attribute[] = [
     height(shrink),
 ];
 
-function row(attributes: Attribute[], children: Element[]): Element {
+function row(
+    attributes: Attribute[],
+    children: Element[],
+    keys?: string[]
+): Element {
     return Internal.element(
         asRow,
         Internal.div,
         [...rowAttrs, ...attributes],
-        Unkeyed(children)
+        Array.isArray(keys)
+            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
+            : Unkeyed(children)
     );
 }
 
@@ -578,12 +586,18 @@ const columnAttrs: Attribute[] = [
     width(shrink),
 ];
 
-function column(attributes: Attribute[], children: Element[]): Element {
+function column(
+    attributes: Attribute[],
+    children: Element[],
+    keys?: string[]
+): Element {
     return Internal.element(
         asColumn,
         Internal.div,
         [...columnAttrs, ...attributes],
-        Unkeyed(children)
+        Array.isArray(keys)
+            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
+            : Unkeyed(children)
     );
 }
 
@@ -600,7 +614,11 @@ const wrappedRowAttrs: Attribute[] = [
 ];
 
 /** Same as `row`, but will wrap if it takes up too much horizontal space. */
-function wrappedRow(attributes: Attribute[], children: Element[]): Element {
+function wrappedRow(
+    attributes: Attribute[],
+    children: Element[],
+    keys?: string[]
+): Element {
     const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
         Internal.extractSpacingAndPadding(attributes);
 
@@ -610,7 +628,9 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                 asRow,
                 Internal.div,
                 [...wrappedRowAttrs, ...attributes],
-                Unkeyed(children)
+                Array.isArray(keys)
+                    ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
+                    : Unkeyed(children)
             );
 
         case MaybeType.Just: {
@@ -698,7 +718,14 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                         asRow,
                         Internal.div,
                         [...wrappedRowAttrs, ...attributes, newPadding.value],
-                        Unkeyed(children)
+                        Array.isArray(keys)
+                            ? Keyed(
+                                  children.map((c, i) => [
+                                      <string>keys.at(i),
+                                      c,
+                                  ])
+                              )
+                            : Unkeyed(children)
                     );
 
                 case MaybeType.Nothing: {
@@ -746,7 +773,14 @@ function wrappedRow(attributes: Attribute[], children: Element[]): Element {
                                         SpacingStyle(name, x, y)
                                     ),
                                 ],
-                                Unkeyed(children)
+                                Array.isArray(keys)
+                                    ? Keyed(
+                                          keys.map((k, i) => [
+                                              k,
+                                              children.at(i),
+                                          ])
+                                      )
+                                    : Unkeyed(children)
                             ),
                         ])
                     );
@@ -1088,12 +1122,18 @@ const paragraphAttrs: Attribute[] = [
  * ![A paragraph where the first letter is twice the height of the others](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%209.41.52%20PM.png)
  * **Note** `spacing` on a paragraph will set the pixel spacing between lines.
  */
-function paragraph(attributes: Attribute[], children: Element[]): Element {
+function paragraph(
+    attributes: Attribute[],
+    children: Element[],
+    keys?: string[]
+): Element {
     return Internal.element(
         asParagraph,
         Internal.div,
         [...paragraphAttrs, ...attributes],
-        Unkeyed(children)
+        Array.isArray(keys)
+            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
+            : Unkeyed(children)
     );
 }
 
@@ -1120,12 +1160,18 @@ const textColumnAttrs: Attribute[] = [width(maximum(750, minimum(500, fill)))];
  *
  * ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
  */
-function textColumn(attributes: Attribute[], children: Element[]): Element {
+function textColumn(
+    attributes: Attribute[],
+    children: Element[],
+    keys?: string[]
+): Element {
     return Internal.element(
         asTextColumn,
         Internal.div,
         [...textColumnAttrs, ...attributes],
-        Unkeyed(children)
+        Array.isArray(keys)
+            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
+            : Unkeyed(children)
     );
 }
 
