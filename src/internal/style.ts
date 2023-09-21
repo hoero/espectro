@@ -118,6 +118,7 @@ enum Location {
     OnRight,
     Within,
     Behind,
+    Floating,
 }
 
 interface SelfDescriptor {
@@ -168,6 +169,7 @@ const locations = [
     Location.OnLeft,
     Location.Within,
     Location.Behind,
+    Location.Floating,
 ];
 
 const classes = {
@@ -201,6 +203,7 @@ const classes = {
     onRight: 'or',
     onLeft: 'ol',
     inFront: 'fr',
+    floating: 'fl',
     behind: 'bh',
     hasBehind: 'hbh',
 
@@ -331,6 +334,7 @@ const _unicode = {
     onLeft: 'on-left',
     inFront: 'infront',
     behind: 'behind',
+    floating: 'floating',
 
     // alignments
     alignTop: '⤒',
@@ -426,6 +430,7 @@ const _single = {
     onLeft: 'l',
     inFront: 'f',
     behind: 'b',
+    floating: 'fl',
 
     // alignments
     alignTop: '⤒',
@@ -829,6 +834,18 @@ const baseSheet: Class[] = [
                             Prop('top', '0'),
                             Prop('margin', '0 !important'),
                             Prop('z-index', '0'),
+                            Prop('pointer-events', 'none'),
+                            Child('*', [Prop('pointer-events', 'auto')]),
+                        ]);
+
+                    case Location.Floating:
+                        return Descriptor(dot(classes.floating), [
+                            Prop('position', 'fixed'),
+                            Prop('width', '100%'),
+                            Prop('height', '100%'),
+                            Prop('left', '0'),
+                            Prop('top', '0'),
+                            Prop('margin', '0 !important'),
                             Prop('pointer-events', 'none'),
                             Child('*', [Prop('pointer-events', 'auto')]),
                         ]);

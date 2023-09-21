@@ -765,6 +765,7 @@ export enum Location {
     OnLeft,
     InFront,
     Behind,
+    Floating,
 }
 
 export interface Nearby {

@@ -1329,6 +1329,13 @@ function inFront(element: Element): Attribute {
     return createNearby(Location.InFront, element);
 }
 
+/**
+ * This will place an element in front over another (fixed).
+ */
+function floating(element: Element): Attribute {
+    return createNearby(Location.Floating, element);
+}
+
 /**This will place an element between the background and the content of an element. */
 function behindContent(element: Element): Attribute {
     return createNearby(Location.Behind, element);
@@ -1657,4 +1664,5 @@ export {
     jsxAttribute,
     useViewport,
     debounce,
+    floating,
 };
