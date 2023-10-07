@@ -1712,6 +1712,9 @@ function nearbyElement(
 
             case Location.Behind:
                 return [...common, cls.behind].join(' ');
+
+            case Location.Floating:
+                return [...common, cls.floating].join(' ');
         }
     }
 

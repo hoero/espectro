@@ -374,6 +374,14 @@ const alignRight: Attribute = AlignX(HAlign.Right);
 
 const spaceEvenly: Attribute = Class(Flag.spacing, classes.spaceEvenly);
 
+const stickyTop: Attribute = Class(Flag.yAlign, classes.stickyTop);
+
+const stickyRight: Attribute = Class(Flag.xAlign, classes.stickyLeft);
+
+const stickyBottom: Attribute = Class(Flag.yAlign, classes.stickyTop);
+
+const stickyLeft: Attribute = Class(Flag.xAlign, classes.stickyLeft);
+
 /** Set the cursor to be a pointing hand when it's hovering over this element. */
 const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
@@ -1329,6 +1337,13 @@ function inFront(element: Element): Attribute {
     return createNearby(Location.InFront, element);
 }
 
+/**
+ * This will place an element in front over another (fixed).
+ */
+function floating(element: Element): Attribute {
+    return createNearby(Location.Floating, element);
+}
+
 /**This will place an element between the background and the content of an element. */
 function behindContent(element: Element): Attribute {
     return createNearby(Location.Behind, element);
@@ -1657,4 +1672,9 @@ export {
     jsxAttribute,
     useViewport,
     debounce,
+    floating,
+    stickyTop,
+    stickyLeft,
+    stickyBottom,
+    stickyRight,
 };

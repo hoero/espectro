@@ -118,6 +118,7 @@ enum Location {
     OnRight,
     Within,
     Behind,
+    Floating,
 }
 
 interface SelfDescriptor {
@@ -168,6 +169,7 @@ const locations = [
     Location.OnLeft,
     Location.Within,
     Location.Behind,
+    Location.Floating,
 ];
 
 const classes = {
@@ -201,6 +203,7 @@ const classes = {
     onRight: 'or',
     onLeft: 'ol',
     inFront: 'fr',
+    floating: 'fl',
     behind: 'bh',
     hasBehind: 'hbh',
 
@@ -213,6 +216,16 @@ const classes = {
     alignCenterY: 'cy',
     alignedHorizontally: 'ah',
     alignedVertically: 'av',
+
+    // sticky alignments
+    stickyTop: 'syt',
+    stickyBottom: 'syb',
+    stickyRight: 'syr',
+    stickyLeft: 'syl',
+    stickyCenterX: 'sycx',
+    stickyCenterY: 'sycy',
+    stickyHorizontally: 'syh',
+    stickyVertically: 'syv',
 
     // space evenly
     spaceEvenly: 'sev',
@@ -331,6 +344,7 @@ const _unicode = {
     onLeft: 'on-left',
     inFront: 'infront',
     behind: 'behind',
+    floating: 'floating',
 
     // alignments
     alignTop: '⤒',
@@ -426,6 +440,7 @@ const _single = {
     onLeft: 'l',
     inFront: 'f',
     behind: 'b',
+    floating: 'fl',
 
     // alignments
     alignTop: '⤒',
@@ -829,6 +844,18 @@ const baseSheet: Class[] = [
                             Prop('top', '0'),
                             Prop('margin', '0 !important'),
                             Prop('z-index', '0'),
+                            Prop('pointer-events', 'none'),
+                            Child('*', [Prop('pointer-events', 'auto')]),
+                        ]);
+
+                    case Location.Floating:
+                        return Descriptor(dot(classes.floating), [
+                            Prop('position', 'fixed'),
+                            Prop('width', '100%'),
+                            Prop('height', '100%'),
+                            Prop('left', '0'),
+                            Prop('top', '0'),
+                            Prop('margin', '0 !important'),
                             Prop('pointer-events', 'none'),
                             Child('*', [Prop('pointer-events', 'auto')]),
                         ]);
@@ -1289,6 +1316,53 @@ const baseSheet: Class[] = [
                 }
             }),
         ]),
+        stickyAlignment((alignment: Alignment): Rule[] => {
+            switch (alignment) {
+                case Alignment.Top:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('top', '0'),
+                        Prop('z-index', '1'),
+                    ];
+
+                case Alignment.Bottom:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('bottom', '0'),
+                        Prop('z-index', '1'),
+                    ];
+
+                case Alignment.Right:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('right', '0'),
+                        Prop('z-index', '1'),
+                    ];
+
+                case Alignment.Left:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('left', '0'),
+                        Prop('z-index', '1'),
+                    ];
+
+                case Alignment.CenterX:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('right', '0'),
+                        Prop('left', '0'),
+                        Prop('z-index', '1'),
+                    ];
+
+                case Alignment.CenterY:
+                    return [
+                        Prop('position', 'sticky'),
+                        Prop('top', '0'),
+                        Prop('bottom', '0'),
+                        Prop('z-index', '1'),
+                    ];
+            }
+        }),
         Descriptor(dot(classes.inputMultiline), [
             Prop('white-space', 'pre-wrap !important'),
             Prop('height', '100%'),
@@ -1503,6 +1577,28 @@ function contentName(desc: ContentDescriptor): string {
     }
 }
 
+function stickyName(desc: SelfDescriptor): string {
+    switch (desc.align) {
+        case Alignment.Top:
+            return dot(classes.stickyTop);
+
+        case Alignment.Bottom:
+            return dot(classes.stickyBottom);
+
+        case Alignment.Left:
+            return dot(classes.stickyLeft);
+
+        case Alignment.Right:
+            return dot(classes.stickyRight);
+
+        case Alignment.CenterX:
+            return dot(classes.stickyCenterX);
+
+        case Alignment.CenterY:
+            return dot(classes.stickyCenterY);
+    }
+}
+
 function describeAlignment(
     values: (alignment: Alignment) => [Rule[], Rule[]]
 ): Batch {
@@ -1526,6 +1622,17 @@ function gridAlignment(values: (alignment: Alignment) => Rule[]): Batch {
             Child(dot(classes.any), [
                 Descriptor(selfName({ align: alignment }), values(alignment)),
             ]),
+        ];
+    }
+    return Batch(
+        alignments.flatMap((value: Alignment) => createDescription(value))
+    );
+}
+
+function stickyAlignment(values: (alignment: Alignment) => Rule[]): Batch {
+    function createDescription(alignment: Alignment): Rule[] {
+        return [
+            Descriptor(stickyName({ align: alignment }), values(alignment)),
         ];
     }
     return Batch(
