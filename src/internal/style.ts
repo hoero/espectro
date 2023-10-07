@@ -1351,7 +1351,7 @@ const baseSheet: Class[] = [
                         Prop('position', 'sticky'),
                         Prop('right', '0'),
                         Prop('left', '0'),
-                        Prop('z-index', '2'),
+                        Prop('z-index', '1'),
                     ];
 
                 case Alignment.CenterY:
