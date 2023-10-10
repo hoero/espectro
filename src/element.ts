@@ -159,150 +159,150 @@
  * @docs html, htmlAttribute
  */
 
-import { elmish, preact, hooks } from '../deps.ts';
+import { elmish, hooks, preact } from "../deps.ts";
 import {
-    Length,
-    Px,
-    Rem,
-    Content,
-    Fill,
-    Min,
-    Max,
-    MinContent,
-    MaxContent,
-    Element,
-    Attribute,
-    Attr,
-    Option,
-    RenderMode,
-    RenderModeOption,
-    FocusStyle,
-    FocusStyleOption,
-    HoverSetting,
-    HoverOption,
-    Empty,
-    Text,
-    asEl,
-    asRow,
-    asColumn,
-    Unkeyed,
-    Width,
-    Height,
-    Padding_,
-    Spaced,
-    Maybe,
-    PaddingStyle,
-    StyleClass,
-    SpacingStyle,
-    GridPosition,
-    GridTemplateStyle,
-    asGrid,
-    asParagraph,
-    Paragraph,
-    Describe,
-    asTextColumn,
-    Attributes,
-    NodeName,
-    Location,
-    Elements,
-    NoAttribute,
-    Nearby,
-    TransformComponent_,
-    Scale,
-    Rotate,
-    MoveY,
-    MoveX,
-    AlignX,
-    HAlign,
-    AlignY,
-    VAlign,
-    Class,
-    Transparency,
-    PseudoSelector,
-    PseudoClass,
-    LayoutContext,
-    Viewport,
-    Keyed,
-} from './internal/data.ts';
-import * as Flag from './internal/flag.ts';
-import { classes } from './internal/style.ts';
-import * as Internal from './internal/model.ts';
-import { style } from './elements/attributes.ts';
-import { oneRem } from './units/rem.ts';
+  AlignX,
+  AlignY,
+  asColumn,
+  asEl,
+  asGrid,
+  asParagraph,
+  asRow,
+  asTextColumn,
+  Attr,
+  Attribute,
+  Attributes,
+  Class,
+  Content,
+  Describe,
+  Element,
+  Elements,
+  Empty,
+  Fill,
+  FocusStyle,
+  FocusStyleOption,
+  GridPosition,
+  GridTemplateStyle,
+  HAlign,
+  Height,
+  HoverOption,
+  HoverSetting,
+  Keyed,
+  LayoutContext,
+  Length,
+  Location,
+  Max,
+  MaxContent,
+  Maybe,
+  Min,
+  MinContent,
+  MoveX,
+  MoveY,
+  Nearby,
+  NoAttribute,
+  NodeName,
+  Option,
+  Padding_,
+  PaddingStyle,
+  Paragraph,
+  PseudoClass,
+  PseudoSelector,
+  Px,
+  Rem,
+  RenderMode,
+  RenderModeOption,
+  Rotate,
+  Scale,
+  Spaced,
+  SpacingStyle,
+  StyleClass,
+  Text,
+  TransformComponent_,
+  Transparency,
+  Unkeyed,
+  VAlign,
+  Viewport,
+  Width,
+} from "./internal/data.ts";
+import * as Flag from "./internal/flag.ts";
+import { classes } from "./internal/style.ts";
+import * as Internal from "./internal/model.ts";
+import { style } from "./elements/attributes.ts";
+import { oneRem } from "./units/rem.ts";
 
 interface Column<T extends Record<string, any>> {
-    header: Element;
-    footer: Element;
-    width: Length;
-    view: (record: T) => Element;
+  header: Element;
+  footer: Element;
+  width: Length;
+  view: (record: T) => Element;
 }
 
 function Column(
-    header: Element,
-    footer: Element,
-    width: Length,
-    view: (record: Record<string, any>) => Element
+  header: Element,
+  footer: Element,
+  width: Length,
+  view: (record: Record<string, any>) => Element,
 ): Column<Record<string, any>> {
-    return { header, footer, width, view };
+  return { header, footer, width, view };
 }
 
 interface IndexedColumn<T extends Record<string, any>> {
-    header: Element;
-    footer: Element;
-    width: Length;
-    view: (a: number, record: T) => Element;
+  header: Element;
+  footer: Element;
+  width: Length;
+  view: (a: number, record: T) => Element;
 }
 
 function IndexedColumn(
-    header: Element,
-    footer: Element,
-    width: Length,
-    view: (a: number, record: Record<string, any>) => Element
+  header: Element,
+  footer: Element,
+  width: Length,
+  view: (a: number, record: Record<string, any>) => Element,
 ): IndexedColumn<Record<string, any>> {
-    return { header, footer, width, view };
+  return { header, footer, width, view };
 }
 
 interface InternalTable<T extends Record<string, any>> {
-    data: T[];
-    columns: InternalTableColumn[];
+  data: T[];
+  columns: InternalTableColumn[];
 }
 
 function _InternalTable(
-    data: Record<string, any>[],
-    columns: InternalTableColumn[]
+  data: Record<string, any>[],
+  columns: InternalTableColumn[],
 ): InternalTable<Record<string, any>> {
-    return { data, columns };
+  return { data, columns };
 }
 
 enum InternalTableColumns {
-    InternalIndexedColumn,
-    InternalColumn,
+  InternalIndexedColumn,
+  InternalColumn,
 }
 
 interface InternalIndexedColumn {
-    type: InternalTableColumns.InternalIndexedColumn;
-    column: IndexedColumn<Record<string, any>>;
+  type: InternalTableColumns.InternalIndexedColumn;
+  column: IndexedColumn<Record<string, any>>;
 }
 
 function InternalIndexedColumn(
-    column: IndexedColumn<Record<string, any>>
+  column: IndexedColumn<Record<string, any>>,
 ): InternalIndexedColumn {
-    return {
-        type: InternalTableColumns.InternalIndexedColumn,
-        column,
-    };
+  return {
+    type: InternalTableColumns.InternalIndexedColumn,
+    column,
+  };
 }
 
 interface InternalColumn {
-    type: InternalTableColumns.InternalColumn;
-    column: Column<Record<string, any>>;
+  type: InternalTableColumns.InternalColumn;
+  column: Column<Record<string, any>>;
 }
 
 function InternalColumn(column: Column<Record<string, any>>): InternalColumn {
-    return {
-        type: InternalTableColumns.InternalColumn,
-        column,
-    };
+  return {
+    type: InternalTableColumns.InternalColumn,
+    column,
+  };
 }
 
 type InternalTableColumn = InternalIndexedColumn | InternalColumn;
@@ -332,7 +332,7 @@ const viewport: Length = Viewport();
  * If you're embedding multiple espectro `layout` elements, you need to guarantee that only one is rendering the static style sheet and that it's above all the others in the DOM tree.
  */
 const noStaticStyleSheet: Option = RenderModeOption(
-    RenderMode.NoStaticStyleSheet
+  RenderMode.NoStaticStyleSheet,
 );
 
 /** Disable all `mouseOver` styles. */
@@ -386,74 +386,76 @@ const stickyLeft: Attribute = Class(Flag.xAlign, classes.stickyLeft);
 const pointer: Attribute = Class(Flag.cursor, classes.cursorPointer);
 
 function jsx(jsx: preact.JSX.Element): Element {
-    return Internal.unstyled(jsx);
+  return Internal.unstyled(jsx);
 }
 
 function jsxAttribute(
-    attribute: preact.ClassAttributes<string> &
-        preact.JSX.HTMLAttributes &
-        preact.JSX.SVGAttributes
+  attribute:
+    & preact.ClassAttributes<string>
+    & preact.JSX.HTMLAttributes
+    & preact.JSX.SVGAttributes,
 ): Attribute {
-    return Attr(attribute);
+  return Attr(attribute);
 }
 
 const debounce = <A extends unknown[]>(
-    callback: (...args: A) => unknown,
-    msDelay: number
+  callback: (...args: A) => unknown,
+  msDelay: number,
 ) => {
-    let timer: any;
+  let timer: any;
 
-    return (...args: A) => {
-        clearTimeout(timer);
+  return (...args: A) => {
+    clearTimeout(timer);
 
-        timer = setTimeout(() => {
-            timer = undefined;
-            callback(...args);
-        }, msDelay);
-    };
+    timer = setTimeout(() => {
+      timer = undefined;
+      callback(...args);
+    }, msDelay);
+  };
 };
 
 function useViewport(msDelay = 100): {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
 } {
-    const [viewport, setViewport] = hooks.useState({
+  const [viewport, setViewport] = hooks.useState({
+    width: self.innerWidth,
+    height: self.innerHeight,
+    x: self.scrollX,
+    y: self.scrollY,
+  });
+
+  hooks.useEffect(() => {
+    const handler = msDelay <= 0
+      ? updateViewport
+      : debounce(updateViewport, msDelay);
+
+    function updateViewport() {
+      setViewport({
         width: self.innerWidth,
         height: self.innerHeight,
         x: self.scrollX,
         y: self.scrollY,
-    });
+      });
+    }
 
-    hooks.useEffect(() => {
-        const handler =
-            msDelay <= 0 ? updateViewport : debounce(updateViewport, msDelay);
+    self.addEventListener("resize", handler);
+    self.addEventListener("scroll", handler);
 
-        function updateViewport() {
-            setViewport({
-                width: self.innerWidth,
-                height: self.innerHeight,
-                x: self.scrollX,
-                y: self.scrollY,
-            });
-        }
+    return () => self.removeEventListener("resize", handler);
+  }, [viewport]);
 
-        self.addEventListener('resize', handler);
-        self.addEventListener('scroll', handler);
-
-        return () => self.removeEventListener('resize', handler);
-    }, []);
-
-    return viewport;
+  return viewport;
 }
 
 function px(value: number): Px {
-    return Px(value);
+  return Px(value);
 }
 
 function rem(value: number): Rem {
-    return Rem(value);
+  return Rem(value);
 }
 
 /**
@@ -466,7 +468,7 @@ function rem(value: number): Rem {
  * ```
  */
 function minimum(value: number, length: Length): Min {
-    return Min(value, length);
+  return Min(value, length);
 }
 
 /**
@@ -479,7 +481,7 @@ function minimum(value: number, length: Length): Min {
  * ```
  */
 function maximum(value: number, length: Length): Max {
-    return Max(value, length);
+  return Max(value, length);
 }
 
 /**
@@ -490,42 +492,42 @@ function maximum(value: number, length: Length): Max {
  * **Also:** `fill === fillPortion(1)`
  */
 function fillPortion(value: number): Fill {
-    return Fill(value);
+  return Fill(value);
 }
 
 /** Sets the dimension based on the viewport dimensions.*/
 function vp(value: number): Viewport {
-    return Viewport(Math.round(value));
+  return Viewport(Math.round(value));
 }
 
 const layoutAttrs: Attribute = Internal.htmlClass(
-    `${classes.root} ${classes.any} ${classes.single}`
+  `${classes.root} ${classes.any} ${classes.single}`,
 );
 
 /** This is your top level node where you can turn `Element` into `JSX`. */
 function layout(attributes: Attribute[], child: Element): preact.JSX.Element {
-    return layoutWith(
-        [],
-        [layoutAttrs, ...Internal.rootStyle.concat(attributes)],
-        child,
-        asEl,
-        Internal.div
-    );
+  return layoutWith(
+    [],
+    [layoutAttrs, ...Internal.rootStyle.concat(attributes)],
+    child,
+    asEl,
+    Internal.div,
+  );
 }
 
 function layoutWith(
-    options: Option[],
-    attributes: Attribute[],
-    child: Element,
-    context?: LayoutContext,
-    node?: NodeName,
-    key?: string
+  options: Option[],
+  attributes: Attribute[],
+  child: Element,
+  context?: LayoutContext,
+  node?: NodeName,
+  key?: string,
 ): preact.JSX.Element {
-    return Internal.renderRoot(options, attributes, child, context, node, key);
+  return Internal.renderRoot(options, attributes, child, context, node, key);
 }
 
 function focusStyle(focus: FocusStyle): FocusStyleOption {
-    return FocusStyleOption(focus);
+  return FocusStyleOption(focus);
 }
 
 /**
@@ -538,7 +540,7 @@ function focusStyle(focus: FocusStyle): FocusStyleOption {
  * **Note** text does not wrap by default. In order to get text to wrap, check out `paragraph`!
  */
 function text(content: string): Element {
-    return Text(content);
+  return Text(content);
 }
 
 const elAttrs: Attribute[] = [width(shrink), height(shrink)];
@@ -559,249 +561,250 @@ const elAttrs: Attribute[] = [width(shrink), height(shrink)];
  * ```
  */
 function el(attributes: Attribute[], child: Element, key?: string): Element {
-    return Internal.element(
-        asEl,
-        Internal.div,
-        [...elAttrs, ...attributes],
-        key ? Keyed([[key, child]]) : Unkeyed([child])
-    );
+  return Internal.element(
+    asEl,
+    Internal.div,
+    [...elAttrs, ...attributes],
+    key ? Keyed([[key, child]]) : Unkeyed([child]),
+  );
 }
 
 const rowAttrs: Attribute[] = [
-    Internal.htmlClass(classes.contentLeft + ' ' + classes.contentCenterY),
-    width(shrink),
-    height(shrink),
+  Internal.htmlClass(classes.contentLeft + " " + classes.contentCenterY),
+  width(shrink),
+  height(shrink),
 ];
 
 function row(
-    attributes: Attribute[],
-    children: Element[],
-    keys?: string[]
+  attributes: Attribute[],
+  children: Element[],
+  keys?: string[],
 ): Element {
-    return Internal.element(
-        asRow,
-        Internal.div,
-        [...rowAttrs, ...attributes],
-        Array.isArray(keys)
-            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
-            : Unkeyed(children)
-    );
+  return Internal.element(
+    asRow,
+    Internal.div,
+    [...rowAttrs, ...attributes],
+    Array.isArray(keys)
+      ? Keyed(children.map((c, i) => [<string> keys.at(i), c]))
+      : Unkeyed(children),
+  );
 }
 
 const columnAttrs: Attribute[] = [
-    Internal.htmlClass(classes.contentTop + ' ' + classes.contentLeft),
-    height(shrink),
-    width(shrink),
+  Internal.htmlClass(classes.contentTop + " " + classes.contentLeft),
+  height(shrink),
+  width(shrink),
 ];
 
 function column(
-    attributes: Attribute[],
-    children: Element[],
-    keys?: string[]
+  attributes: Attribute[],
+  children: Element[],
+  keys?: string[],
 ): Element {
-    return Internal.element(
-        asColumn,
-        Internal.div,
-        [...columnAttrs, ...attributes],
-        Array.isArray(keys)
-            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
-            : Unkeyed(children)
-    );
+  return Internal.element(
+    asColumn,
+    Internal.div,
+    [...columnAttrs, ...attributes],
+    Array.isArray(keys)
+      ? Keyed(children.map((c, i) => [<string> keys.at(i), c]))
+      : Unkeyed(children),
+  );
 }
 
 const wrappedRowAttrs: Attribute[] = [
-    Internal.htmlClass(
-        classes.contentLeft +
-            ' ' +
-            classes.contentCenterY +
-            ' ' +
-            classes.wrapped
-    ),
-    width(shrink),
-    height(shrink),
+  Internal.htmlClass(
+    classes.contentLeft +
+      " " +
+      classes.contentCenterY +
+      " " +
+      classes.wrapped,
+  ),
+  width(shrink),
+  height(shrink),
 ];
 
 /** Same as `row`, but will wrap if it takes up too much horizontal space. */
 function wrappedRow(
-    attributes: Attribute[],
-    children: Element[],
-    keys?: string[]
+  attributes: Attribute[],
+  children: Element[],
+  keys?: string[],
 ): Element {
-    const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] =
-        Internal.extractSpacingAndPadding(attributes);
+  const [padded, spaced]: [Maybe<Padding_>, Maybe<Spaced>] = Internal
+    .extractSpacingAndPadding(attributes);
 
-    switch (spaced.type) {
-        case MaybeType.Nothing:
-            return Internal.element(
+  switch (spaced.type) {
+    case MaybeType.Nothing:
+      return Internal.element(
+        asRow,
+        Internal.div,
+        [...wrappedRowAttrs, ...attributes],
+        Array.isArray(keys)
+          ? Keyed(children.map((c, i) => [<string> keys.at(i), c]))
+          : Unkeyed(children),
+      );
+
+    case MaybeType.Just: {
+      const { name, x, y } = spaced.value,
+        newPadding: Maybe<StyleClass> = (() => {
+          switch (padded.type) {
+            case MaybeType.Just: {
+              const { top, right, bottom, left } = padded.value;
+              if (
+                typeof top === "number" &&
+                typeof right === "number" &&
+                typeof bottom === "number" &&
+                typeof left === "number" &&
+                typeof x === "number" &&
+                typeof y === "number"
+              ) {
+                if (right >= x / 2 && bottom >= y / 2) {
+                  const newTop = top - y / 2,
+                    newRight = right - x / 2,
+                    newBottom = bottom - y / 2,
+                    newLeft = left - x / 2;
+                  return Just(
+                    StyleClass(
+                      Flag.padding,
+                      PaddingStyle(
+                        Internal.paddingNameFloat(
+                          newTop,
+                          newRight,
+                          newBottom,
+                          newLeft,
+                        ),
+                        newTop,
+                        newRight,
+                        newBottom,
+                        newLeft,
+                      ),
+                    ),
+                  );
+                }
+              }
+              if (
+                typeof top !== "number" &&
+                typeof right !== "number" &&
+                typeof bottom !== "number" &&
+                typeof left !== "number" &&
+                typeof x !== "number" &&
+                typeof y !== "number"
+              ) {
+                if (
+                  right.rem >= x.rem / 2 &&
+                  bottom.rem >= y.rem / 2
+                ) {
+                  const newTop = top.rem - y.rem / 2,
+                    newRight = right.rem - x.rem / 2,
+                    newBottom = bottom.rem - y.rem / 2,
+                    newLeft = left.rem - x.rem / 2;
+                  return Just(
+                    StyleClass(
+                      Flag.padding,
+                      PaddingStyle(
+                        Internal.paddingNameFloat(
+                          newTop,
+                          newRight,
+                          newBottom,
+                          newLeft,
+                        ),
+                        newTop,
+                        newRight,
+                        newBottom,
+                        newLeft,
+                      ),
+                    ),
+                  );
+                }
+              }
+              return Nothing();
+            }
+
+            case MaybeType.Nothing:
+              return Nothing();
+          }
+        })();
+
+      switch (newPadding.type) {
+        case MaybeType.Just:
+          return Internal.element(
+            asRow,
+            Internal.div,
+            [...wrappedRowAttrs, ...attributes, newPadding.value],
+            Array.isArray(keys)
+              ? Keyed(
+                children.map((c, i) => [
+                  <string> keys.at(i),
+                  c,
+                ]),
+              )
+              : Unkeyed(children),
+          );
+
+        case MaybeType.Nothing: {
+          // Not enough space in padding to compensate for spacing
+          const halfX = ((typeof x === "number" ? x : x.rem) / 2) * -1,
+            halfY = ((typeof y === "number" ? y : y.rem) / 2) * -1;
+          return Internal.element(
+            asEl,
+            Internal.div,
+            attributes,
+            Unkeyed([
+              Internal.element(
                 asRow,
                 Internal.div,
-                [...wrappedRowAttrs, ...attributes],
+                [
+                  Internal.htmlClass(
+                    classes.contentLeft +
+                      " " +
+                      classes.contentCenterY +
+                      " " +
+                      classes.wrapped,
+                  ),
+                  style(
+                    "margin",
+                    typeof x === "number" &&
+                      typeof y === "number"
+                      ? `${halfY.toString()}px ${halfX.toString()}px`
+                      : `${halfY.toString()}rem ${halfX.toString()}rem`,
+                  ),
+                  style(
+                    "width",
+                    typeof x === "number"
+                      ? `calc(100% + ${x.toString()}px)`
+                      : `calc(100% + ${x.rem.toString()}rem)`,
+                  ),
+                  style(
+                    "height",
+                    typeof y === "number"
+                      ? `calc(100% + ${y.toString()}px)`
+                      : `calc(100% + ${y.rem.toString()}rem)`,
+                  ),
+                  StyleClass(
+                    Flag.spacing,
+                    SpacingStyle(name, x, y),
+                  ),
+                ],
                 Array.isArray(keys)
-                    ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
-                    : Unkeyed(children)
-            );
-
-        case MaybeType.Just: {
-            const { name, x, y } = spaced.value,
-                newPadding: Maybe<StyleClass> = (() => {
-                    switch (padded.type) {
-                        case MaybeType.Just: {
-                            const { top, right, bottom, left } = padded.value;
-                            if (
-                                typeof top === 'number' &&
-                                typeof right === 'number' &&
-                                typeof bottom === 'number' &&
-                                typeof left === 'number' &&
-                                typeof x === 'number' &&
-                                typeof y === 'number'
-                            )
-                                if (right >= x / 2 && bottom >= y / 2) {
-                                    const newTop = top - y / 2,
-                                        newRight = right - x / 2,
-                                        newBottom = bottom - y / 2,
-                                        newLeft = left - x / 2;
-                                    return Just(
-                                        StyleClass(
-                                            Flag.padding,
-                                            PaddingStyle(
-                                                Internal.paddingNameFloat(
-                                                    newTop,
-                                                    newRight,
-                                                    newBottom,
-                                                    newLeft
-                                                ),
-                                                newTop,
-                                                newRight,
-                                                newBottom,
-                                                newLeft
-                                            )
-                                        )
-                                    );
-                                }
-                            if (
-                                typeof top !== 'number' &&
-                                typeof right !== 'number' &&
-                                typeof bottom !== 'number' &&
-                                typeof left !== 'number' &&
-                                typeof x !== 'number' &&
-                                typeof y !== 'number'
-                            )
-                                if (
-                                    right.rem >= x.rem / 2 &&
-                                    bottom.rem >= y.rem / 2
-                                ) {
-                                    const newTop = top.rem - y.rem / 2,
-                                        newRight = right.rem - x.rem / 2,
-                                        newBottom = bottom.rem - y.rem / 2,
-                                        newLeft = left.rem - x.rem / 2;
-                                    return Just(
-                                        StyleClass(
-                                            Flag.padding,
-                                            PaddingStyle(
-                                                Internal.paddingNameFloat(
-                                                    newTop,
-                                                    newRight,
-                                                    newBottom,
-                                                    newLeft
-                                                ),
-                                                newTop,
-                                                newRight,
-                                                newBottom,
-                                                newLeft
-                                            )
-                                        )
-                                    );
-                                }
-                            return Nothing();
-                        }
-
-                        case MaybeType.Nothing:
-                            return Nothing();
-                    }
-                })();
-
-            switch (newPadding.type) {
-                case MaybeType.Just:
-                    return Internal.element(
-                        asRow,
-                        Internal.div,
-                        [...wrappedRowAttrs, ...attributes, newPadding.value],
-                        Array.isArray(keys)
-                            ? Keyed(
-                                  children.map((c, i) => [
-                                      <string>keys.at(i),
-                                      c,
-                                  ])
-                              )
-                            : Unkeyed(children)
-                    );
-
-                case MaybeType.Nothing: {
-                    // Not enough space in padding to compensate for spacing
-                    const halfX =
-                            ((typeof x === 'number' ? x : x.rem) / 2) * -1,
-                        halfY = ((typeof y === 'number' ? y : y.rem) / 2) * -1;
-                    return Internal.element(
-                        asEl,
-                        Internal.div,
-                        attributes,
-                        Unkeyed([
-                            Internal.element(
-                                asRow,
-                                Internal.div,
-                                [
-                                    Internal.htmlClass(
-                                        classes.contentLeft +
-                                            ' ' +
-                                            classes.contentCenterY +
-                                            ' ' +
-                                            classes.wrapped
-                                    ),
-                                    style(
-                                        'margin',
-                                        typeof x === 'number' &&
-                                            typeof y === 'number'
-                                            ? `${halfY.toString()}px ${halfX.toString()}px`
-                                            : `${halfY.toString()}rem ${halfX.toString()}rem`
-                                    ),
-                                    style(
-                                        'width',
-                                        typeof x === 'number'
-                                            ? `calc(100% + ${x.toString()}px)`
-                                            : `calc(100% + ${x.rem.toString()}rem)`
-                                    ),
-                                    style(
-                                        'height',
-                                        typeof y === 'number'
-                                            ? `calc(100% + ${y.toString()}px)`
-                                            : `calc(100% + ${y.rem.toString()}rem)`
-                                    ),
-                                    StyleClass(
-                                        Flag.spacing,
-                                        SpacingStyle(name, x, y)
-                                    ),
-                                ],
-                                Array.isArray(keys)
-                                    ? Keyed(
-                                          keys.map((k, i) => [
-                                              k,
-                                              children.at(i),
-                                          ])
-                                      )
-                                    : Unkeyed(children)
-                            ),
-                        ])
-                    );
-                }
-            }
+                  ? Keyed(
+                    keys.map((k, i) => [
+                      k,
+                      children.at(i),
+                    ]),
+                  )
+                  : Unkeyed(children),
+              ),
+            ]),
+          );
         }
+      }
     }
+  }
 }
 
 /** Highlight the borders of an element and it's children below. This can really help if you're running into some issue with your layout! */
 function explain(): Attribute {
-    console.error(`An element is being debugged!`);
-    return Internal.htmlClass('explain');
+  console.error(`An element is being debugged!`);
+  return Internal.htmlClass("explain");
 }
 
 /**
@@ -843,259 +846,261 @@ function explain(): Attribute {
  * **Note:** Sometimes you might not have a list of objects directly in your model. In this case it can be really nice to write a function that transforms some part of your model into a list of objects before feeding it into `Element.table`.
  */
 function table(
-    attributes: Attribute[],
-    config: {
-        data: Record<string, any>[];
-        columns: Column<Record<string, any>>[];
-    }
+  attributes: Attribute[],
+  config: {
+    data: Record<string, any>[];
+    columns: Column<Record<string, any>>[];
+  },
 ): Element {
-    return tableHelper(attributes, {
-        data: config.data,
-        columns: config.columns.map(InternalColumn),
-    });
+  return tableHelper(attributes, {
+    data: config.data,
+    columns: config.columns.map(InternalColumn),
+  });
 }
 
 /** Same as `Element.table` except the `view` for each column will also receive the row index as well as the object. */
 function indexedTable(
-    attributes: Attribute[],
-    config: {
-        data: Record<string, any>[];
-        columns: IndexedColumn<Record<string, any>>[];
-    }
+  attributes: Attribute[],
+  config: {
+    data: Record<string, any>[];
+    columns: IndexedColumn<Record<string, any>>[];
+  },
 ): Element {
-    return tableHelper(attributes, {
-        data: config.data,
-        columns: config.columns.map(InternalIndexedColumn),
-    });
+  return tableHelper(attributes, {
+    data: config.data,
+    columns: config.columns.map(InternalIndexedColumn),
+  });
 }
 
 function tableHelper(
-    attributes: Attribute[],
-    config: InternalTable<Record<string, any>>
+  attributes: Attribute[],
+  config: InternalTable<Record<string, any>>,
 ): Element {
-    const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
+  const [sX, sY] = Internal.getSpacing(attributes, [0, 0]);
 
-    const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
-        const headers_ = headers.map((header: Element, col: number) =>
-            onGrid(1, col + 1, header)
-        );
-        return headers.some((value: Element) => value === Empty())
-            ? Nothing()
-            : Just(headers_);
-    })(config.columns.map(columnHeader));
-
-    const maybeFooters: Maybe<Element[]> = ((footers: Element[]) => {
-        const footers_ = footers.map((footer: Element, col: number) =>
-            onGrid(config.data.length + 2, col + 1, footer)
-        );
-        return footers.some((value: Element) => value === Empty())
-            ? Nothing()
-            : Just(footers_);
-    })(config.columns.map(columnFooter));
-
-    const template: Attribute = StyleClass(
-        Flag.gridTemplate,
-        GridTemplateStyle(
-            (() => {
-                if (typeof sX === 'number' && typeof sY === 'number')
-                    return [Px(sX), Px(sY)];
-                if (typeof sX !== 'number' && typeof sY !== 'number')
-                    return [Rem(sX.rem), Rem(sY.rem)];
-                return [Px(0), Px(0)];
-            })(),
-            config.columns.map(columnWidth),
-            [].concat(...new Array(config.data.length).fill([Content()]))
-        )
+  const maybeHeaders: Maybe<Element[]> = ((headers: Element[]) => {
+    const headers_ = headers.map((header: Element, col: number) =>
+      onGrid(1, col + 1, header)
     );
+    return headers.some((value: Element) => value === Empty())
+      ? Nothing()
+      : Just(headers_);
+  })(config.columns.map(columnHeader));
 
-    const children: {
+  const maybeFooters: Maybe<Element[]> = ((footers: Element[]) => {
+    const footers_ = footers.map((footer: Element, col: number) =>
+      onGrid(config.data.length + 2, col + 1, footer)
+    );
+    return footers.some((value: Element) => value === Empty())
+      ? Nothing()
+      : Just(footers_);
+  })(config.columns.map(columnFooter));
+
+  const template: Attribute = StyleClass(
+    Flag.gridTemplate,
+    GridTemplateStyle(
+      (() => {
+        if (typeof sX === "number" && typeof sY === "number") {
+          return [Px(sX), Px(sY)];
+        }
+        if (typeof sX !== "number" && typeof sY !== "number") {
+          return [Rem(sX.rem), Rem(sY.rem)];
+        }
+        return [Px(0), Px(0)];
+      })(),
+      config.columns.map(columnWidth),
+      [].concat(...new Array(config.data.length).fill([Content()])),
+    ),
+  );
+
+  const children: {
+    elements: Element[];
+    column: number;
+    row: number;
+  } = config.data.reduce(
+    (
+      acc: {
         elements: Element[];
         column: number;
         row: number;
-    } = config.data.reduce(
-        (
-            acc: {
-                elements: Element[];
-                column: number;
-                row: number;
-            },
-            data: Record<string, any>
-        ) => build(config.columns, data, acc),
-        {
-            elements: [],
-            row: maybeHeaders.type === MaybeType.Nothing ? 1 : 2,
-            column: 1,
-        }
+      },
+      data: Record<string, any>,
+    ) => build(config.columns, data, acc),
+    {
+      elements: [],
+      row: maybeHeaders.type === MaybeType.Nothing ? 1 : 2,
+      column: 1,
+    },
+  );
+
+  function columnHeader(col: InternalTableColumn): Element {
+    switch (col.type) {
+      case InternalTableColumns.InternalIndexedColumn:
+        return col.column.header;
+
+      case InternalTableColumns.InternalColumn:
+        return col.column.header;
+    }
+  }
+
+  function columnFooter(col: InternalTableColumn): Element {
+    switch (col.type) {
+      case InternalTableColumns.InternalIndexedColumn:
+        return col.column.footer;
+
+      case InternalTableColumns.InternalColumn:
+        return col.column.footer;
+    }
+  }
+
+  function columnWidth(col: InternalTableColumn): Length {
+    switch (col.type) {
+      case InternalTableColumns.InternalIndexedColumn:
+        return col.column.width;
+
+      case InternalTableColumns.InternalColumn:
+        return col.column.width;
+    }
+  }
+
+  function onGrid(
+    rowLevel: number,
+    columnLevel: number,
+    elem: Element,
+  ): Element {
+    return Internal.element(
+      asEl,
+      Internal.div,
+      [
+        StyleClass(
+          Flag.gridPosition,
+          GridPosition(rowLevel, columnLevel, 1, 1),
+        ),
+      ],
+      Unkeyed([elem]),
     );
+  }
 
-    function columnHeader(col: InternalTableColumn): Element {
-        switch (col.type) {
-            case InternalTableColumns.InternalIndexedColumn:
-                return col.column.header;
+  function add(
+    cell: Record<string, any>,
+    columnConfig: InternalTableColumn,
+    cursor: { elements: Element[]; row: number; column: number },
+  ): { elements: Element[]; row: number; column: number } {
+    switch (columnConfig.type) {
+      case InternalTableColumns.InternalIndexedColumn: {
+        cursor.elements = [
+          onGrid(
+            cursor.row,
+            cursor.column,
+            columnConfig.column.view(
+              maybeHeaders.type === MaybeType.Nothing
+                ? cursor.row - 1
+                : cursor.row - 2,
+              cell,
+            ),
+          ),
+          ...cursor.elements,
+        ];
+        cursor.column = cursor.column + 1;
+        return cursor;
+      }
 
-            case InternalTableColumns.InternalColumn:
-                return col.column.header;
-        }
-    }
-
-    function columnFooter(col: InternalTableColumn): Element {
-        switch (col.type) {
-            case InternalTableColumns.InternalIndexedColumn:
-                return col.column.footer;
-
-            case InternalTableColumns.InternalColumn:
-                return col.column.footer;
-        }
-    }
-
-    function columnWidth(col: InternalTableColumn): Length {
-        switch (col.type) {
-            case InternalTableColumns.InternalIndexedColumn:
-                return col.column.width;
-
-            case InternalTableColumns.InternalColumn:
-                return col.column.width;
-        }
-    }
-
-    function onGrid(
-        rowLevel: number,
-        columnLevel: number,
-        elem: Element
-    ): Element {
-        return Internal.element(
-            asEl,
-            Internal.div,
-            [
-                StyleClass(
-                    Flag.gridPosition,
-                    GridPosition(rowLevel, columnLevel, 1, 1)
-                ),
-            ],
-            Unkeyed([elem])
-        );
-    }
-
-    function add(
-        cell: Record<string, any>,
-        columnConfig: InternalTableColumn,
-        cursor: { elements: Element[]; row: number; column: number }
-    ): { elements: Element[]; row: number; column: number } {
-        switch (columnConfig.type) {
-            case InternalTableColumns.InternalIndexedColumn: {
-                cursor.elements = [
-                    onGrid(
-                        cursor.row,
-                        cursor.column,
-                        columnConfig.column.view(
-                            maybeHeaders.type === MaybeType.Nothing
-                                ? cursor.row - 1
-                                : cursor.row - 2,
-                            cell
-                        )
-                    ),
-                    ...cursor.elements,
-                ];
-                cursor.column = cursor.column + 1;
-                return cursor;
-            }
-
-            case InternalTableColumns.InternalColumn:
-                return {
-                    elements: [
-                        onGrid(
-                            cursor.row,
-                            cursor.column,
-                            columnConfig.column.view(cell)
-                        ),
-                        ...cursor.elements,
-                    ],
-                    row: cursor.row,
-                    column: cursor.column + 1,
-                };
-        }
-    }
-
-    function build(
-        columns: InternalTableColumn[],
-        rowData: Record<string, any>,
-        cursor: {
-            elements: Element[];
-            column: number;
-            row: number;
-        }
-    ): {
-        elements: Element[];
-        column: number;
-        row: number;
-    } {
-        const newCursor: {
-            elements: Element[];
-            column: number;
-            row: number;
-        } = columns.reduce(
-            (
-                acc: {
-                    elements: Element[];
-                    column: number;
-                    row: number;
-                },
-                column: InternalTableColumn
-            ) => add(rowData, column, acc),
-            cursor
-        );
-
+      case InternalTableColumns.InternalColumn:
         return {
-            elements: newCursor.elements,
-            row: cursor.row + 1,
-            column: 1,
+          elements: [
+            onGrid(
+              cursor.row,
+              cursor.column,
+              columnConfig.column.view(cell),
+            ),
+            ...cursor.elements,
+          ],
+          row: cursor.row,
+          column: cursor.column + 1,
         };
     }
+  }
 
-    return Internal.element(
-        asGrid,
-        Internal.div,
-        [width(fill), template, ...attributes],
-        Unkeyed(
-            (() => {
-                switch (maybeHeaders.type) {
-                    case MaybeType.Nothing:
-                        {
-                            switch (maybeFooters.type) {
-                                case MaybeType.Nothing:
-                                    return children.elements;
-
-                                case MaybeType.Just:
-                                    return children.elements.concat(
-                                        maybeFooters.value
-                                    );
-                            }
-                        }
-                        break;
-
-                    case MaybeType.Just: {
-                        switch (maybeFooters.type) {
-                            case MaybeType.Nothing:
-                                return maybeHeaders.value.concat(
-                                    children.elements.reverse()
-                                );
-
-                            case MaybeType.Just:
-                                return maybeHeaders.value
-                                    .concat(children.elements.reverse())
-                                    .concat(maybeFooters.value);
-                        }
-                    }
-                }
-            })()
-        )
+  function build(
+    columns: InternalTableColumn[],
+    rowData: Record<string, any>,
+    cursor: {
+      elements: Element[];
+      column: number;
+      row: number;
+    },
+  ): {
+    elements: Element[];
+    column: number;
+    row: number;
+  } {
+    const newCursor: {
+      elements: Element[];
+      column: number;
+      row: number;
+    } = columns.reduce(
+      (
+        acc: {
+          elements: Element[];
+          column: number;
+          row: number;
+        },
+        column: InternalTableColumn,
+      ) => add(rowData, column, acc),
+      cursor,
     );
+
+    return {
+      elements: newCursor.elements,
+      row: cursor.row + 1,
+      column: 1,
+    };
+  }
+
+  return Internal.element(
+    asGrid,
+    Internal.div,
+    [width(fill), template, ...attributes],
+    Unkeyed(
+      (() => {
+        switch (maybeHeaders.type) {
+          case MaybeType.Nothing:
+            {
+              switch (maybeFooters.type) {
+                case MaybeType.Nothing:
+                  return children.elements;
+
+                case MaybeType.Just:
+                  return children.elements.concat(
+                    maybeFooters.value,
+                  );
+              }
+            }
+            break;
+
+          case MaybeType.Just: {
+            switch (maybeFooters.type) {
+              case MaybeType.Nothing:
+                return maybeHeaders.value.concat(
+                  children.elements.reverse(),
+                );
+
+              case MaybeType.Just:
+                return maybeHeaders.value
+                  .concat(children.elements.reverse())
+                  .concat(maybeFooters.value);
+            }
+          }
+        }
+      })(),
+    ),
+  );
 }
 
 const paragraphAttrs: Attribute[] = [
-    Describe(Paragraph()),
-    width(fill),
-    spacing(5),
+  Describe(Paragraph()),
+  width(fill),
+  spacing(5),
 ];
 
 /**
@@ -1131,18 +1136,18 @@ const paragraphAttrs: Attribute[] = [
  * **Note** `spacing` on a paragraph will set the pixel spacing between lines.
  */
 function paragraph(
-    attributes: Attribute[],
-    children: Element[],
-    keys?: string[]
+  attributes: Attribute[],
+  children: Element[],
+  keys?: string[],
 ): Element {
-    return Internal.element(
-        asParagraph,
-        Internal.div,
-        [...paragraphAttrs, ...attributes],
-        Array.isArray(keys)
-            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
-            : Unkeyed(children)
-    );
+  return Internal.element(
+    asParagraph,
+    Internal.div,
+    [...paragraphAttrs, ...attributes],
+    Array.isArray(keys)
+      ? Keyed(children.map((c, i) => [<string> keys.at(i), c]))
+      : Unkeyed(children),
+  );
 }
 
 const textColumnAttrs: Attribute[] = [width(maximum(750, minimum(500, fill)))];
@@ -1169,18 +1174,18 @@ const textColumnAttrs: Attribute[] = [width(maximum(750, minimum(500, fill)))];
  * ![A text layout where an image is on the left.](https://mdgriffith.gitbooks.io/style-elements/content/assets/Screen%20Shot%202017-08-25%20at%208.42.39%20PM.png)
  */
 function textColumn(
-    attributes: Attribute[],
-    children: Element[],
-    keys?: string[]
+  attributes: Attribute[],
+  children: Element[],
+  keys?: string[],
 ): Element {
-    return Internal.element(
-        asTextColumn,
-        Internal.div,
-        [...textColumnAttrs, ...attributes],
-        Array.isArray(keys)
-            ? Keyed(children.map((c, i) => [<string>keys.at(i), c]))
-            : Unkeyed(children)
-    );
+  return Internal.element(
+    asTextColumn,
+    Internal.div,
+    [...textColumnAttrs, ...attributes],
+    Array.isArray(keys)
+      ? Keyed(children.map((c, i) => [<string> keys.at(i), c]))
+      : Unkeyed(children),
+  );
 }
 
 /**
@@ -1193,38 +1198,38 @@ function textColumn(
  * So, take a moment to describe your image as you would to someone who has a harder time seeing.
  */
 function image(
-    attributes: Attribute[],
-    { src, description }: { src: string; description: string }
+  attributes: Attribute[],
+  { src, description }: { src: string; description: string },
 ): Element {
-    const imageAttributes: Attribute[] = attributes.filter((a: Attribute) => {
-        switch (a.type) {
-            case Attributes.Width:
-                return true;
+  const imageAttributes: Attribute[] = attributes.filter((a: Attribute) => {
+    switch (a.type) {
+      case Attributes.Width:
+        return true;
 
-            case Attributes.Height:
-                return true;
+      case Attributes.Height:
+        return true;
 
-            default:
-                return false;
-        }
-    });
-    return Internal.element(
+      default:
+        return false;
+    }
+  });
+  return Internal.element(
+    asEl,
+    Internal.div,
+    [Internal.htmlClass(classes.imageContainer), ...attributes],
+    Unkeyed([
+      Internal.element(
         asEl,
-        Internal.div,
-        [Internal.htmlClass(classes.imageContainer), ...attributes],
-        Unkeyed([
-            Internal.element(
-                asEl,
-                NodeName('img'),
-                [
-                    Attr({ src: src }),
-                    Attr({ alt: description }),
-                    ...imageAttributes,
-                ],
-                Unkeyed([])
-            ),
-        ])
-    );
+        NodeName("img"),
+        [
+          Attr({ src: src }),
+          Attr({ alt: description }),
+          ...imageAttributes,
+        ],
+        Unkeyed([]),
+      ),
+    ]),
+  );
 }
 
 /**
@@ -1236,96 +1241,96 @@ function image(
  * ```
  */
 function link(
-    attributes: Attribute[],
-    { url, label }: { url: string; label: Element }
+  attributes: Attribute[],
+  { url, label }: { url: string; label: Element },
 ): Element {
-    return linkCore(attributes, { url, label });
+  return linkCore(attributes, { url, label });
 }
 
 function newTabLink(
-    attributes: Attribute[],
-    { url, label }: { url: string; label: Element }
+  attributes: Attribute[],
+  { url, label }: { url: string; label: Element },
 ): Element {
-    return linkCore([Attr({ target: '_blank' }), ...attributes], {
-        url,
-        label,
-    });
+  return linkCore([Attr({ target: "_blank" }), ...attributes], {
+    url,
+    label,
+  });
 }
 
 const linkAttrs: Attribute[] = [
-    Attr({ rel: 'noopener noreferrer' }),
-    width(shrink),
-    height(shrink),
-    Internal.htmlClass(
-        `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`
-    ),
+  Attr({ rel: "noopener noreferrer" }),
+  width(shrink),
+  height(shrink),
+  Internal.htmlClass(
+    `${classes.contentCenterX} ${classes.contentCenterY} ${classes.link}`,
+  ),
 ];
 
 function linkCore(
-    attributes: Attribute[],
-    { url, label }: { url: string; label: Element }
+  attributes: Attribute[],
+  { url, label }: { url: string; label: Element },
 ): Element {
-    return Internal.element(
-        asEl,
-        NodeName('a'),
-        [Attr({ href: url }), ...linkAttrs, ...attributes],
-        Unkeyed([label])
-    );
+  return Internal.element(
+    asEl,
+    NodeName("a"),
+    [Attr({ href: url }), ...linkAttrs, ...attributes],
+    Unkeyed([label]),
+  );
 }
 
 function download(
-    attributes: Attribute[],
-    { url, label }: { url: string; label: Element }
+  attributes: Attribute[],
+  { url, label }: { url: string; label: Element },
 ): Element {
-    return downloadCore(attributes, { url, filename: '', label });
+  return downloadCore(attributes, { url, filename: "", label });
 }
 
 function downloadAs(
-    attributes: Attribute[],
-    { label, filename, url }: { label: Element; filename: string; url: string }
+  attributes: Attribute[],
+  { label, filename, url }: { label: Element; filename: string; url: string },
 ): Element {
-    return downloadCore(attributes, { url, filename, label });
+  return downloadCore(attributes, { url, filename, label });
 }
 
 const downloadAttrs: Attribute[] = [
-    width(shrink),
-    height(shrink),
-    Internal.htmlClass(classes.contentCenterX),
-    Internal.htmlClass(classes.contentCenterY),
+  width(shrink),
+  height(shrink),
+  Internal.htmlClass(classes.contentCenterX),
+  Internal.htmlClass(classes.contentCenterY),
 ];
 
 function downloadCore(
-    attributes: Attribute[],
-    { url, filename, label }: { url: string; filename: string; label: Element }
+  attributes: Attribute[],
+  { url, filename, label }: { url: string; filename: string; label: Element },
 ): Element {
-    return Internal.element(
-        asEl,
-        NodeName('a'),
-        [
-            Attr({ href: url }),
-            Attr({ download: filename }),
-            ...downloadAttrs,
-            ...attributes,
-        ],
-        Unkeyed([label])
-    );
+  return Internal.element(
+    asEl,
+    NodeName("a"),
+    [
+      Attr({ href: url }),
+      Attr({ download: filename }),
+      ...downloadAttrs,
+      ...attributes,
+    ],
+    Unkeyed([label]),
+  );
 }
 
 // NEARBYS
 function below(element: Element): Attribute {
-    return createNearby(Location.Below, element);
+  return createNearby(Location.Below, element);
 }
 
 function above(element: Element): Attribute {
-    return createNearby(Location.Above, element);
+  return createNearby(Location.Above, element);
 }
 
 function onRight(element: Element): Attribute {
-    return createNearby(Location.OnRight, element);
+  return createNearby(Location.OnRight, element);
 }
 
 function onLeft(element: Element): Attribute {
-    return createNearby(Location.OnLeft, element);
+  return createNearby(Location.OnLeft, element);
 }
 
 /**
@@ -1334,102 +1339,104 @@ function onLeft(element: Element): Attribute {
  * **Note:** If you use this on a `layout` element, it will place the element as fixed to the viewport which can be useful for modals and overlays.
  */
 function inFront(element: Element): Attribute {
-    return createNearby(Location.InFront, element);
+  return createNearby(Location.InFront, element);
 }
 
 /**
  * This will place an element in front over another (fixed).
  */
 function floating(element: Element): Attribute {
-    return createNearby(Location.Floating, element);
+  return createNearby(Location.Floating, element);
 }
 
 /**This will place an element between the background and the content of an element. */
 function behindContent(element: Element): Attribute {
-    return createNearby(Location.Behind, element);
+  return createNearby(Location.Behind, element);
 }
 
 function createNearby(location: Location, element: Element): Attribute {
-    switch (element.type) {
-        case Elements.Empty:
-            return NoAttribute();
+  switch (element.type) {
+    case Elements.Empty:
+      return NoAttribute();
 
-        default:
-            return Nearby(location, element);
-    }
+    default:
+      return Nearby(location, element);
+  }
 }
 
 function width(width: Length): Attribute {
-    return Width(width);
+  return Width(width);
 }
 
 function height(width: Length): Attribute {
-    return Height(width);
+  return Height(width);
 }
 
 function scale(n: number): Attribute {
-    return TransformComponent_(Flag.scale, Scale([n, n, 1]));
+  return TransformComponent_(Flag.scale, Scale([n, n, 1]));
 }
 
 /** Angle is given in radians. */
 function rotate(angle: number): Attribute {
-    return TransformComponent_(Flag.rotate, Rotate([0, 0, 1], angle));
+  return TransformComponent_(Flag.rotate, Rotate([0, 0, 1], angle));
 }
 
 function moveUp(y: number | Rem): Attribute {
-    if (typeof y === 'number')
-        return TransformComponent_(Flag.moveY, MoveY(y * -1));
-    return TransformComponent_(Flag.moveY, MoveY(Rem(y.rem * -1)));
+  if (typeof y === "number") {
+    return TransformComponent_(Flag.moveY, MoveY(y * -1));
+  }
+  return TransformComponent_(Flag.moveY, MoveY(Rem(y.rem * -1)));
 }
 
 function moveDown(y: number | Rem): Attribute {
-    return TransformComponent_(Flag.moveY, MoveY(y));
+  return TransformComponent_(Flag.moveY, MoveY(y));
 }
 
 function moveRight(x: number | Rem): Attribute {
-    return TransformComponent_(Flag.moveX, MoveX(x));
+  return TransformComponent_(Flag.moveX, MoveX(x));
 }
 
 function moveLeft(x: number | Rem): Attribute {
-    if (typeof x === 'number')
-        return TransformComponent_(Flag.moveX, MoveX(x * -1));
-    return TransformComponent_(Flag.moveX, MoveX(Rem(x.rem * -1)));
+  if (typeof x === "number") {
+    return TransformComponent_(Flag.moveX, MoveX(x * -1));
+  }
+  return TransformComponent_(Flag.moveX, MoveX(Rem(x.rem * -1)));
 }
 
 function padding(x: number | Rem): Attribute {
-    return StyleClass(
-        Flag.padding,
-        PaddingStyle(
-            typeof x !== 'number'
-                ? `p-${Math.round(x.rem * oneRem)}-rem`
-                : 'p-' + x,
-            x,
-            x,
-            x,
-            x
-        )
-    );
+  return StyleClass(
+    Flag.padding,
+    PaddingStyle(
+      typeof x !== "number" ? `p-${Math.round(x.rem * oneRem)}-rem` : "p-" + x,
+      x,
+      x,
+      x,
+      x,
+    ),
+  );
 }
 
 /** Set horizontal and vertical padding. */
 function paddingXY(x: number | Rem, y: number | Rem): Attribute {
-    return x === y ||
-        (typeof x !== 'number' && typeof y !== 'number' && x.rem === y.rem)
-        ? padding(x)
-        : StyleClass(
-              Flag.padding,
-              PaddingStyle(
-                  typeof x !== 'number' && typeof y !== 'number'
-                      ? `p-${Math.round(x.rem * oneRem)}-${Math.round(
-                            y.rem * oneRem
-                        )}-rem`
-                      : `p-${x}-${y}`,
-                  y,
-                  x,
-                  y,
-                  x
-              )
-          );
+  return x === y ||
+      (typeof x !== "number" && typeof y !== "number" && x.rem === y.rem)
+    ? padding(x)
+    : StyleClass(
+      Flag.padding,
+      PaddingStyle(
+        typeof x !== "number" && typeof y !== "number"
+          ? `p-${Math.round(x.rem * oneRem)}-${
+            Math.round(
+              y.rem * oneRem,
+            )
+          }-rem`
+          : `p-${x}-${y}`,
+        y,
+        x,
+        y,
+        x,
+      ),
+    );
 }
 
 /**
@@ -1451,49 +1458,49 @@ function paddingXY(x: number | Rem, y: number | Rem): Attribute {
  * ```
  */
 function paddingEach({
-    top,
-    right,
-    bottom,
-    left,
+  top,
+  right,
+  bottom,
+  left,
 }:
-    | {
-          top: number;
-          right: number;
-          bottom: number;
-          left: number;
-      }
-    | {
-          top: Rem;
-          right: Rem;
-          bottom: Rem;
-          left: Rem;
-      }): Attribute {
-    return (top === right && top === bottom && top === left) ||
-        (typeof top !== 'number' &&
-            typeof right !== 'number' &&
-            typeof bottom !== 'number' &&
-            typeof left !== 'number' &&
-            top.rem === right.rem &&
-            top.rem === bottom.rem &&
-            top.rem === left.rem)
-        ? padding(top)
-        : StyleClass(
-              Flag.padding,
-              PaddingStyle(
-                  Internal.paddingName(top, right, bottom, left),
-                  top,
-                  right,
-                  bottom,
-                  left
-              )
-          );
+  | {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  }
+  | {
+    top: Rem;
+    right: Rem;
+    bottom: Rem;
+    left: Rem;
+  }): Attribute {
+  return (top === right && top === bottom && top === left) ||
+      (typeof top !== "number" &&
+        typeof right !== "number" &&
+        typeof bottom !== "number" &&
+        typeof left !== "number" &&
+        top.rem === right.rem &&
+        top.rem === bottom.rem &&
+        top.rem === left.rem)
+    ? padding(top)
+    : StyleClass(
+      Flag.padding,
+      PaddingStyle(
+        Internal.paddingName(top, right, bottom, left),
+        top,
+        right,
+        bottom,
+        left,
+      ),
+    );
 }
 
 function spacing(x: number | Rem): Attribute {
-    return StyleClass(
-        Flag.spacing,
-        SpacingStyle(Internal.spacingName(x, x), x, x)
-    );
+  return StyleClass(
+    Flag.spacing,
+    SpacingStyle(Internal.spacingName(x, x), x, x),
+  );
 }
 
 /**
@@ -1502,34 +1509,34 @@ function spacing(x: number | Rem): Attribute {
  * However for some layouts, like `textColumn`, you may want to set a different spacing for the x axis compared to the y axis.
  */
 function spacingXY(x: number | Rem, y: number | Rem): Attribute {
-    return StyleClass(
-        Flag.spacing,
-        SpacingStyle(Internal.spacingName(x, y), x, y)
-    );
+  return StyleClass(
+    Flag.spacing,
+    SpacingStyle(Internal.spacingName(x, y), x, y),
+  );
 }
 
 /** Make an element transparent and have it ignore any mouse or touch events, though it will stil take up space. */
 function transparent(on: boolean): Attribute {
-    return on
-        ? StyleClass(Flag.transparency, Transparency('transparent', 1.0))
-        : StyleClass(Flag.transparency, Transparency('visible', 0.0));
+  return on
+    ? StyleClass(Flag.transparency, Transparency("transparent", 1.0))
+    : StyleClass(Flag.transparency, Transparency("visible", 0.0));
 }
 
-/**A capped value between 0.0 and 1.0, where 0.0 is transparent and 1.0 is fully opaque.
+/** A capped value between 0.0 and 1.0, where 0.0 is transparent and 1.0 is fully opaque.
  *
  * Semantically equivalent to html opacity.
  */
 function alpha(o: number): Attribute {
-    const transparency_: number = ((x: number) => 1 - x)(
-        Math.min(1.0, Math.max(0.0, o))
-    );
-    return StyleClass(
-        Flag.transparency,
-        Transparency(
-            'transparency-' + Internal.floatClass(transparency_),
-            transparency_
-        )
-    );
+  const transparency_: number = ((x: number) => 1 - x)(
+    Math.min(1.0, Math.max(0.0, o)),
+  );
+  return StyleClass(
+    Flag.transparency,
+    Transparency(
+      "transparency-" + Internal.floatClass(transparency_),
+      transparency_,
+    ),
+  );
 }
 
 /**
@@ -1554,127 +1561,127 @@ function alpha(o: number): Attribute {
  * `Font.size(scaled(-1))` -- 16 * 1.25 ^ (-1) results in 12.8
  */
 function modular(normal: number, ratio: number, rescale: number): number {
-    if (rescale === 0) {
-        return normal;
-    } else if (rescale < 0) {
-        return normal * ratio ** rescale;
-    } else {
-        return normal * ratio ** (rescale - 1);
-    }
+  if (rescale === 0) {
+    return normal;
+  } else if (rescale < 0) {
+    return normal * ratio ** rescale;
+  } else {
+    return normal * ratio ** (rescale - 1);
+  }
 }
 
 function mouseOver(decs: Attribute[]): Attribute {
-    return StyleClass(
-        Flag.hover,
-        PseudoSelector(PseudoClass.Hover, Internal.unwrapDecorations(decs))
-    );
+  return StyleClass(
+    Flag.hover,
+    PseudoSelector(PseudoClass.Hover, Internal.unwrapDecorations(decs)),
+  );
 }
 
 function mouseDown(decs: Attribute[]): Attribute {
-    return StyleClass(
-        Flag.active,
-        PseudoSelector(PseudoClass.Active, Internal.unwrapDecorations(decs))
-    );
+  return StyleClass(
+    Flag.active,
+    PseudoSelector(PseudoClass.Active, Internal.unwrapDecorations(decs)),
+  );
 }
 
 function focused(decs: Attribute[]): Attribute {
-    return StyleClass(
-        Flag.focus,
-        PseudoSelector(PseudoClass.Focus, Internal.unwrapDecorations(decs))
-    );
+  return StyleClass(
+    Flag.focus,
+    PseudoSelector(PseudoClass.Focus, Internal.unwrapDecorations(decs)),
+  );
 }
 
 export {
-    rem,
-    minContent,
-    maxContent,
-    none,
-    text,
-    el,
-    elAttrs,
-    row,
-    rowAttrs,
-    wrappedRow,
-    wrappedRowAttrs,
-    Column,
-    column,
-    columnAttrs,
-    paragraph,
-    paragraphAttrs,
-    textColumn,
-    textColumnAttrs,
-    table,
-    IndexedColumn,
-    indexedTable,
-    width,
-    height,
-    px,
-    shrink,
-    fill,
-    fillPortion,
-    maximum,
-    minimum,
-    vp,
-    viewport,
-    explain,
-    padding,
-    paddingXY,
-    paddingEach,
-    spacing,
-    spacingXY,
-    spaceEvenly,
-    centerX,
-    centerY,
-    alignLeft,
-    alignRight,
-    alignTop,
-    alignBottom,
-    transparent,
-    alpha,
-    pointer,
-    moveUp,
-    moveDown,
-    moveRight,
-    moveLeft,
-    rotate,
-    scale,
-    clip,
-    clipX,
-    clipY,
-    scrollbars,
-    scrollbarX,
-    scrollbarY,
-    layout,
-    layoutWith,
-    layoutAttrs,
-    noStaticStyleSheet,
-    forceHover,
-    noHover,
-    focusStyle,
-    link,
-    linkAttrs,
-    newTabLink,
-    download,
-    downloadAs,
-    downloadAttrs,
-    image,
-    above,
-    below,
-    onRight,
-    onLeft,
-    inFront,
-    behindContent,
-    mouseOver,
-    mouseDown,
-    focused,
-    modular,
-    jsx,
-    jsxAttribute,
-    useViewport,
-    debounce,
-    floating,
-    stickyTop,
-    stickyLeft,
-    stickyBottom,
-    stickyRight,
+  above,
+  alignBottom,
+  alignLeft,
+  alignRight,
+  alignTop,
+  alpha,
+  behindContent,
+  below,
+  centerX,
+  centerY,
+  clip,
+  clipX,
+  clipY,
+  Column,
+  column,
+  columnAttrs,
+  debounce,
+  download,
+  downloadAs,
+  downloadAttrs,
+  el,
+  elAttrs,
+  explain,
+  fill,
+  fillPortion,
+  floating,
+  focused,
+  focusStyle,
+  forceHover,
+  height,
+  image,
+  IndexedColumn,
+  indexedTable,
+  inFront,
+  jsx,
+  jsxAttribute,
+  layout,
+  layoutAttrs,
+  layoutWith,
+  link,
+  linkAttrs,
+  maxContent,
+  maximum,
+  minContent,
+  minimum,
+  modular,
+  mouseDown,
+  mouseOver,
+  moveDown,
+  moveLeft,
+  moveRight,
+  moveUp,
+  newTabLink,
+  noHover,
+  none,
+  noStaticStyleSheet,
+  onLeft,
+  onRight,
+  padding,
+  paddingEach,
+  paddingXY,
+  paragraph,
+  paragraphAttrs,
+  pointer,
+  px,
+  rem,
+  rotate,
+  row,
+  rowAttrs,
+  scale,
+  scrollbars,
+  scrollbarX,
+  scrollbarY,
+  shrink,
+  spaceEvenly,
+  spacing,
+  spacingXY,
+  stickyBottom,
+  stickyLeft,
+  stickyRight,
+  stickyTop,
+  table,
+  text,
+  textColumn,
+  textColumnAttrs,
+  transparent,
+  useViewport,
+  viewport,
+  vp,
+  width,
+  wrappedRow,
+  wrappedRowAttrs,
 };
