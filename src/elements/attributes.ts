@@ -100,6 +100,12 @@ function style(property: string, value: string): Attribute {
     return Attr({ style: `${property}: ${value};` });
 }
 
+function styles(properties: [string, string][]): Attribute {
+    return Attr({
+        style: properties.map((val) => `${val[0]}: ${val[1]};`).join(' '),
+    });
+}
+
 export {
     focusedOnLoad,
     selected,
@@ -121,4 +127,5 @@ export {
     class_,
     classList,
     id,
+    styles,
 };
