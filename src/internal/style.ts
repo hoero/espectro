@@ -855,6 +855,7 @@ const baseSheet: Class[] = [
                             Prop('height', '100%'),
                             Prop('left', '0'),
                             Prop('top', '0'),
+                            Prop('z-index', '20'),
                             Prop('margin', '0 !important'),
                             Prop('pointer-events', 'none'),
                             Child('*', [Prop('pointer-events', 'auto')]),
